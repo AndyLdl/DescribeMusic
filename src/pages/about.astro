@@ -1,57 +1,67 @@
 ---
-import { getCollection } from "astro:content";
-import { Picture } from "astro:assets";
 import Layout from "@/layouts/Layout.astro";
 import Container from "@/components/container.astro";
 import Sectionhead from "@/components/sectionhead.astro";
+import { Picture } from "astro:assets";
+import team1 from "@/assets/team/janette-lynch.md?raw";
+import team2 from "@/assets/team/marcell-ziemann.md?raw";
+import team3 from "@/assets/team/robert-palmer.md?raw";
 
-// Filter team entries with 'draft: false' & date before current date
-const publishedTeamMembers = await getCollection("team", ({ data }) => {
-  return !data.draft && data.publishDate < new Date();
-});
+
+// This is a temporary solution to display team members without full content collection setup
+const teamMembers = [
+  { name: "Janette Lynch", title: "CEO & Founder", avatar: "/src/assets/team/janette-lynch.md" },
+  { name: "Marcell Ziemann", title: "Chief Technology Officer", avatar: "/src/assets/team/marcell-ziemann.md" },
+  { name: "Robert Palmer", title: "Head of Product", avatar: "/src/assets/team/robert-palmer.md" },
+]
 ---
 
-<Layout title="About">
+<Layout title="About Us">
   <Container>
     <Sectionhead>
-      <Fragment slot="title">About</Fragment>
-      <Fragment slot="desc">We are a small passionate team.</Fragment>
+      <Fragment slot="title">About Describe Music</Fragment>
+      <Fragment slot="desc">We are a small, passionate team dedicated to decoding the world of sound.</Fragment>
     </Sectionhead>
 
     <div class="flex flex-col gap-3 mx-auto max-w-4xl mt-16">
       <h2 class="font-bold text-3xl text-gray-800">
-        Empowering the world with Astro.
+        Empowering creators with the language of audio.
       </h2>
       <p class="text-lg leading-relaxed text-slate-500">
-        We're a multi-cultural team from around the world! We come from diverse
-        backgrounds, bringing different personalities, experiences and skills to
-        the job. This is what makes our team so special.
+        At Describe Music, we believe that sound is more than just waves in the air; it's emotion, data, and stories waiting to be told. Our mission is to provide creators, developers, and music lovers with the tools to understand and articulate the nuances of any audio.
+      </p>
+       <p class="text-lg leading-relaxed text-slate-500">
+        Born from a passion for both music and machine learning, our team is a blend of audio engineers, data scientists, and product visionaries from around the globe. We're building Describe Music to be the ultimate assistant for anyone who works with sound.
       </p>
     </div>
-    <div class="grid md:grid-cols-3 gap-10 mx-auto max-w-4xl mt-12">
-      {
-        publishedTeamMembers.map((teamMemberEntry) => (
-          <div class="group">
-            <div class="w-full aspect-square">
-              <Picture
-                src={teamMemberEntry.data.avatar.src}
-                alt={teamMemberEntry.data.avatar.alt}
-                sizes="(max-width: 800px) 100vw, 400px"
-                width={400}
-                height={400}
-                class="w-full rounded-sm transition group-hover:-translate-y-1 group-hover:shadow-xl bg-white object-cover object-center aspect-square"
-              />
-            </div>
-
-            <div class="mt-4 text-center">
-              <h2 class="text-lg text-gray-800">{teamMemberEntry.data.name}</h2>
-              <h3 class="text-sm text-slate-500">
-                {teamMemberEntry.data.title}
-              </h3>
-            </div>
-          </div>
-        ))
-      }
+     <div class="grid md:grid-cols-3 gap-10 mx-auto max-w-4xl mt-12">
+      <div class="group">
+        <div class="w-full aspect-square">
+          <img src="/src/assets/team/janette-lynch.md" alt="Janette Lynch" class="w-full rounded-sm transition group-hover:-translate-y-1 group-hover:shadow-xl bg-white object-cover object-center aspect-square" />
+        </div>
+        <div class="mt-4 text-center">
+          <h2 class="text-lg text-gray-800">Janette Lynch</h2>
+          <h3 class="text-sm text-slate-500">CEO & Founder</h3>
+        </div>
+      </div>
+      <div class="group">
+        <div class="w-full aspect-square">
+          <img src="/src/assets/team/marcell-ziemann.md" alt="Marcell Ziemann" class="w-full rounded-sm transition group-hover:-translate-y-1 group-hover:shadow-xl bg-white object-cover object-center aspect-square" />
+        </div>
+        <div class="mt-4 text-center">
+          <h2 class="text-lg text-gray-800">Marcell Ziemann</h2>
+          <h3 class="text-sm text-slate-500">Chief Technology Officer</h3>
+        </div>
+      </div>
+      <div class="group">
+        <div class="w-full aspect-square">
+          <img src="/src/assets/team/robert-palmer.md" alt="Robert Palmer" class="w-full rounded-sm transition group-hover:-translate-y-1 group-hover:shadow-xl bg-white object-cover object-center aspect-square" />
+        </div>
+        <div class="mt-4 text-center">
+          <h2 class="text-lg text-gray-800">Robert Palmer</h2>
+          <h3 class="text-sm text-slate-500">Head of Product</h3>
+        </div>
+      </div>
     </div>
   </Container>
 </Layout>

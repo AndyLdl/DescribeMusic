@@ -1,17 +1,20 @@
 ---
-import Container from "@/components/container.astro";
-import Cta from "@/components/cta.astro";
-import Features from "@/components/features.astro";
-import Hero from "@/components/hero.astro";
-import Logos from "@/components/logos.astro";
 import Layout from "@/layouts/Layout.astro";
+import Section01_Hero from "@/components/sections/01_Hero.astro";
+import Section02_Hook from "@/components/sections/02_Hook_React.astro";
+import Section03_Features from "@/components/sections/03_Features.astro";
+import Section03a_UseCases from "@/components/sections/03a_UseCases.astro";
+import Section03b_FAQ from "@/components/sections/03b_FAQ.astro";
+import Section04_SocialProof from "@/components/sections/04_SocialProof.astro";
+import Section05_CTA from "@/components/sections/05_CTA.astro";
 ---
 
-<Layout title="">
-  <Container>
-    <Hero />
-    <Features />
-    <Logos />
-    <Cta />
-  </Container>
+<Layout>
+  <Section01_Hero />
+  <Section02_Hook />
+  <Section03_Features />
+  <Section03a_UseCases />
+  <Section03b_FAQ />
+  <Section04_SocialProof />
+  <Section05_CTA />
 </Layout>

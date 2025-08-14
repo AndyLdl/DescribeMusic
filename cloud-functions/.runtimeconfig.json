@@ -1,0 +1,12 @@
+{
+  "cors": {
+    "allowed_origins": "https://your-domain.com,http://localhost:4321"
+  },
+  "app": {
+    "storage_bucket": "describe-music.appspot.com",
+    "project_id": "describe-music"
+  },
+  "google_ai": {
+    "api_key": "AIzaSyAbtn_9WkG8sGQTKLyLI5F67KOdh2wi26o"
+  }
+}

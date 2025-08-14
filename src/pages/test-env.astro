@@ -1,0 +1,25 @@
+---
+// Test environment variables
+---
+
+<html>
+  <head>
+    <title>Environment Test</title>
+  </head>
+  <body>
+    <h1>Environment Variables Test</h1>
+    <script>
+      console.log(
+        "VITE_CLOUD_FUNCTIONS_URL:",
+        import.meta.env.VITE_CLOUD_FUNCTIONS_URL
+      );
+      console.log("VITE_ENVIRONMENT:", import.meta.env.VITE_ENVIRONMENT);
+      document.body.innerHTML +=
+        "<p>VITE_CLOUD_FUNCTIONS_URL: " +
+        import.meta.env.VITE_CLOUD_FUNCTIONS_URL +
+        "</p>";
+      document.body.innerHTML +=
+        "<p>VITE_ENVIRONMENT: " + import.meta.env.VITE_ENVIRONMENT + "</p>";
+    </script>
+  </body>
+</html>

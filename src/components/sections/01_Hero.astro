@@ -1,0 +1,42 @@
+---
+import { Icon } from "astro-icon/components";
+---
+
+<div
+  id="hero-section"
+  class="relative h-screen flex items-center justify-center overflow-hidden bg-dark-bg">
+  <canvas id="living-nebula-canvas" class="absolute inset-0 w-full h-full"
+  ></canvas>
+
+  <div class="relative text-center z-10 p-6">
+    <div id="hero-content">
+      <h1
+        class="text-5xl md:text-8xl font-bold tracking-tighter !leading-tight text-white/90">
+        Describe Music.
+      </h1>
+      <p class="mt-4 text-xl md:text-2xl text-slate-300/80">
+        AI-Powered Audio Analysis.
+      </p>
+      <a
+        href="#hook"
+        class="mt-8 inline-flex items-center justify-center gap-2 px-6 py-3 text-lg font-medium text-white bg-white/5 border border-white/10 rounded-full backdrop-blur-xl hover:bg-white/10 transition duration-300 group">
+        Start Analyzing for Free
+        <Icon
+          name="heroicons:arrow-right-20-solid"
+          class="w-5 h-5 transition-transform group-hover:translate-x-1"
+        />
+      </a>
+    </div>
+  </div>
+
+  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
+    <a href="#hook" id="scroll-down-hint" class="animate-bounce">
+      <Icon
+        name="heroicons:arrow-down-20-solid"
+        class="w-6 h-6 text-white/50"
+      />
+    </a>
+  </div>
+</div>
+
+<script is:inline src="/scripts/visualizer.js"></script>

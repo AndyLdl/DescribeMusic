@@ -1,0 +1,50 @@
+---
+const useCases = [
+    {
+        title: "For Podcasters & YouTubers",
+        points: [
+            "Generate show notes & video chapters",
+            "Check audio quality before publishing",
+            "Find the perfect background music"
+        ]
+    },
+    {
+        title: "For Musicians & Producers",
+        points: [
+            "Analyze song structures of popular hits",
+            "Get unbiased feedback on your demos",
+            "Discover new melodic or rhythmic ideas"
+        ]
+    },
+    {
+        title: "For Marketers & Agencies",
+        points: [
+            "Ensure ad music is brand-safe",
+            "Write compelling copy based on audio mood",
+            "Find audio for social media campaigns"
+        ]
+    }
+];
+---
+<section id="use-cases" class="py-24">
+    <div class="max-w-5xl mx-auto px-6">
+        <h2 class="text-4xl font-medium tracking-tight text-center animate-on-scroll">
+            Who is Describe Music for?
+        </h2>
+        <div class="grid md:grid-cols-3 gap-8 mt-16">
+            {useCases.map((useCase, index) => (
+                <div class="glass-pane p-8 animate-on-scroll" style={`--scroll-delay: ${index * 150}ms`}>
+                    <h3 class="text-xl font-bold text-white">{useCase.title}</h3>
+                    <ul class="mt-4 space-y-2">
+                        {useCase.points.map(point => (
+                            <li class="flex items-start gap-2 text-slate-400">
+                                <span class="text-primary mt-1">&check;</span>
+                                <span>{point}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            ))}
+        </div>
+    </div>
+</section>

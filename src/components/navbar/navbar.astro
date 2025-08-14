@@ -1,40 +1,33 @@
 ---
 import Container from "@/components/container.astro";
 import Link from "@/components/ui/link.astro";
-import Dropdown from "./dropdown.astro";
 import { Astronav, MenuItems, MenuIcon } from "astro-navbar";
+import en from "../../i18n/en.json";
+
+const t = (key) => {
+  return key.split('.').reduce((o, i) => o[i], en);
+}
 
 const menuitems = [
   {
-    title: "Features",
-    path: "#",
-    children: [
-      { title: "Action", path: "/" },
-      { title: "Another action", path: "#" },
-      { title: "Dropdown Submenu", path: "#" },
-      { title: "404 Page", path: "/404" },
-    ],
+    title: t('nav.features'),
+    path: "/#features",
   },
   {
-    title: "Pricing",
+    title: t('nav.pricing'),
     path: "/pricing",
   },
   {
-    title: "About",
-    path: "/about",
-  },
-  {
-    title: "Blog",
+    title: t('nav.blog'),
     path: "/blog",
   },
   {
-    title: "Contact",
-    path: "/contact",
+    title: t('nav.about'),
+    path: "/about",
   },
   {
-    title: "Pro Version",
-    badge: true,
-    path: "https://astroship-pro.web3templates.com/",
+    title: t('nav.contact'),
+    path: "/contact",
   },
 ];
 ---
@@ -43,10 +36,9 @@ const menuitems = [
   <header class="flex flex-col lg:flex-row justify-between items-center my-5">
     <Astronav>
       <div class="flex w-full lg:w-auto items-center justify-between">
-        <a href="/" class="text-lg"
-          ><span class="font-bold text-slate-800">Astro</span><span
-            class="text-slate-500">ship</span
-          >
+        <a href="/" class="text-lg">
+          <span class="font-bold text-slate-800">Describe</span>
+          <span class="text-slate-500">Music</span>
         </a>
         <div class="block lg:hidden">
           <MenuIcon class="w-4 h-4 text-gray-800" />
@@ -55,44 +47,28 @@ const menuitems = [
       <MenuItems class="hidden w-full lg:w-auto mt-2 lg:flex lg:mt-0">
         <ul class="flex flex-col lg:flex-row lg:gap-3">
           {
-            menuitems.map((item, index) => (
-              <>
-                {item.children && (
-                  <Dropdown
-                    title={item.title}
-                    children={item.children}
-                    lastItem={index === menuitems.length - 1}
-                  />
-                )}
-
-                {!item.children && (
-                  <li>
-                    <a
-                      href={item.path}
-                      class="flex lg:px-3 py-2 items-center text-gray-600 hover:text-gray-900">
-                      <span> {item.title}</span>
-                      {item.badge && (
-                        <span class="ml-1 px-2 py-0.5 text-[10px] animate-pulse font-semibold uppercase text-white bg-indigo-600 rounded-full">
-                          New
-                        </span>
-                      )}
-                    </a>
-                  </li>
-                )}
-              </>
+            menuitems.map((item) => (
+              <li>
+                <a
+                  href={item.path}
+                  class="flex lg:px-3 py-2 items-center text-gray-600 hover:text-gray-900"
+                >
+                  <span>{item.title}</span>
+                </a>
+              </li>
             ))
           }
         </ul>
         <div class="lg:hidden flex items-center mt-3 gap-4">
-          <Link href="#" style="muted" block size="md">Log in</Link>
-          <Link href="#" size="md" block>Sign up</Link>
+          <Link href="#" style="muted" block size="md">{t('nav.login')}</Link>
+          <Link href="/analyze" size="md" block>{t('nav.cta')}</Link>
         </div>
       </MenuItems>
     </Astronav>
     <div>
       <div class="hidden lg:flex items-center gap-4">
-        <a href="#">Log in</a>
-        <Link href="#" size="md">Sign up</Link>
+        <a href="#">{t('nav.login')}</a>
+        <Link href="/analyze" size="md">{t('nav.cta')}</Link>
       </div>
     </div>
   </header>

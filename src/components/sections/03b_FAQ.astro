@@ -1,0 +1,40 @@
+---
+const faqs = [
+    {
+        q: "What is Describe Music?",
+        a: "Describe Music is an AI-powered platform that analyzes audio files to provide detailed descriptions, technical data, and creative insights."
+    },
+    {
+        q: "How accurate is the analysis?",
+        a: "Our analysis is powered by advanced AI models, providing highly accurate results for a wide range of audio types. However, like any AI, it should be used as a powerful assistant, not an infallible judge."
+    },
+    {
+        q: "What happens to the audio files I upload?",
+        a: "We prioritize your privacy and security. Uploaded files are processed securely and are not used for any purpose other than providing you with an analysis. Please refer to our Privacy Policy for more details."
+    },
+    {
+        q: "What audio formats do you support?",
+        a: "We support all major audio formats, including MP3, WAV, FLAC, AAC, and more."
+    }
+];
+---
+<section id="faq" class="py-24">
+    <div class="max-w-3xl mx-auto px-6">
+        <h2 class="text-4xl font-medium tracking-tight text-center animate-on-scroll">
+            Frequently Asked Questions
+        </h2>
+        <div class="mt-12 space-y-4">
+            {faqs.map((faq, index) => (
+                <details class="glass-pane p-6 group animate-on-scroll" style={`--scroll-delay: ${index * 100}ms`}>
+                    <summary class="flex items-center justify-between cursor-pointer font-semibold text-lg text-white">
+                        {faq.q}
+                        <span class="transition-transform duration-300 group-open:rotate-180">&darr;</span>
+                    </summary>
+                    <p class="mt-4 text-slate-400">
+                        {faq.a}
+                    </p>
+                </details>
+            ))}
+        </div>
+    </div>
+</section>

@@ -1,0 +1,506 @@
+---
+import { Icon } from "astro-icon/components";
+---
+
+<header class="fixed top-0 left-0 w-full z-50 border-b border-slate-800/50">
+  <!-- Simplified background for tool interface -->
+  <div class="absolute inset-0 bg-slate-900/95 backdrop-blur-md"></div>
+
+  <div class="relative max-w-none px-6">
+    <div class="h-16 flex items-center justify-between">
+      <!-- Simplified brand logo -->
+      <a href="/" class="group relative flex items-center gap-3">
+        <!-- Logo icon -->
+        <div
+          class="w-8 h-8 bg-gradient-to-r from-violet-500 to-blue-500 rounded-lg flex items-center justify-center">
+          <svg
+            class="w-5 h-5 text-white"
+            fill="currentColor"
+            viewBox="0 0 24 24">
+            <path
+              d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"
+            ></path>
+          </svg>
+        </div>
+
+        <!-- Brand text -->
+        <div class="text-lg font-semibold tracking-tight">
+          <span
+            class="text-white/90 group-hover:text-white transition-colors duration-300">
+            Describe Music
+          </span>
+        </div>
+      </a>
+
+      <!-- Right side navigation -->
+      <nav class="flex items-center gap-4">
+        <!-- Save/Export actions (placeholder) -->
+        <div class="hidden md:flex items-center gap-2">
+          <!-- Export Dropdown -->
+          <div class="relative" id="export-dropdown">
+            <button
+              onclick="toggleExportDropdown()"
+              class="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-md hover:border-slate-600 transition-all duration-300">
+              <Icon
+                name="heroicons:document-arrow-down-20-solid"
+                class="w-4 h-4"
+              />
+              Export
+              <Icon name="heroicons:chevron-down-20-solid" class="w-3 h-3" />
+            </button>
+
+            <!-- Export Dropdown Menu -->
+            <div
+              id="export-menu"
+              class="absolute right-0 mt-2 w-48 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-xl opacity-0 invisible transform scale-95 transition-all duration-200 z-50">
+              <div class="p-2">
+                <button
+                  onclick="exportAsJSON()"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200">
+                  <Icon
+                    name="heroicons:document-text-20-solid"
+                    class="w-4 h-4"
+                  />
+                  Export as JSON
+                </button>
+                <button
+                  onclick="exportAsCSV()"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200">
+                  <Icon name="heroicons:table-cells-20-solid" class="w-4 h-4" />
+                  Export as CSV
+                </button>
+                <button
+                  onclick="exportReport()"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200">
+                  <Icon name="heroicons:document-20-solid" class="w-4 h-4" />
+                  Generate Report
+                </button>
+                <hr class="my-2 border-slate-600" />
+                <button
+                  onclick="copyAnalysisData()"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200">
+                  <Icon name="heroicons:clipboard-20-solid" class="w-4 h-4" />
+                  Copy to Clipboard
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Share Dropdown -->
+          <div class="relative" id="share-dropdown">
+            <button
+              onclick="toggleShareDropdown()"
+              class="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-md hover:border-slate-600 transition-all duration-300">
+              <Icon name="heroicons:share-20-solid" class="w-4 h-4" />
+              Share
+              <Icon name="heroicons:chevron-down-20-solid" class="w-3 h-3" />
+            </button>
+
+            <!-- Share Dropdown Menu -->
+            <div
+              id="share-menu"
+              class="absolute right-0 mt-2 w-56 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-xl opacity-0 invisible transform scale-95 transition-all duration-200 z-50">
+              <div class="p-2">
+                <button
+                  onclick="copyShareLink()"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200">
+                  <Icon name="heroicons:link-20-solid" class="w-4 h-4" />
+                  Copy Share Link
+                </button>
+                <button
+                  onclick="shareViaEmail()"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200">
+                  <Icon name="heroicons:envelope-20-solid" class="w-4 h-4" />
+                  Share via Email
+                </button>
+                <hr class="my-2 border-slate-600" />
+                <button
+                  onclick="shareToTwitter()"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"
+                    ></path>
+                  </svg>
+                  Share on Twitter
+                </button>
+                <button
+                  onclick="shareToLinkedIn()"
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200">
+                  <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path
+                      d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"
+                    ></path>
+                  </svg>
+                  Share on LinkedIn
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Divider -->
+        <!-- <div class="hidden md:block w-px h-6 bg-slate-700"></div> -->
+
+        <!-- User actions -->
+        <!-- <a
+          href="/pricing"
+          class="text-sm text-slate-400 hover:text-white transition-colors duration-300">
+          Upgrade
+        </a> -->
+
+        <!-- User menu -->
+        <!-- <div class="relative">
+          <button
+            class="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors duration-300">
+            <Icon
+              name="heroicons:user-20-solid"
+              class="w-4 h-4 text-slate-400"
+            />
+          </button>
+        </div> -->
+
+        <!-- Mobile menu button -->
+        <button
+          class="md:hidden p-2 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-all duration-300">
+          <Icon name="heroicons:bars-3-20-solid" class="w-5 h-5" />
+        </button>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<style>
+  /* Minimize visual noise for tool interface */
+  header {
+    font-feature-settings:
+      "tnum" on,
+      "lnum" on; /* Tabular numbers for better alignment */
+  }
+
+  /* Subtle animation for the activity indicator */
+  @keyframes pulse-soft {
+    0%,
+    100% {
+      opacity: 0.4;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  .animate-pulse {
+    animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+</style>
+
+<script>
+  // Dropdown functionality
+  function toggleExportDropdown() {
+    const menu = document.getElementById("export-menu");
+    if (!menu) return;
+
+    const isVisible = !menu.classList.contains("invisible");
+
+    // Close all dropdowns first
+    closeAllDropdowns();
+
+    if (!isVisible) {
+      menu.classList.remove("invisible", "opacity-0", "scale-95");
+      menu.classList.add("opacity-100", "scale-100");
+    }
+  }
+
+  function toggleShareDropdown() {
+    const menu = document.getElementById("share-menu");
+    if (!menu) return;
+
+    const isVisible = !menu.classList.contains("invisible");
+
+    // Close all dropdowns first
+    closeAllDropdowns();
+
+    if (!isVisible) {
+      menu.classList.remove("invisible", "opacity-0", "scale-95");
+      menu.classList.add("opacity-100", "scale-100");
+    }
+  }
+
+  // Make functions globally accessible
+  (window as any).toggleExportDropdown = toggleExportDropdown;
+  (window as any).toggleShareDropdown = toggleShareDropdown;
+
+  function closeAllDropdowns() {
+    const dropdowns = ["export-menu", "share-menu"];
+    dropdowns.forEach((id) => {
+      const menu = document.getElementById(id);
+      if (menu) {
+        menu.classList.add("invisible", "opacity-0", "scale-95");
+        menu.classList.remove("opacity-100", "scale-100");
+      }
+    });
+  }
+
+  // Close dropdowns when clicking outside
+  document.addEventListener("click", function (event) {
+    const exportDropdown = document.getElementById("export-dropdown");
+    const shareDropdown = document.getElementById("share-dropdown");
+    const target = event.target as Element;
+
+    if (!exportDropdown?.contains(target) && !shareDropdown?.contains(target)) {
+      closeAllDropdowns();
+    }
+  });
+
+  // Get current analysis data (this would be passed from the React component in a real implementation)
+  function getCurrentAnalysisData() {
+    // This is a placeholder - in reality, this would get data from the React component
+    return {
+      filename: "sample-audio.mp3",
+      timestamp: new Date().toISOString(),
+      duration: 180,
+      format: "MP3",
+      basicInfo: {
+        genre: "Electronic",
+        mood: "Energetic",
+        bpm: 128,
+        key: "C Major",
+        energy: 0.85,
+        valence: 0.72,
+        danceability: 0.89,
+      },
+      emotions: {
+        happy: 0.78,
+        sad: 0.12,
+        angry: 0.05,
+        calm: 0.25,
+        excited: 0.82,
+      },
+      quality: {
+        overall: 8.5,
+        clarity: 9.2,
+        loudness: -8.5,
+        dynamic_range: 7.8,
+        noise_level: 2.1,
+      },
+      tags: [
+        "electronic",
+        "energetic",
+        "high-energy",
+        "intense",
+        "moderate-tempo",
+        "groove",
+        "happy",
+        "uplifting",
+        "positive",
+        "exciting",
+        "dynamic",
+        "high-quality",
+        "professional",
+        "studio-quality",
+        "clear",
+        "crisp",
+        "danceable",
+        "groovy",
+        "rhythmic",
+        "bright",
+        "mp3-file",
+        "ai-analyzed",
+        "music-analysis",
+        "audio-processing",
+      ],
+    };
+  }
+
+  // Export functions
+  function exportAsJSON() {
+    const data = getCurrentAnalysisData();
+    const jsonString = JSON.stringify(data, null, 2);
+    downloadFile(
+      `${data.filename}-analysis.json`,
+      jsonString,
+      "application/json"
+    );
+    closeAllDropdowns();
+  }
+
+  function exportAsCSV() {
+    const data = getCurrentAnalysisData();
+    const csv = convertToCSV(data);
+    downloadFile(`${data.filename}-analysis.csv`, csv, "text/csv");
+    closeAllDropdowns();
+  }
+
+  function exportReport() {
+    const data = getCurrentAnalysisData();
+    const report = generateTextReport(data);
+    downloadFile(`${data.filename}-report.txt`, report, "text/plain");
+    closeAllDropdowns();
+  }
+
+  function copyAnalysisData() {
+    const data = getCurrentAnalysisData();
+    const summary = generateSummary(data);
+    navigator.clipboard.writeText(summary).then(() => {
+      showNotification("Analysis data copied to clipboard!");
+    });
+    closeAllDropdowns();
+  }
+
+  // Share functions
+  function copyShareLink() {
+    const data = getCurrentAnalysisData();
+    const shareUrl = `${window.location.origin}/results/${data.filename}-${Date.now()}`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      showNotification("Share link copied to clipboard!");
+    });
+    closeAllDropdowns();
+  }
+
+  function shareViaEmail() {
+    const data = getCurrentAnalysisData();
+    const subject = `Audio Analysis Results: ${data.filename}`;
+    const body = generateEmailBody(data);
+    const mailto = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(mailto);
+    closeAllDropdowns();
+  }
+
+  function shareToTwitter() {
+    const data = getCurrentAnalysisData();
+    const text = `Just analyzed "${data.filename}" with Describe Music! 🎵 Genre: ${data.basicInfo.genre}, BPM: ${data.basicInfo.bpm}, Mood: ${data.basicInfo.mood} ⚡ #AudioAnalysis #AI`;
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank");
+    closeAllDropdowns();
+  }
+
+  function shareToLinkedIn() {
+    const data = getCurrentAnalysisData();
+    const summary = `Just completed an AI-powered audio analysis of "${data.filename}" using Describe Music. Key insights: ${data.basicInfo.genre} genre, ${data.basicInfo.bpm} BPM, ${data.basicInfo.mood} mood.`;
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(summary)}`;
+    window.open(url, "_blank");
+    closeAllDropdowns();
+  }
+
+  // Utility functions
+  function downloadFile(filename, content, mimeType) {
+    const blob = new Blob([content], { type: mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showNotification(`${filename} downloaded successfully!`);
+  }
+
+  function convertToCSV(data) {
+    const rows = [
+      ["Property", "Value"],
+      ["Filename", data.filename],
+      ["Genre", data.basicInfo.genre],
+      ["Mood", data.basicInfo.mood],
+      ["BPM", data.basicInfo.bpm],
+      ["Key", data.basicInfo.key],
+      ["Energy", Math.round(data.basicInfo.energy * 100) + "%"],
+      ["Valence", Math.round(data.basicInfo.valence * 100) + "%"],
+      ["Danceability", Math.round(data.basicInfo.danceability * 100) + "%"],
+      ["Overall Quality", data.quality.overall + "/10"],
+      ["Clarity", data.quality.clarity + "/10"],
+      ["Loudness", data.quality.loudness + " dB"],
+      ["Dynamic Range", data.quality.dynamic_range + "/10"],
+      ["AI Tags", data.tags.map((tag) => `#${tag}`).join(", ")],
+    ];
+
+    return rows
+      .map((row) => row.map((cell) => `"${cell}"`).join(","))
+      .join("\n");
+  }
+
+  function generateTextReport(data) {
+    return `
+AUDIO ANALYSIS REPORT
+====================
+
+File Information:
+- Filename: ${data.filename}
+- Analysis Date: ${new Date(data.timestamp).toLocaleString()}
+- Duration: ${Math.floor(data.duration / 60)}:${(data.duration % 60).toString().padStart(2, "0")}
+- Format: ${data.format}
+
+Musical Analysis:
+- Genre: ${data.basicInfo.genre}
+- Mood: ${data.basicInfo.mood}
+- BPM: ${data.basicInfo.bpm}
+- Key: ${data.basicInfo.key}
+- Energy Level: ${Math.round(data.basicInfo.energy * 100)}%
+- Valence: ${Math.round(data.basicInfo.valence * 100)}%
+- Danceability: ${Math.round(data.basicInfo.danceability * 100)}%
+
+Quality Assessment:
+- Overall Score: ${data.quality.overall}/10
+- Clarity: ${data.quality.clarity}/10
+- Loudness: ${data.quality.loudness} dB
+- Dynamic Range: ${data.quality.dynamic_range}/10
+- Noise Level: ${data.quality.noise_level}%
+
+Emotional Analysis:
+${Object.entries(data.emotions)
+  .map(
+    ([emotion, value]) =>
+      `- ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}: ${Math.round((value as number) * 100)}%`
+  )
+  .join("\n")}
+
+AI-Generated Tags:
+${data.tags.map((tag) => `#${tag}`).join(", ")}
+
+Generated by Describe Music - AI-Powered Audio Analysis
+    `.trim();
+  }
+
+  function generateSummary(data) {
+    return `${data.filename} - ${data.basicInfo.genre} | ${data.basicInfo.mood} | ${data.basicInfo.bpm} BPM | ${data.basicInfo.key} | Quality: ${data.quality.overall}/10`;
+  }
+
+  function generateEmailBody(data) {
+    return `I wanted to share the audio analysis results for "${data.filename}":
+
+🎵 Genre: ${data.basicInfo.genre}
+🎭 Mood: ${data.basicInfo.mood}
+🥁 BPM: ${data.basicInfo.bpm}
+🎹 Key: ${data.basicInfo.key}
+⚡ Energy: ${Math.round(data.basicInfo.energy * 100)}%
+⭐ Quality Score: ${data.quality.overall}/10
+
+Analyzed with Describe Music - AI-Powered Audio Analysis
+${window.location.origin}
+    `;
+  }
+
+  function showNotification(message) {
+    // Simple notification - could be enhanced with a proper toast system
+    const notification = document.createElement("div");
+    notification.className =
+      "fixed top-20 right-4 bg-green-500/90 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300";
+    notification.textContent = message;
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      notification.style.opacity = "0";
+      setTimeout(() => document.body.removeChild(notification), 300);
+    }, 3000);
+  }
+
+  // Make all export and share functions globally accessible
+  (window as any).exportAsJSON = exportAsJSON;
+  (window as any).exportAsCSV = exportAsCSV;
+  (window as any).exportReport = exportReport;
+  (window as any).copyAnalysisData = copyAnalysisData;
+  (window as any).copyShareLink = copyShareLink;
+  (window as any).shareViaEmail = shareViaEmail;
+  (window as any).shareToTwitter = shareToTwitter;
+  (window as any).shareToLinkedIn = shareToLinkedIn;
+</script>

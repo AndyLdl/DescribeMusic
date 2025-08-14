@@ -6,58 +6,48 @@ import PricingCard from "@/components/pricing.astro";
 
 const pricing = [
   {
-    name: "Personal",
-    price: "Free",
+    name: "Free",
+    price: "$0",
     popular: false,
     features: [
-      "Lifetime free",
-      "Up to 3 users",
-      "Unlimited Pages",
-      "Astro Sub domain",
-      "Basic Integrations",
+      "10 minutes/month",
+      "Standard analysis features",
       "Community Support",
     ],
     button: {
       text: "Get Started",
-      link: "/",
+      link: "/analyze",
     },
   },
   {
-    name: "Startup",
+    name: "Creator",
     price: {
       monthly: "$19",
       annual: "$16",
-      discount: "10%",
-      original: "$24",
     },
     popular: true,
     features: [
-      "All Free Features",
-      "Up to 20 users",
-      "20 Custom domains",
-      "Unlimited Collaborators",
-      "Advanced Integrations",
+      "120 minutes/month",
+      "Advanced analysis features (Coming Soon)",
       "Priority Support",
     ],
     button: {
-      text: "Get Started",
+      text: "Choose Creator",
       link: "#",
     },
   },
   {
-    name: "Enterprise",
+    name: "Business",
     price: "Custom",
     popular: false,
     features: [
-      "All Pro Features",
-      "Unlimited Custom domains",
-      "99.99% Uptime SLA",
-      "SAML & SSO Integration",
+      "Unlimited usage",
+      "API Access",
       "Dedicated Account Manager",
-      "24/7 Phone Support",
+      "SAML & SSO Integration",
     ],
     button: {
-      text: "Contact us",
+      text: "Contact Sales",
       link: "/contact",
     },
   },
@@ -67,14 +57,14 @@ const pricing = [
 <Layout title="Pricing">
   <Container>
     <Sectionhead>
-      <Fragment slot="title">Pricing</Fragment>
+      <Fragment slot="title">Pricing Plans</Fragment>
       <Fragment slot="desc">
-        Simple & Predictable pricing. No Surprises.
+        Simple, predictable pricing. No surprises.
       </Fragment>
     </Sectionhead>
 
     <div
-      class="grid md:grid-cols-3 gap-10 mx-auto max-w-(--breakpoint-lg) mt-12">
+      class="grid md:grid-cols-3 gap-10 mx-auto max-w-5xl mt-12">
       {pricing.map((item) => <PricingCard plan={item} />)}
     </div>
   </Container>

@@ -1,0 +1,91 @@
+{
+  "site": {
+    "title": "Describe Music | AI-Powered Audio and Voice Analysis",
+    "description": "Instantly analyze any music, audio, or voice file with our advanced AI. Generate detailed descriptions, identify instruments, analyze emotions, and get SEO-friendly tags for your content.",
+    "keywords": "Describe Music, describe audio, describe voice, music analysis, audio recognition, AI music tool, voice analysis, sound recognition, AI audio analysis"
+  },
+  "nav": {
+    "features": "Features",
+    "pricing": "Pricing",
+    "blog": "Blog",
+    "about": "About",
+    "contact": "Contact",
+    "login": "Log in",
+    "cta": "Start Analyzing for Free"
+  },
+  "footer": {
+    "copyright": "Copyright © {year} Describe Music. All rights reserved."
+  },
+  "hero": {
+    "title": "Describe Music: Your AI-Powered Audio Analysis Engine",
+    "subtitle": "From intricate melodies to subtle voice emotions, our advanced AI instantly translates any sound into detailed, actionable descriptions.",
+    "cta": "Start Analyzing for Free"
+  },
+  "instant_experience": {
+    "title": "See It in Action: Analyze a Sample",
+    "cta": "Analyze Your Own Audio File →",
+    "samples": [
+      { 
+        "id": "rock", 
+        "title": "🎸 Rock Riff", 
+        "results": ["🎸 Electric Guitar", "🥁 Drums", "⚡ Energetic", "🤘 Rock", "BPM: 150"] 
+      },
+      { 
+        "id": "podcast", 
+        "title": "🎙️ Podcast Clip", 
+        "results": ["🗣️ Male Voice", "💬 Clear Speech", "😊 Positive Tone", "44.1kHz", "No Background Noise"] 
+      },
+      { 
+        "id": "nature", 
+        "title": "🍃 Forest Sounds", 
+        "results": ["🐦 Birdsong", "💨 Wind", "🌿 Nature", "😌 Calming", "Stereo"] 
+      }
+    ]
+  },
+  "features": {
+    "title": "Unlock Every Detail in Your Audio",
+    "card1_title": "In-depth Music Analysis",
+    "card1_desc": "Identify mood, genre, instruments, BPM, and key.",
+    "card2_title": "Voice & Speech Analysis",
+    "card2_desc": "Analyze speaker emotion, gender, and speech clarity.",
+    "card3_title": "Sound Effect Recognition",
+    "card3_desc": "Recognize everything from nature sounds to urban noises.",
+    "card4_title": "AI-Powered Tagging",
+    "card4_desc": "Automatically generate SEO-friendly and searchable tags.",
+    "card5_title": "Developer API",
+    "card5_desc": "Integrate our analysis engine into your applications.",
+    "card6_title": "Batch Processing",
+    "card6_desc": "Analyze multiple files at once to speed up your workflow."
+  },
+  "use_cases": {
+    "title": "Who is Describe Music for?",
+    "group1_title": "For Podcasters & YouTubers",
+    "group1_item1": "Generate show notes & video chapters",
+    "group1_item2": "Check audio quality before publishing",
+    "group1_item3": "Find the perfect background music",
+    "group2_title": "For Musicians & Producers",
+    "group2_item1": "Analyze song structures of popular hits",
+    "group2_item2": "Get unbiased feedback on your demos",
+    "group2_item3": "Discover new melodic or rhythmic ideas",
+    "group3_title": "For Marketers & Agencies",
+    "group3_item1": "Ensure ad music is brand-safe",
+    "group3_item2": "Write compelling copy based on audio mood",
+    "group3_item3": "Find audio for social media campaigns"
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "q1": "What is Describe Music?",
+    "a1": "Describe Music is an AI-powered platform that analyzes audio files to provide detailed descriptions, technical data, and creative insights.",
+    "q2": "How accurate is the analysis?",
+    "a2": "Our analysis is powered by advanced AI models, providing highly accurate results for a wide range of audio types. However, like any AI, it should be used as a powerful assistant, not an infallible judge.",
+    "q3": "What happens to the audio files I upload?",
+    "a3": "We prioritize your privacy and security. Uploaded files are processed securely and are not used for any purpose other than providing you with an analysis. Please refer to our Privacy Policy for more details.",
+    "q4": "What audio formats do you support?",
+    "a4": "We support all major audio formats, including MP3, WAV, FLAC, AAC, and more."
+  },
+  "final_cta": {
+    "title": "Ready to Hear the Unheard?",
+    "subtitle": "Join thousands of creators and developers who are using Describe Music to unlock the full potential of their audio content. Start your free trial today.",
+    "cta": "Sign Up Now - It's Free"
+  }
+}

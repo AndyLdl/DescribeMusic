@@ -1,0 +1,31 @@
+{
+  "functions": {
+    "source": "./",
+    "runtime": "nodejs18",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "firebase-debug.log",
+      "firebase-debug.*.log",
+      "*.local",
+      "src",
+      "*.md",
+      "tsconfig.json",
+      ".eslintrc.js"
+    ],
+    "predeploy": [
+      "npm run build"
+    ]
+  },
+  "emulators": {
+    "functions": {
+      "port": 5001,
+      "host": "localhost"
+    },
+    "ui": {
+      "enabled": true,
+      "port": 4000,
+      "host": "localhost"
+    }
+  }
+}

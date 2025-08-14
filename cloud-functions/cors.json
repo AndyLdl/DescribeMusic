@@ -1,0 +1,16 @@
+[
+  {
+    "origin": [
+      "http://localhost:4321",
+      "http://localhost:4322", 
+      "http://localhost:4323",
+      "http://localhost:4324",
+      "http://localhost:4325",
+      "https://localhost:4321",
+      "https://localhost:4322"
+    ],
+    "method": ["GET", "PUT", "POST", "DELETE", "OPTIONS"],
+    "responseHeader": ["Content-Type", "x-goog-resumable"],
+    "maxAgeSeconds": 3600
+  }
+]

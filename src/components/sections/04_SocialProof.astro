@@ -1,0 +1,47 @@
+---
+const testimonials = [
+    {
+        name: "Alex Rivera",
+        title: "Podcast Producer",
+        avatar: "/images/avatars/alex.jpg",
+        quote: "Describe Music has become an indispensable part of my workflow. The AI summary is shockingly accurate and saves me hours of manual logging every week."
+    },
+    {
+        name: "Samantha Chen",
+        title: "Indie Game Developer",
+        avatar: "/images/avatars/samantha.jpg",
+        quote: "As a solo developer, I wear many hats. This tool's ability to quickly categorize and tag my sound effects library is a total game-changer. The API is a dream to work with."
+    },
+    {
+        name: "David Lee",
+        title: "Musician & Composer",
+        avatar: "/images/avatars/david.jpg",
+        quote: "I was skeptical at first, but the instrument and key analysis is incredibly accurate. It's like having a second pair of perfectly trained ears in the studio."
+    }
+]
+---
+<section id="social-proof" class="py-24">
+    <div class="max-w-5xl mx-auto px-6 text-center">
+        <h2 class="text-3xl md:text-4xl font-medium tracking-tight animate-on-scroll">
+            Loved by creators and developers
+        </h2>
+        <div class="mt-16 grid md:grid-cols-1 lg:grid-cols-3 gap-8">
+            {testimonials.map((testimonial, index) => (
+                <div class="glass-pane p-8 animate-on-scroll" style={`--scroll-delay: ${index * 150}ms`}>
+                    <p class="text-slate-300 before:content-['“'] after:content-['”']">
+                        {testimonial.quote}
+                    </p>
+                    <div class="flex items-center gap-4 mt-6">
+                        <div class="w-12 h-12 rounded-full bg-slate-700 flex-shrink-0">
+                            {/* Placeholder for avatar image */}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-white">{testimonial.name}</p>
+                            <p class="text-sm text-slate-400">{testimonial.title}</p>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+</section>

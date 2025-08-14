@@ -1,0 +1,241 @@
+---
+const samples = [
+    {
+        id: 'rock',
+        title: '🎸 Rock Anthem',
+        subtitle: 'High-energy rock track',
+        audioUrl: '/audio/samples/rock-anthem', // Will support both .mp3 and .wav
+        summary: 'A powerful rock anthem with driving electric guitars and energetic drums.',
+        analysis: {
+            genre: 'Rock',
+            mood: 'Energetic, Powerful',
+            tempo: '150 BPM',
+            key: 'E Minor',
+            instruments: ['Electric Guitar', 'Bass Guitar', 'Drums', 'Vocals'],
+            structure: 'Verse-Chorus-Verse-Chorus-Bridge-Chorus',
+            quality: 'Studio Quality (44.1kHz/16-bit)',
+            duration: '3:42'
+        },
+        tags: ['🎸 Electric Guitar', '🥁 Drums', '⚡ Energetic', '🤘 Rock', 'BPM: 150']
+    },
+    {
+        id: 'podcast',
+        title: '🎙️ Interview Segment',
+        subtitle: 'Professional podcast audio',
+        audioUrl: '/audio/samples/interview-segment', // Will support both .mp3 and .wav
+        summary: 'Clear, professional interview audio with excellent speech clarity and minimal background noise.',
+        analysis: {
+            type: 'Speech/Podcast',
+            speakers: '2 (Male & Female)',
+            clarity: 'Excellent',
+            noise_level: 'Very Low',
+            emotion: 'Conversational, Engaging',
+            language: 'English',
+            quality: 'Broadcast Quality (48kHz/24-bit)',
+            duration: '2:15'
+        },
+        tags: ['🗣️ Clear Speech', '🎙️ Professional', '😊 Engaging', '🔇 Low Noise', '48kHz']
+    },
+    {
+        id: 'nature',
+        title: '🌲 Forest Ambience',
+        subtitle: 'Natural soundscape',
+        audioUrl: '/audio/samples/forest-ambience', // Will support both .mp3 and .wav
+        summary: 'Peaceful forest ambience with gentle birdsong and rustling leaves, perfect for relaxation.',
+        analysis: {
+            type: 'Nature/Ambient',
+            environment: 'Forest',
+            elements: ['Bird Calls', 'Wind', 'Leaves', 'Distant Water'],
+            mood: 'Peaceful, Calming',
+            stereo_width: 'Wide Stereo Field',
+            frequency_range: '20Hz - 20kHz',
+            quality: 'Field Recording (96kHz/24-bit)',
+            duration: '5:30'
+        },
+        tags: ['🐦 Birdsong', '🍃 Nature', '😌 Calming', '🎧 Stereo', '96kHz']
+    }
+];
+---
+<section id="hook" class="py-24 bg-gradient-to-b from-transparent to-slate-900/20">
+    <div class="container mx-auto px-6">
+        <!-- Section Header -->
+        <div class="text-center mb-16 animate-on-scroll" style="--scroll-delay: 0ms">
+            <h2 class="text-4xl md:text-5xl font-bold text-white mb-6">
+                🚀 Experience AI Analysis <span class="text-primary">Instantly</span>
+            </h2>
+            <p class="text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
+                Try our AI-powered audio analysis with these sample tracks. 
+                Click any sample to see instant results and hear the audio.
+            </p>
+        </div>
+
+        <!-- Main Layout: Left-Right Split -->
+        <div class="grid lg:grid-cols-2 gap-8 animate-on-scroll" style="--scroll-delay: 200ms">
+            
+            <!-- Left Panel: Audio Samples -->
+            <div class="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md p-6">
+                <h3 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                    🎵 Audio Samples
+                </h3>
+                
+                <div class="space-y-4">
+                    {samples.map((sample, index) => (
+                        <div 
+                            class="sample-card group relative bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-primary/30 transition-all duration-300 cursor-pointer"
+                            data-sample-id={sample.id}
+                            data-index={index}
+                        >
+                            <!-- Audio Element -->
+                            <audio preload="metadata" data-sample-id={sample.id} crossorigin="anonymous">
+                                <source src={`${sample.audioUrl}.wav`} type="audio/wav"/>
+                                <source src={`${sample.audioUrl}.mp3`} type="audio/mpeg"/>
+                                Your browser does not support the audio element.
+                            </audio>
+                            
+                            <!-- Sample Header -->
+                            <div class="p-4">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="flex-1">
+                                        <h4 class="text-lg font-medium text-white mb-1">{sample.title}</h4>
+                                        <p class="text-sm text-slate-400">{sample.subtitle}</p>
+                                    </div>
+                                    
+                                    <!-- Play/Pause Button -->
+                                    <div 
+                                        class="play-btn w-10 h-10 flex items-center justify-center bg-primary/20 hover:bg-primary/30 rounded-full transition-all duration-300 cursor-pointer ml-3"
+                                        data-sample-id={sample.id}
+                                        aria-label="Play audio sample"
+                                    >
+                                        <!-- Play Icon -->
+                                        <svg class="play-icon w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M8 5v14l11-7z"/>
+                                        </svg>
+                                        <!-- Pause Icon -->
+                                        <svg class="pause-icon w-4 h-4 text-white hidden" fill="currentColor" viewBox="0 0 24 24">
+                                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                                        </svg>
+                                        <!-- Loading Spinner -->
+                                        <div class="loading-spinner hidden w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Compact Waveform -->
+                                <div class="waveform-container bg-slate-800/50 rounded-lg p-2 mb-3">
+                                    <canvas 
+                                        class="waveform-canvas w-full h-8" 
+                                        data-sample-id={sample.id}
+                                        width="300" 
+                                        height="32"
+                                    ></canvas>
+                                </div>
+                                
+                                <!-- Progress Bar -->
+                                <div class="audio-progress-container hidden">
+                                    <div class="flex items-center gap-2 text-xs text-slate-400">
+                                        <span class="current-time">0:00</span>
+                                        <div class="flex-1 bg-slate-700 rounded-full h-1 relative overflow-hidden">
+                                            <div class="progress-bar absolute left-0 top-0 h-full bg-primary rounded-full transition-all duration-150" style="width: 0%"></div>
+                                        </div>
+                                        <span class="total-time">0:00</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Selection Indicator -->
+                            <div class="selection-indicator absolute top-2 right-2 w-3 h-3 bg-primary rounded-full opacity-0 transition-opacity duration-300"></div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            
+            <!-- Right Panel: AI Analysis Results -->
+            <div class="bg-white/5 border border-white/10 rounded-2xl backdrop-blur-md p-6">
+                <h3 class="text-xl font-semibold text-white mb-6 flex items-center gap-2">
+                    🤖 AI Analysis Engine
+                </h3>
+                
+                <!-- Analysis Status -->
+                <div class="analysis-status mb-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <div class="w-3 h-3 bg-slate-500 rounded-full animate-pulse"></div>
+                        <span class="text-slate-400 text-sm">Select a sample to start analysis</span>
+                    </div>
+                </div>
+                
+                <!-- Analysis Progress -->
+                <div class="analysis-progress hidden mb-6">
+                    <h4 class="text-white font-medium mb-4">🔄 Analyzing Audio...</h4>
+                    <div class="space-y-3">
+                        <div class="progress-step flex items-center gap-3">
+                            <div class="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                            <span class="text-sm text-slate-300">🎵 Audio Pattern Analysis</span>
+                        </div>
+                        <div class="progress-step flex items-center gap-3 opacity-50">
+                            <div class="w-4 h-4 border-2 border-slate-500 rounded-full"></div>
+                            <span class="text-sm text-slate-400">🎸 Genre Detection</span>
+                        </div>
+                        <div class="progress-step flex items-center gap-3 opacity-50">
+                            <div class="w-4 h-4 border-2 border-slate-500 rounded-full"></div>
+                            <span class="text-sm text-slate-400">😊 Mood Analysis</span>
+                        </div>
+                        <div class="progress-step flex items-center gap-3 opacity-50">
+                            <div class="w-4 h-4 border-2 border-slate-500 rounded-full"></div>
+                            <span class="text-sm text-slate-400">🎼 Structure Analysis</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analysis Results -->
+                <div class="analysis-results hidden">
+                    <h4 class="text-white font-medium mb-4">📊 Analysis Results</h4>
+                    
+                    <!-- Results Grid -->
+                    <div class="grid grid-cols-2 gap-4 mb-6">
+                        <div class="result-item bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">GENRE</div>
+                            <div class="text-white font-medium genre-result">-</div>
+                            <div class="text-xs text-primary confidence-score">-</div>
+                        </div>
+                        <div class="result-item bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">MOOD</div>
+                            <div class="text-white font-medium mood-result">-</div>
+                            <div class="text-xs text-primary energy-level">-</div>
+                        </div>
+                        <div class="result-item bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">TEMPO</div>
+                            <div class="text-white font-medium tempo-result">-</div>
+                            <div class="text-xs text-slate-400 tempo-confidence">-</div>
+                        </div>
+                        <div class="result-item bg-slate-800/50 rounded-lg p-3">
+                            <div class="text-xs text-slate-400 mb-1">KEY</div>
+                            <div class="text-white font-medium key-result">-</div>
+                            <div class="text-xs text-slate-400 key-confidence">-</div>
+                        </div>
+                    </div>
+                    
+                    <!-- AI Insight -->
+                    <div class="ai-insight bg-gradient-to-r from-primary/10 to-cyan-500/10 border border-primary/20 rounded-lg p-4">
+                        <div class="flex items-start gap-3">
+                            <div class="text-primary text-lg">💡</div>
+                            <div>
+                                <div class="text-sm font-medium text-white mb-2">AI Insight</div>
+                                <div class="text-sm text-slate-300 insight-text">Select a sample to see AI analysis insights...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+// Script to handle the interactive demo
+document.addEventListener('DOMContentLoaded', () => {
+    // ... (omitted for brevity, but this is where the full JS logic goes)
+});
+</script>
+
+<style>
+/* Styles for the interactive demo */
+</style>
