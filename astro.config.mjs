@@ -8,7 +8,7 @@ import react from "@astrojs/react";
 
 // https://astro.build/config
 export default defineConfig({
-  site: "https://describemusic.ai",
+  site: "https://describemusic.net",
   integrations: [mdx(), sitemap(), icon({
     include: {
       'heroicons': ['*'],
