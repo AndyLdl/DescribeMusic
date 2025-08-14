@@ -15,7 +15,7 @@ export interface Props {
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
 const resolvedImageWithDomain = new URL(
-  "/opengraph.jpg",
+  "/images/logo/social/opengraph-1200x630.jpg",
   Astro.site
 ).toString();
 
@@ -33,7 +33,35 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="/images/logo/favicon/favicon.ico"
+    />
+
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/logo/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/logo/favicon/favicon-16x16.png"
+    />
+
+    <!-- Apple Touch Icon -->
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/images/logo/app-icons/icon-192-rounded.png"
+    />
+
+    <!-- PWA Icons -->
+    <link rel="manifest" href="/manifest.json" />
     <meta name="generator" content={Astro.generator} />
     <meta name="keywords" content={siteKeywords} />
 
