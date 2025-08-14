@@ -166,66 +166,110 @@ const HookSection: React.FC = () => {
   const drawProfessionalWaveform = useCallback((canvas: HTMLCanvasElement, progress: number = 0) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const context = ctx as CanvasRenderingContext2D;
 
     const width = canvas.width;
     const height = canvas.height;
-    
-    // Clear canvas
-    ctx.clearRect(0, 0, width, height);
-    
-    // Generate waveform data (simulate audio bars)
-    const barCount = Math.floor(width / 3); // Each bar is 3px wide with 1px gap
     const centerY = height / 2;
-    
-    for (let i = 0; i < barCount; i++) {
-      const x = i * 3;
-      const progress_pos = i / barCount;
-      
-      // Generate realistic amplitude data
-      const wave1 = Math.sin(progress_pos * Math.PI * 12) * 0.6;
-      const wave2 = Math.sin(progress_pos * Math.PI * 24) * 0.3;
-      const wave3 = Math.sin(progress_pos * Math.PI * 48) * 0.15;
-      const noise = (Math.random() - 0.5) * 0.2;
-      
-      // Add envelope for natural audio shape
-      const envelope = Math.sin(progress_pos * Math.PI) * 0.8 + 0.3;
-      
-      let amplitude = (wave1 + wave2 + wave3 + noise) * envelope;
-      amplitude = Math.abs(amplitude); // Always positive for bars
-      
-      const barHeight = amplitude * (height * 0.4);
-      
-      // Create gradient based on position and playback progress
-      const gradient = ctx.createLinearGradient(0, centerY - barHeight, 0, centerY + barHeight);
-      
-      if (progress_pos <= progress) {
-        // Played portion - brighter colors
-        gradient.addColorStop(0, '#22c55e'); // Green
-        gradient.addColorStop(0.5, '#84cc16'); // Lime
-        gradient.addColorStop(1, '#eab308'); // Yellow
-      } else {
-        // Unplayed portion - muted colors
-        gradient.addColorStop(0, 'rgba(34, 197, 94, 0.3)');
-        gradient.addColorStop(0.5, 'rgba(132, 204, 22, 0.3)');
-        gradient.addColorStop(1, 'rgba(234, 179, 8, 0.3)');
-      }
-      
-      ctx.fillStyle = gradient;
-      
-      // Draw symmetrical bars (top and bottom)
-      ctx.fillRect(x, centerY - barHeight, 2, barHeight);
-      ctx.fillRect(x, centerY, 2, barHeight);
+    const progressX = Math.max(0, Math.min(1, progress)) * width;
+    const maxAmplitude = height * 0.28;
+    const step = 6; // visual smoothness vs perf
+
+    context.clearRect(0, 0, width, height);
+
+    function amplitudeAt(x: number): number {
+      const t = x / width;
+      const env = Math.sin(t * Math.PI);
+      const a = Math.sin(t * Math.PI * 8 + progress * Math.PI * 2) * 0.9;
+      const b = Math.sin(t * Math.PI * 16 + progress * Math.PI * 3) * 0.4;
+      const c = Math.sin(t * Math.PI * 32 + progress * Math.PI * 5) * 0.2;
+      const pseudoNoise = Math.sin((t + 0.123) * 37.0) * 0.08;
+      const amp = Math.abs((a + b + c + pseudoNoise) * env);
+      return Math.min(1, Math.max(0, amp));
     }
-    
-    // Draw progress line
-    if (progress > 0) {
-      const progressX = progress * width;
-      ctx.strokeStyle = '#ef4444'; // Red progress line
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(progressX, 0);
-      ctx.lineTo(progressX, height);
-      ctx.stroke();
+
+    function buildRibbonPath(fromX: number, toX: number) {
+      const pointsTop: { x: number; y: number }[] = [];
+      for (let x = fromX; x <= toX; x += step) {
+        const amp = amplitudeAt(x);
+        pointsTop.push({ x, y: centerY - amp * maxAmplitude });
+      }
+      // Build smooth path using quadratic curves
+      context.beginPath();
+      if (pointsTop.length > 0) {
+        context.moveTo(pointsTop[0].x, pointsTop[0].y);
+        for (let i = 1; i < pointsTop.length - 1; i++) {
+          const p0 = pointsTop[i];
+          const p1 = pointsTop[i + 1];
+          const cx = (p0.x + p1.x) / 2;
+          const cy = (p0.y + p1.y) / 2;
+          context.quadraticCurveTo(p0.x, p0.y, cx, cy);
+        }
+        const last = pointsTop[pointsTop.length - 1];
+        context.lineTo(last.x, last.y);
+
+        // Mirror to bottom
+        for (let i = pointsTop.length - 1; i >= 0; i--) {
+          const px = pointsTop[i].x;
+          const py = pointsTop[i].y;
+          const mirroredY = centerY + (centerY - py);
+          context.lineTo(px, mirroredY);
+        }
+        context.closePath();
+      }
+    }
+
+    // Left (played) region
+    if (progressX > 0) {
+      context.save();
+      context.beginPath();
+      context.rect(0, 0, progressX, height);
+      context.clip();
+
+      const gradLeft = context.createLinearGradient(0, 0, 0, height);
+      gradLeft.addColorStop(0, '#8B5CF6');
+      gradLeft.addColorStop(0.5, '#38BDF8');
+      gradLeft.addColorStop(1, '#8B5CF6');
+      
+      context.shadowColor = 'rgba(34, 197, 94, 0.35)';
+      context.shadowBlur = 24;
+      context.fillStyle = gradLeft;
+      buildRibbonPath(0, progressX);
+      context.fill();
+
+      context.restore();
+    }
+
+    // Right (unplayed) region
+    if (progressX < width) {
+      context.save();
+      context.beginPath();
+      context.rect(progressX, 0, width - progressX, height);
+      context.clip();
+
+      const gradRight = context.createLinearGradient(0, 0, 0, height);
+      gradRight.addColorStop(0, 'rgba(139, 92, 246, 0.22)');
+      gradRight.addColorStop(0.5, 'rgba(56, 189, 248, 0.20)');
+      gradRight.addColorStop(1, 'rgba(139, 92, 246, 0.18)');
+      
+      context.shadowColor = 'rgba(34, 197, 94, 0.18)';
+      context.shadowBlur = 16;
+      context.fillStyle = gradRight;
+      buildRibbonPath(progressX, width);
+      context.fill();
+      context.restore();
+    }
+
+    // Playhead
+    if (progress > 0 && progress < 1) {
+      context.save();
+      context.strokeStyle = '#60a5fa';
+      context.lineWidth = 2;
+      context.beginPath();
+      context.moveTo(progressX, 0);
+      context.lineTo(progressX, height);
+      context.stroke();
+      context.restore();
     }
   }, []);
 
