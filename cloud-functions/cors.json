@@ -2,15 +2,31 @@
   {
     "origin": [
       "http://localhost:4321",
-      "http://localhost:4322", 
+      "http://localhost:4322",
       "http://localhost:4323",
       "http://localhost:4324",
       "http://localhost:4325",
       "https://localhost:4321",
-      "https://localhost:4322"
+      "https://localhost:4322",
+      "https://www.describemusic.net",
+      "https://describemusic.net"
     ],
-    "method": ["GET", "PUT", "POST", "DELETE", "OPTIONS"],
-    "responseHeader": ["Content-Type", "x-goog-resumable"],
+    "method": [
+      "GET",
+      "PUT",
+      "POST",
+      "DELETE",
+      "OPTIONS",
+      "HEAD"
+    ],
+    "responseHeader": [
+      "Content-Type",
+      "x-goog-resumable",
+      "x-goog-meta-*",
+      "x-goog-hash",
+      "ETag",
+      "Content-Length"
+    ],
     "maxAgeSeconds": 3600
   }
 ]
