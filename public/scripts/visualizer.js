@@ -250,14 +250,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setCanvasSize();
     animate();
 
-    // Enter the Lab 按钮功能
-    const enterBtn = document.querySelector('#hero-content a');
-    if (enterBtn) {
-        enterBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelector('#hook')?.scrollIntoView({
-                behavior: 'smooth'
-            });
-        });
-    }
+    // 移除之前的按钮点击拦截，让链接正常工作
+    // 按钮现在直接导航到 /analyze 页面
 });
