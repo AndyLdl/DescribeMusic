@@ -6,6 +6,88 @@
  */
 
 // Types matching the cloud function responses
+export interface ContentType {
+    primary: 'music' | 'speech' | 'sound-effects' | 'ambient' | 'mixed';
+    confidence: number;
+    description: string;
+}
+
+export interface DetectedSound {
+    category: 'nature' | 'urban' | 'indoor' | 'mechanical' | 'human' | 'animal' | 'event';
+    type: string;
+    confidence: number;
+    timestamp: { start: number; end: number };
+    description: string;
+}
+
+export interface EnvironmentAnalysis {
+    location_type: 'indoor' | 'outdoor' | 'mixed';
+    setting: 'urban' | 'rural' | 'natural' | 'domestic' | 'commercial';
+    activity_level: 'busy' | 'moderate' | 'calm' | 'isolated';
+    acoustic_space: 'small' | 'medium' | 'large' | 'open';
+    time_of_day: 'unknown' | 'morning' | 'day' | 'evening' | 'night';
+    weather: 'unknown' | 'clear' | 'rain' | 'wind' | 'storm';
+}
+
+export interface VoiceAnalysis {
+    hasVoice: boolean;
+    speakerCount: number;
+    genderDetection: {
+        primary: 'male' | 'female' | 'unknown';
+        confidence: number;
+        multipleGenders: boolean;
+    };
+    speakerEmotion: {
+        primary: 'happy' | 'sad' | 'angry' | 'calm' | 'excited' | 'nervous' | 'confident' | 'stressed' | 'neutral';
+        confidence: number;
+        emotions: {
+            happy: number;
+            sad: number;
+            angry: number;
+            calm: number;
+            excited: number;
+            nervous: number;
+            confident: number;
+            stressed: number;
+        };
+    };
+    speechClarity: {
+        score: number;
+        pronunciation: number;
+        articulation: number;
+        pace: 'slow' | 'normal' | 'fast';
+        volume: 'quiet' | 'normal' | 'loud';
+    };
+    vocalCharacteristics: {
+        pitchRange: 'low' | 'medium' | 'high';
+        speakingRate: number;
+        pauseFrequency: 'low' | 'medium' | 'high';
+        intonationVariation: number;
+    };
+    languageAnalysis: {
+        language: string;
+        confidence: number;
+        accent: string;
+    };
+    audioQuality: {
+        backgroundNoise: number;
+        echo: number;
+        compression: number;
+        overall: number;
+    };
+}
+
+export interface SoundEffectAnalysis {
+    detected: DetectedSound[];
+    environment: EnvironmentAnalysis;
+}
+
+export interface AudioEvent {
+    type: string;
+    timestamp: { start: number; end: number };
+    description: string;
+}
+
 export interface CloudAnalysisResult {
     id: string;
     filename: string;
@@ -13,6 +95,7 @@ export interface CloudAnalysisResult {
     duration: number;
     fileSize: string;
     format: string;
+    contentType: ContentType;
     basicInfo: {
         genre: string;
         mood: string;
@@ -27,6 +110,8 @@ export interface CloudAnalysisResult {
         liveness: number;
         loudness: number;
     };
+    voiceAnalysis: VoiceAnalysis;
+    soundEffects: SoundEffectAnalysis;
     emotions: {
         happy: number;
         sad: number;
@@ -36,9 +121,12 @@ export interface CloudAnalysisResult {
         melancholic: number;
         energetic: number;
         peaceful: number;
+        tense: number;
+        relaxed: number;
     };
     structure: {
-        [key: string]: { start: number; end: number };
+        events?: AudioEvent[];
+        [key: string]: { start: number; end: number } | AudioEvent[] | undefined;
     };
     quality: {
         overall: number;
@@ -55,6 +143,11 @@ export interface CloudAnalysisResult {
             artist: string;
             similarity: number;
             genre?: string;
+        }>;
+        similar_sounds: Array<{
+            category: string;
+            description: string;
+            similarity: number;
         }>;
         style_influences: string[];
         genre_confidence: number;
@@ -430,7 +523,10 @@ export function convertToFrontendFormat(cloudResult: CloudAnalysisResult): any {
         duration: cloudResult.duration,
         fileSize: cloudResult.fileSize,
         format: cloudResult.format,
+        contentType: cloudResult.contentType,
         basicInfo: cloudResult.basicInfo,
+        voiceAnalysis: cloudResult.voiceAnalysis,
+        soundEffects: cloudResult.soundEffects,
         emotions: cloudResult.emotions,
         structure: cloudResult.structure,
         quality: cloudResult.quality,

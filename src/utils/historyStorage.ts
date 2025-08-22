@@ -6,6 +6,11 @@ export interface HistoryRecord {
     fileSize: string;
     format: string;
     thumbnail?: string; // Base64 encoded waveform preview
+    contentType?: {
+        primary: 'music' | 'speech' | 'sound-effects' | 'ambient' | 'mixed';
+        confidence: number;
+        description: string;
+    };
     basicInfo: {
         genre: string;
         mood: string;
@@ -14,6 +19,70 @@ export interface HistoryRecord {
         energy: number;
         valence: number;
         danceability: number;
+    };
+    voiceAnalysis?: {
+        hasVoice: boolean;
+        speakerCount: number;
+        genderDetection: {
+            primary: 'male' | 'female' | 'unknown';
+            confidence: number;
+            multipleGenders: boolean;
+        };
+        speakerEmotion: {
+            primary: 'happy' | 'sad' | 'angry' | 'calm' | 'excited' | 'nervous' | 'confident' | 'stressed' | 'neutral';
+            confidence: number;
+            emotions: {
+                happy: number;
+                sad: number;
+                angry: number;
+                calm: number;
+                excited: number;
+                nervous: number;
+                confident: number;
+                stressed: number;
+            };
+        };
+        speechClarity: {
+            score: number;
+            pronunciation: number;
+            articulation: number;
+            pace: 'slow' | 'normal' | 'fast';
+            volume: 'quiet' | 'normal' | 'loud';
+        };
+        vocalCharacteristics: {
+            pitchRange: 'low' | 'medium' | 'high';
+            speakingRate: number;
+            pauseFrequency: 'low' | 'medium' | 'high';
+            intonationVariation: number;
+        };
+        languageAnalysis: {
+            language: string;
+            confidence: number;
+            accent: string;
+        };
+        audioQuality: {
+            backgroundNoise: number;
+            echo: number;
+            compression: number;
+            overall: number;
+        };
+    };
+    soundEffects?: {
+        detected: Array<{
+            category: 'nature' | 'urban' | 'indoor' | 'mechanical' | 'human' | 'animal' | 'event';
+            type: string;
+            confidence: number;
+            timestamp: { start: number; end: number };
+            description: string;
+        }>;
+        environment: {
+            location_type: 'indoor' | 'outdoor' | 'mixed';
+            setting: 'urban' | 'rural' | 'natural' | 'domestic' | 'commercial';
+            activity_level: 'busy' | 'moderate' | 'calm' | 'isolated';
+            acoustic_space: 'small' | 'medium' | 'large' | 'open';
+            time_of_day: 'unknown' | 'morning' | 'day' | 'evening' | 'night';
+            weather: 'unknown' | 'clear' | 'rain' | 'wind' | 'storm';
+        };
     };
     quickStats: {
         qualityScore: number;

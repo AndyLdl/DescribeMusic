@@ -188,7 +188,9 @@ Please provide your analysis in valid JSON format only, without any markdown for
             excited: 0.2,
             melancholic: 0.2,
             energetic: 0.3,
-            peaceful: 0.3
+            peaceful: 0.3,
+            tense: 0.2,
+            relaxed: 0.4
         };
     }
 
@@ -216,6 +218,7 @@ Please provide your analysis in valid JSON format only, without any markdown for
     private getDefaultSimilarity(): SimilarityAnalysis {
         return {
             similar_tracks: [],
+            similar_sounds: [],
             style_influences: ['Unknown'],
             genre_confidence: 0.5
         };

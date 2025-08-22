@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import VoiceAnalysisTab from './VoiceAnalysisTab';
 
 interface AnalysisResult {
   id: string;
@@ -7,7 +8,76 @@ interface AnalysisResult {
   duration: number;
   fileSize: string;
   format: string;
+  contentType?: {
+    primary: 'music' | 'speech' | 'sound-effects' | 'ambient' | 'mixed';
+    confidence: number;
+    description: string;
+  };
   basicInfo: any;
+  voiceAnalysis?: {
+    hasVoice: boolean;
+    speakerCount: number;
+    genderDetection: {
+      primary: 'male' | 'female' | 'unknown';
+      confidence: number;
+      multipleGenders: boolean;
+    };
+    speakerEmotion: {
+      primary: 'happy' | 'sad' | 'angry' | 'calm' | 'excited' | 'nervous' | 'confident' | 'stressed' | 'neutral';
+      confidence: number;
+      emotions: {
+        happy: number;
+        sad: number;
+        angry: number;
+        calm: number;
+        excited: number;
+        nervous: number;
+        confident: number;
+        stressed: number;
+      };
+    };
+    speechClarity: {
+      score: number;
+      pronunciation: number;
+      articulation: number;
+      pace: 'slow' | 'normal' | 'fast';
+      volume: 'quiet' | 'normal' | 'loud';
+    };
+    vocalCharacteristics: {
+      pitchRange: 'low' | 'medium' | 'high';
+      speakingRate: number;
+      pauseFrequency: 'low' | 'medium' | 'high';
+      intonationVariation: number;
+    };
+    languageAnalysis: {
+      language: string;
+      confidence: number;
+      accent: string;
+    };
+    audioQuality: {
+      backgroundNoise: number;
+      echo: number;
+      compression: number;
+      overall: number;
+    };
+  };
+  soundEffects?: {
+    detected: Array<{
+      category: 'nature' | 'urban' | 'indoor' | 'mechanical' | 'human' | 'animal' | 'event';
+      type: string;
+      confidence: number;
+      timestamp: { start: number; end: number };
+      description: string;
+    }>;
+    environment: {
+      location_type: 'indoor' | 'outdoor' | 'mixed';
+      setting: 'urban' | 'rural' | 'natural' | 'domestic' | 'commercial';
+      activity_level: 'busy' | 'moderate' | 'calm' | 'isolated';
+      acoustic_space: 'small' | 'medium' | 'large' | 'open';
+      time_of_day: 'unknown' | 'morning' | 'day' | 'evening' | 'night';
+      weather: 'unknown' | 'clear' | 'rain' | 'wind' | 'storm';
+    };
+  };
   emotions: any;
   structure: any;
   quality: any;
@@ -20,10 +90,17 @@ interface DashboardSectionProps {
   result: AnalysisResult;
 }
 
-type TabType = 'overview' | 'emotions' | 'structure' | 'quality' | 'similarity';
+type TabType = 'overview' | 'voiceanalysis' | 'soundeffects' | 'emotions' | 'structure' | 'quality' | 'similarity';
 
 export default function DashboardSection({ result }: DashboardSectionProps) {
-  const [activeTab, setActiveTab] = useState<TabType>('overview');
+  // 智能默认标签页选择
+  const getDefaultTab = (): TabType => {
+    if (result.voiceAnalysis?.hasVoice) return 'voiceanalysis';
+    if (result.soundEffects?.detected && result.soundEffects.detected.length > 0) return 'soundeffects';
+    return 'overview';
+  };
+  const defaultTab = getDefaultTab();
+  const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
   const [descriptionCopied, setDescriptionCopied] = useState(false);
 
   const formatDuration = (seconds: number) => {
@@ -73,6 +150,8 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
 
   const tabs = [
     { id: 'overview', label: 'Overview', icon: 'chart' },
+    { id: 'voiceanalysis', label: 'Voice & Speech', icon: 'microphone' },
+    { id: 'soundeffects', label: 'Sound Effects', icon: 'soundwave' },
     { id: 'emotions', label: 'Emotions', icon: 'emotion' },
     { id: 'structure', label: 'Structure', icon: 'structure' },
     { id: 'quality', label: 'Quality', icon: 'lightning' },
@@ -152,6 +231,16 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               )}
+              {tab.icon === 'microphone' && (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+              )}
+              {tab.icon === 'soundwave' && (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.636 15.364a5 5 0 000-7.072m-2.828 9.9a9 9 0 010-12.728M12 12v.01" />
+                </svg>
+              )}
               {tab.icon === 'emotion' && (
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
@@ -183,6 +272,8 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
         {/* Main Content Area */}
         <div className="lg:col-span-2 space-y-6">
           {activeTab === 'overview' && <OverviewTab result={result} />}
+          {activeTab === 'voiceanalysis' && result.voiceAnalysis && <VoiceAnalysisTab result={result} />}
+          {activeTab === 'soundeffects' && <SoundEffectsTab result={result} />}
           {activeTab === 'emotions' && <EmotionsTab result={result} />}
           {activeTab === 'structure' && <StructureTab result={result} />}
           {activeTab === 'quality' && <QualityTab result={result} />}
@@ -299,6 +390,171 @@ function OverviewTab({ result }: { result: AnalysisResult }) {
       </div>
     </div>
   );
+}
+
+// Sound Effects Tab Component
+function SoundEffectsTab({ result }: { result: AnalysisResult }) {
+  const { contentType, soundEffects } = result;
+  
+  // Debug logging
+  console.log('🐛 SoundEffectsTab Debug:', {
+    contentType,
+    soundEffects,
+    hasDetected: soundEffects?.detected?.length > 0,
+    fullResult: result
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Content Type Detection */}
+      <div className="glass-pane p-8">
+        <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
+            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.636 15.364a5 5 0 000-7.072m-2.828 9.9a9 9 0 010-12.728M12 12v.01" />
+            </svg>
+          </div>
+          Content Type Detection
+        </h3>
+        
+        {contentType ? (
+          <div className="space-y-4">
+            <div className="p-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/20">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-lg font-semibold text-white capitalize">
+                  {contentType.primary.replace('-', ' ')}
+                </span>
+                <span className="px-3 py-1 bg-green-500/20 text-green-300 text-sm rounded-full">
+                  {Math.round(contentType.confidence * 100)}% confidence
+                </span>
+              </div>
+              <p className="text-slate-300">{contentType.description}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-6 bg-slate-700/30 rounded-xl">
+            <p className="text-slate-400">Content type detection not available for this analysis.</p>
+          </div>
+        )}
+      </div>
+
+      {/* Detected Sounds */}
+      {soundEffects?.detected && soundEffects.detected.length > 0 && (
+        <div className="glass-pane p-8">
+          <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            </div>
+            Detected Sounds
+          </h3>
+          
+          <div className="space-y-4">
+            {soundEffects.detected.map((sound, index) => (
+              <div key={index} className="p-4 bg-white/5 rounded-lg border border-white/10">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-3">
+                    <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(sound.category)}`}>
+                      {sound.category}
+                    </span>
+                    <span className="font-semibold text-white">{sound.type}</span>
+                  </div>
+                  <span className="text-slate-300 text-sm">
+                    {Math.round(sound.confidence * 100)}% confidence
+                  </span>
+                </div>
+                <p className="text-slate-300 text-sm mb-2">{sound.description}</p>
+                <div className="text-xs text-slate-400">
+                  {formatTime(sound.timestamp.start)} - {formatTime(sound.timestamp.end)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Environment Analysis */}
+      {soundEffects?.environment && (
+        <div className="glass-pane p-8">
+          <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
+            <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            Environment Analysis
+          </h3>
+          
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Location Type</span>
+                <span className="font-semibold text-white capitalize">{soundEffects.environment.location_type.replace('_', ' ')}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Setting</span>
+                <span className="font-semibold text-white capitalize">{soundEffects.environment.setting}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Activity Level</span>
+                <span className="font-semibold text-white capitalize">{soundEffects.environment.activity_level}</span>
+              </div>
+            </div>
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Acoustic Space</span>
+                <span className="font-semibold text-white capitalize">{soundEffects.environment.acoustic_space}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Time of Day</span>
+                <span className="font-semibold text-white capitalize">{soundEffects.environment.time_of_day}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-300">Weather</span>
+                <span className="font-semibold text-white capitalize">{soundEffects.environment.weather}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* No Sound Effects Detected */}
+      {(!soundEffects?.detected || soundEffects.detected.length === 0) && (
+        <div className="glass-pane p-8">
+          <div className="text-center py-8">
+            <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
+            <h4 className="text-lg font-semibold text-white mb-2">No Specific Sound Effects Detected</h4>
+            <p className="text-slate-300">This appears to be primarily musical content. Sound effect detection is most effective with environmental audio, speech, or mixed content.</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Helper functions for SoundEffectsTab
+function getCategoryColor(category: string): string {
+  const colors = {
+    nature: 'bg-green-500/20 text-green-300',
+    urban: 'bg-blue-500/20 text-blue-300',
+    indoor: 'bg-purple-500/20 text-purple-300',
+    mechanical: 'bg-orange-500/20 text-orange-300',
+    human: 'bg-pink-500/20 text-pink-300',
+    animal: 'bg-teal-500/20 text-teal-300',
+    event: 'bg-red-500/20 text-red-300'
+  };
+  return colors[category as keyof typeof colors] || 'bg-slate-500/20 text-slate-300';
+}
+
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 // Emotions Tab Component

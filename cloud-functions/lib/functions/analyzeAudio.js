@@ -399,6 +399,58 @@ async function processFileUploadManual(req, requestId) {
     });
 }
 /**
+ * Generate default voice analysis for non-speech content
+ */
+function getDefaultVoiceAnalysis() {
+    return {
+        hasVoice: false,
+        speakerCount: 0,
+        genderDetection: {
+            primary: 'unknown',
+            confidence: 0.0,
+            multipleGenders: false
+        },
+        speakerEmotion: {
+            primary: 'neutral',
+            confidence: 0.0,
+            emotions: {
+                happy: 0.0,
+                sad: 0.0,
+                angry: 0.0,
+                calm: 0.0,
+                excited: 0.0,
+                nervous: 0.0,
+                confident: 0.0,
+                stressed: 0.0
+            }
+        },
+        speechClarity: {
+            score: 0.0,
+            pronunciation: 0.0,
+            articulation: 0.0,
+            pace: 'normal',
+            volume: 'normal'
+        },
+        vocalCharacteristics: {
+            pitchRange: 'medium',
+            speakingRate: 0,
+            pauseFrequency: 'low',
+            intonationVariation: 0.0
+        },
+        languageAnalysis: {
+            language: 'unknown',
+            confidence: 0.0,
+            accent: 'unknown'
+        },
+        audioQuality: {
+            backgroundNoise: 0.0,
+            echo: 0.0,
+            compression: 0.0,
+            overall: 0.0
+        }
+    };
+}
+/**
  * Create mock analysis result for testing
  */
 async function createMockAnalysisResult(audioFile, requestId) {
@@ -414,6 +466,11 @@ async function createMockAnalysisResult(audioFile, requestId) {
         duration: 180.5,
         fileSize: `${audioFile.size} bytes`,
         format: audioFile.format || 'MP3',
+        contentType: {
+            primary: 'music',
+            confidence: 0.95,
+            description: 'Electronic music track'
+        },
         basicInfo: {
             genre: 'Electronic',
             mood: 'Energetic',
@@ -436,7 +493,67 @@ async function createMockAnalysisResult(audioFile, requestId) {
             excited: 0.9,
             melancholic: 0.1,
             energetic: 0.9,
-            peaceful: 0.15
+            peaceful: 0.15,
+            tense: 0.1,
+            relaxed: 0.6
+        },
+        voiceAnalysis: {
+            hasVoice: false,
+            speakerCount: 0,
+            genderDetection: {
+                primary: 'unknown',
+                confidence: 0.0,
+                multipleGenders: false
+            },
+            speakerEmotion: {
+                primary: 'neutral',
+                confidence: 0.0,
+                emotions: {
+                    happy: 0.0,
+                    sad: 0.0,
+                    angry: 0.0,
+                    calm: 0.0,
+                    excited: 0.0,
+                    nervous: 0.0,
+                    confident: 0.0,
+                    stressed: 0.0
+                }
+            },
+            speechClarity: {
+                score: 0.0,
+                pronunciation: 0.0,
+                articulation: 0.0,
+                pace: 'normal',
+                volume: 'normal'
+            },
+            vocalCharacteristics: {
+                pitchRange: 'medium',
+                speakingRate: 0,
+                pauseFrequency: 'low',
+                intonationVariation: 0.0
+            },
+            languageAnalysis: {
+                language: 'unknown',
+                confidence: 0.0,
+                accent: 'unknown'
+            },
+            audioQuality: {
+                backgroundNoise: 0.0,
+                echo: 0.0,
+                compression: 0.0,
+                overall: 0.0
+            }
+        },
+        soundEffects: {
+            detected: [],
+            environment: {
+                location_type: 'indoor',
+                setting: 'commercial',
+                activity_level: 'moderate',
+                acoustic_space: 'medium',
+                time_of_day: 'unknown',
+                weather: 'unknown'
+            }
         },
         structure: {
             intro: { start: 0, end: 15.2 },
@@ -460,6 +577,7 @@ async function createMockAnalysisResult(audioFile, requestId) {
                 { title: 'One More Time', artist: 'Daft Punk', similarity: 0.75, genre: 'Electronic', year: 2001 },
                 { title: 'D.A.N.C.E.', artist: 'Justice', similarity: 0.68, genre: 'Electronic', year: 2007 }
             ],
+            similar_sounds: [],
             style_influences: ['French House', 'Disco', 'Electronic Dance'],
             genre_confidence: 0.92
         },
@@ -782,7 +900,24 @@ async function performAnalysis(audioFile, options = {}, requestId) {
             duration: audioMetadata.duration, // Use real parsed duration
             fileSize: (audioFile.size / (1024 * 1024)).toFixed(2) + ' MB',
             format: audioMetadata.format, // Use real parsed format
+            contentType: analysisData.contentType || {
+                primary: 'music',
+                confidence: 0.8,
+                description: 'Music content (default)'
+            },
             basicInfo: analysisData.basicInfo,
+            voiceAnalysis: analysisData.voiceAnalysis || getDefaultVoiceAnalysis(),
+            soundEffects: analysisData.soundEffects || {
+                detected: [],
+                environment: {
+                    location_type: 'unknown',
+                    setting: 'unknown',
+                    activity_level: 'unknown',
+                    acoustic_space: 'unknown',
+                    time_of_day: 'unknown',
+                    weather: 'unknown'
+                }
+            },
             emotions: analysisData.emotions,
             structure: analysisData.structure,
             quality: analysisData.quality,

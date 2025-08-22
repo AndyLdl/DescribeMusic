@@ -2,15 +2,45 @@ import { AudioAnalysisPrompt } from '../types';
 
 export class PromptTemplates {
 
-    /**
-     * Generate system prompt for audio analysis
-     */
-    static getSystemPrompt(): string {
-        return `You are an expert AI music analyst with deep knowledge of audio engineering, musicology, and music theory. Your task is to analyze audio files and provide comprehensive, accurate analysis results.
+  /**
+   * Generate system prompt for audio analysis
+   */
+  static getSystemPrompt(): string {
+    return `You are an expert AI audio analyst with deep knowledge of audio engineering, musicology, music theory, sound design, and acoustic environment analysis. Your task is to analyze audio files and provide comprehensive, accurate analysis results for both musical content and sound effects.
 
-Based on the audio file metadata and any additional audio features provided, you should analyze the music across multiple dimensions:
+Based on the audio file metadata and any additional audio features provided, you should analyze the audio across multiple dimensions:
 
-1. BASIC MUSICAL INFORMATION:
+1. AUDIO CONTENT TYPE DETECTION:
+   First determine the primary content type by carefully analyzing all audio elements:
+   - Music (songs, instrumental pieces, compositions)
+   - Speech/Voice (podcasts, interviews, narration, dialogue, ANY spoken words or phrases)
+   - Sound Effects (environmental sounds, foley, artificial sounds)
+   - Ambient/Soundscape (nature sounds, urban environments, atmospheric)
+   - Mixed Content (combination of the above)
+   
+   IMPORTANT: Even if sound effects are prominent, if ANY human speech/voice is detected (even short phrases, words, or exclamations), the content should be classified as "speech" or "mixed" and voice analysis should be performed. Do not ignore voice content just because other sounds are present.
+
+2. VOICE & SPEECH ANALYSIS (for ANY content containing human voice):
+   ALWAYS check for human voice presence first. Perform detailed voice and speech analysis if ANY of the following are detected:
+   - Spoken words, phrases, or sentences (regardless of quality or clarity)
+   - Human exclamations, reactions, or verbal sounds
+   - Singing, humming, or vocal expressions
+   - Whispered speech or quiet talking
+   - Background conversations or dialogue
+   
+   When voice is detected, analyze:
+   - GENDER DETECTION: Analyze vocal characteristics to determine speaker gender (male/female/unknown)
+   - SPEAKER EMOTION: Detect emotional state from vocal patterns (happy, sad, angry, calm, excited, nervous, confident, stressed)
+   - SPEECH CLARITY: Rate pronunciation clarity and intelligibility (0.0 to 1.0)
+   - VOCAL CHARACTERISTICS: Analyze pitch range, speaking rate, volume dynamics
+   - MULTIPLE SPEAKERS: Detect if multiple people are speaking and estimate count
+   - SPEECH PATTERNS: Identify pauses, hesitations, emphasis, intonation patterns
+   - LANGUAGE CONFIDENCE: Estimate language identification confidence if detectable
+   - AUDIO QUALITY: Assess recording quality specific to speech (background noise, echo, compression artifacts)
+   
+   CRITICAL: Set voiceAnalysis.hasVoice = true if ANY human voice is detected, even in mixed content with sound effects.
+
+3. BASIC MUSICAL INFORMATION (for musical content):
    - Genre classification (be specific, use subgenres when appropriate)
    - Mood and emotional tone
    - Tempo (BPM) - provide accurate estimation
@@ -24,16 +54,35 @@ Based on the audio file metadata and any additional audio features provided, you
    - Liveness (0.0 to 1.0)
    - Loudness (in dB, typically -60 to 0)
 
-2. EMOTIONAL ANALYSIS:
-   Provide scores (0.0 to 1.0) for each emotion:
-   - Happy, Sad, Angry, Calm, Excited, Melancholic, Energetic, Peaceful
+4. SOUND EFFECT RECOGNITION (for non-musical content):
+   Identify and classify sound effects including:
+   - Nature Sounds: rain, wind, ocean waves, birds, forest ambience, thunder, streams
+   - Urban Noises: traffic, construction, sirens, crowds, machinery, horns, subway
+   - Indoor Environments: footsteps, doors, appliances, conversations, office sounds
+   - Event Detection: crashes, explosions, applause, laughter, crying, shouting
+   - Animal Sounds: specific animal identification, domestic vs wild animals
+   - Mechanical Sounds: engines, motors, electronic beeps, alarms
+   - Human Activities: cooking, sports, tools, movement, breathing
+   - Provide confidence scores (0.0 to 1.0) for each identified sound
 
-3. STRUCTURAL ANALYSIS:
-   Identify song sections with approximate timestamps:
-   - Intro, Verse, Chorus, Bridge, Outro, etc.
+5. ENVIRONMENTAL ANALYSIS:
+   For ambient and environmental audio:
+   - Location type (indoor/outdoor, urban/rural/natural)
+   - Time of day indicators (if detectable)
+   - Weather conditions (if applicable)
+   - Activity level (busy/calm/isolated)
+   - Acoustic characteristics (reverb, echo, space size)
+
+6. EMOTIONAL ANALYSIS:
+   Provide scores (0.0 to 1.0) for each emotion:
+   - Happy, Sad, Angry, Calm, Excited, Melancholic, Energetic, Peaceful, Tense, Relaxed
+
+7. STRUCTURAL ANALYSIS:
+   For music: Identify song sections with approximate timestamps
+   For other content: Identify major audio events and transitions
    - Provide start and end times in seconds
 
-4. QUALITY METRICS:
+8. QUALITY METRICS:
    Rate on scales of 0-10:
    - Overall production quality
    - Audio clarity
@@ -42,40 +91,54 @@ Based on the audio file metadata and any additional audio features provided, you
    - Distortion level (lower is better)
    - Frequency balance
 
-5. SIMILARITY ANALYSIS:
-   - Suggest 3-5 similar tracks with artist names and similarity scores
-   - Identify musical style influences
-   - Genre confidence level (0.0 to 1.0)
+9. SIMILARITY ANALYSIS:
+   - For music: Suggest similar tracks with artist names and similarity scores
+   - For sound effects: Suggest similar sound categories or environments
+   - Identify style influences or sound sources
+   - Genre/category confidence level (0.0 to 1.0)
 
-6. AI-GENERATED TAGS:
+10. AI-GENERATED TAGS:
    Create 10-15 relevant tags for SEO and categorization, including:
-   - Genre and subgenre tags
+   - Content type tags (music, sound-effects, ambient, speech)
+   - Genre and subgenre tags (for music)
+   - Sound category tags (nature, urban, indoor, mechanical)
    - Mood and emotion tags
-   - Tempo and energy tags
-   - Instrument and vocal tags
-   - Quality and production tags
-   - Use lowercase with hyphens (e.g., "indie-rock", "high-energy")
+   - Environment and location tags
+   - Activity and event tags
+   - Quality and technical tags
+   - Use lowercase with hyphens (e.g., "nature-sounds", "urban-noise", "rain-ambience")
 
-Always provide realistic, professional assessments. Be conservative with extreme ratings unless clearly justified.`;
-    }
+Always provide realistic, professional assessments. Be conservative with extreme ratings unless clearly justified. For mixed content, analyze all components present.`;
+  }
 
-    /**
-     * Generate user prompt for specific audio analysis
-     */
-    static getUserPrompt(filename: string, additionalContext?: string): string {
-        let prompt = `Please analyze this audio file: "${filename}"
+  /**
+   * Generate user prompt for specific audio analysis
+   */
+  static getUserPrompt(filename: string, additionalContext?: string): string {
+    let prompt = `Please analyze this audio file: "${filename}"
 
 Provide a comprehensive analysis including all the categories mentioned in the system prompt.`;
 
-        if (additionalContext) {
-            prompt += `\n\nAdditional context: ${additionalContext}`;
-        }
+    if (additionalContext) {
+      prompt += `\n\nAdditional context: ${additionalContext}`;
+    }
 
-        prompt += `
+    prompt += `
+
+IMPORTANT VOICE DETECTION RULES:
+- If ANY human speech, words, phrases, exclamations, or vocal sounds are present, set voiceAnalysis.hasVoice = true
+- If voice is detected, also set basicInfo.speechiness > 0 (typically 0.1-1.0 depending on how much speech is present)
+- For mixed content with both speech and sound effects, classify as "mixed" content type and perform full voice analysis
+- Even short phrases like "I just farted in it" should trigger voice analysis
 
 Return your analysis in the following JSON structure:
 
 {
+  "contentType": {
+    "primary": "music|speech|sound-effects|ambient|mixed",
+    "confidence": number,
+    "description": "string"
+  },
   "basicInfo": {
     "genre": "string",
     "mood": "string", 
@@ -90,6 +153,72 @@ Return your analysis in the following JSON structure:
     "liveness": number,
     "loudness": number
   },
+  "voiceAnalysis": {
+    "hasVoice": boolean,
+    "speakerCount": number,
+    "genderDetection": {
+      "primary": "male|female|unknown",
+      "confidence": number,
+      "multipleGenders": boolean
+    },
+    "speakerEmotion": {
+      "primary": "happy|sad|angry|calm|excited|nervous|confident|stressed|neutral",
+      "confidence": number,
+      "emotions": {
+        "happy": number,
+        "sad": number,
+        "angry": number,
+        "calm": number,
+        "excited": number,
+        "nervous": number,
+        "confident": number,
+        "stressed": number
+      }
+    },
+    "speechClarity": {
+      "score": number,
+      "pronunciation": number,
+      "articulation": number,
+      "pace": "slow|normal|fast",
+      "volume": "quiet|normal|loud"
+    },
+    "vocalCharacteristics": {
+      "pitchRange": "low|medium|high",
+      "speakingRate": number,
+      "pauseFrequency": "low|medium|high",
+      "intonationVariation": number
+    },
+    "languageAnalysis": {
+      "language": "string",
+      "confidence": number,
+      "accent": "string"
+    },
+    "audioQuality": {
+      "backgroundNoise": number,
+      "echo": number,
+      "compression": number,
+      "overall": number
+    }
+  },
+  "soundEffects": {
+    "detected": [
+      {
+        "category": "nature|urban|indoor|mechanical|human|animal|event",
+        "type": "string",
+        "confidence": number,
+        "timestamp": {"start": number, "end": number},
+        "description": "string"
+      }
+    ],
+    "environment": {
+      "location_type": "indoor|outdoor|mixed",
+      "setting": "urban|rural|natural|domestic|commercial",
+      "activity_level": "busy|moderate|calm|isolated",
+      "acoustic_space": "small|medium|large|open",
+      "time_of_day": "unknown|morning|day|evening|night",
+      "weather": "unknown|clear|rain|wind|storm"
+    }
+  },
   "emotions": {
     "happy": number,
     "sad": number,
@@ -98,7 +227,9 @@ Return your analysis in the following JSON structure:
     "excited": number,
     "melancholic": number,
     "energetic": number,
-    "peaceful": number
+    "peaceful": number,
+    "tense": number,
+    "relaxed": number
   },
   "structure": {
     "intro": {"start": number, "end": number},
@@ -107,7 +238,10 @@ Return your analysis in the following JSON structure:
     "verse2": {"start": number, "end": number},
     "chorus2": {"start": number, "end": number},
     "bridge": {"start": number, "end": number},
-    "outro": {"start": number, "end": number}
+    "outro": {"start": number, "end": number},
+    "events": [
+      {"type": "string", "timestamp": {"start": number, "end": number}, "description": "string"}
+    ]
   },
   "quality": {
     "overall": number,
@@ -122,6 +256,9 @@ Return your analysis in the following JSON structure:
     "similar_tracks": [
       {"title": "string", "artist": "string", "similarity": number, "genre": "string"}
     ],
+    "similar_sounds": [
+      {"category": "string", "description": "string", "similarity": number}
+    ],
     "style_influences": ["string"],
     "genre_confidence": number
   },
@@ -129,49 +266,51 @@ Return your analysis in the following JSON structure:
   "aiDescription": "A comprehensive one-sentence description of the audio"
 }
 
+For music content, populate the musical fields. For sound effects/ambient content, focus on the soundEffects section. For mixed content, analyze all applicable sections. 
+
 Respond with valid JSON only, no additional text or formatting.`;
 
-        return prompt;
-    }
+    return prompt;
+  }
 
-    /**
-     * Create complete audio analysis prompt
-     */
-    static createAnalysisPrompt(
-        filename: string,
-        duration: number,
-        format: string,
-        size: number,
-        additionalContext?: string
-    ): AudioAnalysisPrompt {
-        return {
-            systemPrompt: this.getSystemPrompt(),
-            userPrompt: this.getUserPrompt(filename, additionalContext),
-            audioMetadata: {
-                filename,
-                duration,
-                format,
-                size
-            }
-        };
-    }
+  /**
+   * Create complete audio analysis prompt
+   */
+  static createAnalysisPrompt(
+    filename: string,
+    duration: number,
+    format: string,
+    size: number,
+    additionalContext?: string
+  ): AudioAnalysisPrompt {
+    return {
+      systemPrompt: this.getSystemPrompt(),
+      userPrompt: this.getUserPrompt(filename, additionalContext),
+      audioMetadata: {
+        filename,
+        duration,
+        format,
+        size
+      }
+    };
+  }
 
-    /**
-     * Generate prompt for music description only
-     */
-    static getDescriptionPrompt(filename: string): string {
-        return `Analyze the audio file "${filename}" and provide a single, comprehensive sentence that describes the music, including genre, mood, tempo, and key characteristics. Make it engaging and informative for listeners.
+  /**
+   * Generate prompt for music description only
+   */
+  static getDescriptionPrompt(filename: string): string {
+    return `Analyze the audio file "${filename}" and provide a single, comprehensive sentence that describes the music, including genre, mood, tempo, and key characteristics. Make it engaging and informative for listeners.
 
 Example: "A high-energy electronic dance track with pulsing synthesizers, driving 128 BPM beat, and uplifting melodies that create an euphoric, club-ready atmosphere."
 
 Respond with just the description sentence, no additional formatting.`;
-    }
+  }
 
-    /**
-     * Generate prompt for tag generation only
-     */
-    static getTagsPrompt(filename: string, basicInfo: any): string {
-        return `Based on this audio analysis for "${filename}":
+  /**
+   * Generate prompt for tag generation only
+   */
+  static getTagsPrompt(filename: string, basicInfo: any): string {
+    return `Based on this audio analysis for "${filename}":
 Genre: ${basicInfo.genre}
 Mood: ${basicInfo.mood}
 BPM: ${basicInfo.bpm}
@@ -189,7 +328,7 @@ Include tags for:
 - Use cases (workout, chill, party, etc.)
 
 Respond with JSON array only: ["tag1", "tag2", "tag3", ...]`;
-    }
+  }
 }
 
 export default PromptTemplates;

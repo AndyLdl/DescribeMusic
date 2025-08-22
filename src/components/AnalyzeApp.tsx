@@ -15,7 +15,76 @@ interface AnalysisResult {
   duration: number;
   fileSize: string;
   format: string;
+  contentType?: {
+    primary: 'music' | 'speech' | 'sound-effects' | 'ambient' | 'mixed';
+    confidence: number;
+    description: string;
+  };
   basicInfo: any;
+  voiceAnalysis?: {
+    hasVoice: boolean;
+    speakerCount: number;
+    genderDetection: {
+      primary: 'male' | 'female' | 'unknown';
+      confidence: number;
+      multipleGenders: boolean;
+    };
+    speakerEmotion: {
+      primary: 'happy' | 'sad' | 'angry' | 'calm' | 'excited' | 'nervous' | 'confident' | 'stressed' | 'neutral';
+      confidence: number;
+      emotions: {
+        happy: number;
+        sad: number;
+        angry: number;
+        calm: number;
+        excited: number;
+        nervous: number;
+        confident: number;
+        stressed: number;
+      };
+    };
+    speechClarity: {
+      score: number;
+      pronunciation: number;
+      articulation: number;
+      pace: 'slow' | 'normal' | 'fast';
+      volume: 'quiet' | 'normal' | 'loud';
+    };
+    vocalCharacteristics: {
+      pitchRange: 'low' | 'medium' | 'high';
+      speakingRate: number;
+      pauseFrequency: 'low' | 'medium' | 'high';
+      intonationVariation: number;
+    };
+    languageAnalysis: {
+      language: string;
+      confidence: number;
+      accent: string;
+    };
+    audioQuality: {
+      backgroundNoise: number;
+      echo: number;
+      compression: number;
+      overall: number;
+    };
+  };
+  soundEffects?: {
+    detected: Array<{
+      category: 'nature' | 'urban' | 'indoor' | 'mechanical' | 'human' | 'animal' | 'event';
+      type: string;
+      confidence: number;
+      timestamp: { start: number; end: number };
+      description: string;
+    }>;
+    environment: {
+      location_type: 'indoor' | 'outdoor' | 'mixed';
+      setting: 'urban' | 'rural' | 'natural' | 'domestic' | 'commercial';
+      activity_level: 'busy' | 'moderate' | 'calm' | 'isolated';
+      acoustic_space: 'small' | 'medium' | 'large' | 'open';
+      time_of_day: 'unknown' | 'morning' | 'day' | 'evening' | 'night';
+      weather: 'unknown' | 'clear' | 'rain' | 'wind' | 'storm';
+    };
+  };
   emotions: any;
   structure: any;
   quality: any;
@@ -171,7 +240,10 @@ export default function AnalyzeApp() {
         duration: cloudResult.duration,
         fileSize: cloudResult.fileSize,
         format: cloudResult.format,
+        contentType: cloudResult.contentType,
         basicInfo: cloudResult.basicInfo,
+        voiceAnalysis: cloudResult.voiceAnalysis,
+        soundEffects: cloudResult.soundEffects,
         emotions: cloudResult.emotions,
         structure: cloudResult.structure,
         quality: cloudResult.quality,
@@ -191,7 +263,10 @@ export default function AnalyzeApp() {
         fileSize: result.fileSize,
         format: result.format,
         thumbnail,
+        contentType: result.contentType,
         basicInfo: result.basicInfo,
+        voiceAnalysis: result.voiceAnalysis,
+        soundEffects: result.soundEffects,
         quickStats: {
           qualityScore: result.quality.overall,
           emotionalTone: result.basicInfo.mood,
@@ -243,7 +318,40 @@ export default function AnalyzeApp() {
       duration: record.duration,
       fileSize: record.fileSize,
       format: record.format,
+      contentType: record.contentType || {
+        primary: 'music',
+        confidence: 0.8,
+        description: 'Music content (legacy record)'
+      },
       basicInfo: record.basicInfo,
+      voiceAnalysis: record.voiceAnalysis || {
+        hasVoice: false,
+        speakerCount: 0,
+        genderDetection: { primary: 'unknown', confidence: 0.0, multipleGenders: false },
+        speakerEmotion: { 
+          primary: 'neutral', 
+          confidence: 0.0, 
+          emotions: {
+            happy: 0.0, sad: 0.0, angry: 0.0, calm: 0.0,
+            excited: 0.0, nervous: 0.0, confident: 0.0, stressed: 0.0
+          }
+        },
+        speechClarity: { score: 0.0, pronunciation: 0.0, articulation: 0.0, pace: 'normal', volume: 'normal' },
+        vocalCharacteristics: { pitchRange: 'medium', speakingRate: 0, pauseFrequency: 'low', intonationVariation: 0.0 },
+        languageAnalysis: { language: 'unknown', confidence: 0.0, accent: 'unknown' },
+        audioQuality: { backgroundNoise: 0.0, echo: 0.0, compression: 0.0, overall: 0.0 }
+      },
+      soundEffects: record.soundEffects || {
+        detected: [],
+        environment: {
+          location_type: 'indoor',
+          setting: 'commercial',
+          activity_level: 'moderate',
+          acoustic_space: 'medium',
+          time_of_day: 'unknown',
+          weather: 'unknown'
+        }
+      },
       emotions: {
         happy: 0.78,
         sad: 0.12,

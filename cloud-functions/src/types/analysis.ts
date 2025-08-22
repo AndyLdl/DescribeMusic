@@ -32,6 +32,8 @@ export interface EmotionalAnalysis {
     melancholic: number;
     energetic: number;
     peaceful: number;
+    tense: number;
+    relaxed: number;
 }
 
 export interface StructuralAnalysis {
@@ -42,7 +44,90 @@ export interface StructuralAnalysis {
     chorus2?: { start: number; end: number };
     bridge?: { start: number; end: number };
     outro?: { start: number; end: number };
-    [key: string]: { start: number; end: number } | undefined;
+    events?: AudioEvent[];
+    [key: string]: { start: number; end: number } | AudioEvent[] | undefined;
+}
+
+export interface AudioEvent {
+    type: string;
+    timestamp: { start: number; end: number };
+    description: string;
+}
+
+export interface ContentType {
+    primary: 'music' | 'speech' | 'sound-effects' | 'ambient' | 'mixed';
+    confidence: number;
+    description: string;
+}
+
+export interface DetectedSound {
+    category: 'nature' | 'urban' | 'indoor' | 'mechanical' | 'human' | 'animal' | 'event';
+    type: string;
+    confidence: number;
+    timestamp: { start: number; end: number };
+    description: string;
+}
+
+export interface EnvironmentAnalysis {
+    location_type: 'indoor' | 'outdoor' | 'mixed';
+    setting: 'urban' | 'rural' | 'natural' | 'domestic' | 'commercial';
+    activity_level: 'busy' | 'moderate' | 'calm' | 'isolated';
+    acoustic_space: 'small' | 'medium' | 'large' | 'open';
+    time_of_day: 'unknown' | 'morning' | 'day' | 'evening' | 'night';
+    weather: 'unknown' | 'clear' | 'rain' | 'wind' | 'storm';
+}
+
+export interface VoiceAnalysis {
+    hasVoice: boolean;
+    speakerCount: number;
+    genderDetection: {
+        primary: 'male' | 'female' | 'unknown';
+        confidence: number;
+        multipleGenders: boolean;
+    };
+    speakerEmotion: {
+        primary: 'happy' | 'sad' | 'angry' | 'calm' | 'excited' | 'nervous' | 'confident' | 'stressed' | 'neutral';
+        confidence: number;
+        emotions: {
+            happy: number;
+            sad: number;
+            angry: number;
+            calm: number;
+            excited: number;
+            nervous: number;
+            confident: number;
+            stressed: number;
+        };
+    };
+    speechClarity: {
+        score: number;
+        pronunciation: number;
+        articulation: number;
+        pace: 'slow' | 'normal' | 'fast';
+        volume: 'quiet' | 'normal' | 'loud';
+    };
+    vocalCharacteristics: {
+        pitchRange: 'low' | 'medium' | 'high';
+        speakingRate: number; // words per minute
+        pauseFrequency: 'low' | 'medium' | 'high';
+        intonationVariation: number; // 0.0 to 1.0
+    };
+    languageAnalysis: {
+        language: string;
+        confidence: number;
+        accent: string;
+    };
+    audioQuality: {
+        backgroundNoise: number; // 0.0 to 1.0
+        echo: number; // 0.0 to 1.0
+        compression: number; // 0.0 to 1.0
+        overall: number; // 0.0 to 1.0
+    };
+}
+
+export interface SoundEffectAnalysis {
+    detected: DetectedSound[];
+    environment: EnvironmentAnalysis;
 }
 
 export interface QualityMetrics {
@@ -63,8 +148,15 @@ export interface SimilarTrack {
     year?: number;
 }
 
+export interface SimilarSound {
+    category: string;
+    description: string;
+    similarity: number;
+}
+
 export interface SimilarityAnalysis {
     similar_tracks: SimilarTrack[];
+    similar_sounds: SimilarSound[];
     style_influences: string[];
     genre_confidence: number;
 }
@@ -76,7 +168,10 @@ export interface AnalysisResult {
     duration: number;
     fileSize: string;
     format: string;
+    contentType: ContentType;
     basicInfo: BasicInfo;
+    voiceAnalysis: VoiceAnalysis;
+    soundEffects: SoundEffectAnalysis;
     emotions: EmotionalAnalysis;
     structure: StructuralAnalysis;
     quality: QualityMetrics;
