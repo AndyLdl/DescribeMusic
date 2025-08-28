@@ -8,13 +8,22 @@ import { Icon } from "astro-icon/components";
 
   <div class="relative max-w-none px-6">
     <div class="h-16 flex items-center justify-between">
-      <!-- Simplified brand logo -->
+      <!-- Enhanced brand logo with gradient (consistent with homepage) -->
       <a href="/" class="group relative">
-        <div class="text-lg font-semibold tracking-tight">
+        <div class="text-xl font-bold tracking-tight">
           <span
-            class="text-white/90 group-hover:text-white transition-colors duration-300">
-            Describe Music
+            class="bg-gradient-to-r from-violet-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+            Describe
           </span>
+          <span
+            class="text-white/70 group-hover:text-white/90 transition-colors duration-300">
+            Music
+          </span>
+          <span class="text-violet-400/80">.</span>
+        </div>
+        <!-- Subtle glow effect on hover -->
+        <div
+          class="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-blue-500/20 rounded-lg blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-10">
         </div>
       </a>
 
@@ -177,6 +186,22 @@ import { Icon } from "astro-icon/components";
 
   .animate-pulse {
     animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Custom gradient animation for brand logo (consistent with homepage) */
+  @keyframes gradient-shift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  header a[href="/"]:hover span:first-child {
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
   }
 </style>
 
