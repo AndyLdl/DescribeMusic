@@ -5,6 +5,7 @@ import "@fontsource-variable/bricolage-grotesque";
 import "../styles/global.css";
 import en from "../i18n/en.json";
 import AnalyzeHeader from "@/components/AnalyzeHeader.astro";
+import Footer from "@/components/footer.astro";
 
 const t = (key) => key.split(".").reduce((o, i) => o[i], en);
 
@@ -88,7 +89,10 @@ const makeTitle = title
   </head>
   <body>
     <AnalyzeHeader />
-    <slot />
+    <main>
+      <slot />
+    </main>
+    <Footer />
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const animatedElements =

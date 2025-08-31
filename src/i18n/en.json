@@ -14,7 +14,26 @@
     "cta": "Start Analyzing for Free"
   },
   "footer": {
-    "copyright": "Copyright © {year} Describe Music. All rights reserved."
+    "copyright": "Copyright © {year} Describe Music. All rights reserved.",
+    "description": "AI-powered audio analysis for music, voice, and sound effects. Transform any audio file into detailed descriptions, insights, and SEO-friendly tags.",
+    "product": "Product",
+    "audio_analyzer": "Audio Analyzer",
+    "pricing": "Pricing",
+    "features": "Features",
+    "blog": "Blog",
+    "company": "Company",
+    "about": "About",
+    "contact": "Contact",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "links": "Links",
+    "openai": "OpenAI",
+    "huggingface": "Hugging Face",
+    "replicate": "Replicate",
+    "runpod": "RunPod",
+    "music_ai": "Music AI",
+    "language_current": "English",
+    "status": "All Systems Operational"
   },
   "hero": {
     "title": "Describe Music: Your AI-Powered Audio Analysis Engine",
@@ -25,20 +44,38 @@
     "title": "See It in Action: Analyze a Sample",
     "cta": "Analyze Your Own Audio File →",
     "samples": [
-      { 
-        "id": "rock", 
-        "title": "🎸 Rock Riff", 
-        "results": ["🎸 Electric Guitar", "🥁 Drums", "⚡ Energetic", "🤘 Rock", "BPM: 150"] 
+      {
+        "id": "rock",
+        "title": "🎸 Rock Riff",
+        "results": [
+          "🎸 Electric Guitar",
+          "🥁 Drums",
+          "⚡ Energetic",
+          "🤘 Rock",
+          "BPM: 150"
+        ]
       },
-      { 
-        "id": "podcast", 
-        "title": "🎙️ Podcast Clip", 
-        "results": ["🗣️ Male Voice", "💬 Clear Speech", "😊 Positive Tone", "44.1kHz", "No Background Noise"] 
+      {
+        "id": "podcast",
+        "title": "🎙️ Podcast Clip",
+        "results": [
+          "🗣️ Male Voice",
+          "💬 Clear Speech",
+          "😊 Positive Tone",
+          "44.1kHz",
+          "No Background Noise"
+        ]
       },
-      { 
-        "id": "nature", 
-        "title": "🍃 Forest Sounds", 
-        "results": ["🐦 Birdsong", "💨 Wind", "🌿 Nature", "😌 Calming", "Stereo"] 
+      {
+        "id": "nature",
+        "title": "🍃 Forest Sounds",
+        "results": [
+          "🐦 Birdsong",
+          "💨 Wind",
+          "🌿 Nature",
+          "😌 Calming",
+          "Stereo"
+        ]
       }
     ]
   },

@@ -1,33 +1,334 @@
 ---
+import { Icon } from "astro-icon/components";
 import en from "../i18n/en.json";
 
 const t = (key) => {
-  return key.split('.').reduce((o, i) => o[i], en);
-}
+  return key.split(".").reduce((o, i) => o[i], en);
+};
 const currentYear = new Date().getFullYear();
 ---
-<footer class="my-20">
-  <p class="text-center text-sm text-slate-500" set:html={t('footer.copyright').replace('{year}', currentYear.toString())} />
 
-  <!-- TODO: Implement Language Switcher UI -->
-   <div class="flex justify-center mt-4">
-      <div class="relative">
-        <button class="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-translate" viewBox="0 0 16 16">
-            <path d="M4.545 6.714 4.11 8H3l1.862-5h1.284L8 8H6.833l-.435-1.286H4.545zm1.634-.736L5.5 3.956h-.049l-.679 2.022H6.18z"/>
-            <path d="M0 2a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v3h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-3H2a2 2 0 0 1-2-2V2zm2-1a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V2a1 1 0 0 0-1-1H2zm7.138 9.995c.193.166.45.298.74.372.21.053.439.082.68.082.747 0 1.346-.227 1.768-.645.394-.39.592-.928.592-1.572 0-.655-.208-1.218-.624-1.693-.416-.476-1.049-.714-1.852-.714-.78 0-1.416.238-1.911.714-.495.476-.743 1.093-.743 1.852 0 .45.132.854.395 1.218.265.363.62.655 1.067.872z"/>
-          </svg>
-          <span>English</span>
-          <!-- Dropdown Icon -->
-          <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="currentColor" class="bi bi-chevron-down" viewBox="0 0 16 16">
-            <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
-          </svg>
-        </button>
-        <!-- Dropdown menu (hidden by default) -->
-        <!-- <div class="absolute bottom-full mb-2 w-full bg-white border border-slate-200 rounded-md shadow-lg hidden">
-          <a href="#" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">Español</a>
-          <a href="#" class="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-100">中文</a>
-        </div> -->
+<footer class="relative mt-20 bg-gradient-to-b from-slate-900 to-slate-950">
+  <!-- Decorative gradient line -->
+  <div
+    class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-violet-400 to-transparent">
+  </div>
+
+  <div class="max-w-7xl mx-auto px-6 py-16">
+    <!-- Main footer content -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 mb-12">
+      <!-- Brand & Description -->
+      <div class="col-span-1 lg:col-span-2">
+        <div class="mb-6">
+          <!-- Brand logo matching header style -->
+          <a href="/" class="group inline-block">
+            <div class="text-2xl font-bold tracking-tight">
+              <span
+                class="bg-gradient-to-r from-violet-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
+                Describe
+              </span>
+              <span
+                class="text-slate-300 group-hover:text-white transition-colors duration-300">
+                Music
+              </span>
+              <span class="text-violet-400">.</span>
+            </div>
+          </a>
+        </div>
+
+        <p class="text-slate-400 mb-6 max-w-md leading-relaxed">
+          {t("footer.description")}
+        </p>
+
+        <!-- Social Links -->
+        <div class="flex items-center gap-4">
+          <a
+            href="https://twitter.com/describemusic"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
+            <Icon
+              name="simple-icons:twitter"
+              class="w-5 h-5 text-slate-400 group-hover:text-blue-400 transition-colors"
+            />
+            <span class="sr-only">Twitter</span>
+          </a>
+
+          <a
+            href="https://github.com/describemusic"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
+            <Icon
+              name="simple-icons:github"
+              class="w-5 h-5 text-slate-400 group-hover:text-white transition-colors"
+            />
+            <span class="sr-only">GitHub</span>
+          </a>
+
+          <a
+            href="https://linkedin.com/company/describemusic"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="group p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
+            <Icon
+              name="simple-icons:linkedin"
+              class="w-5 h-5 text-slate-400 group-hover:text-blue-500 transition-colors"
+            />
+            <span class="sr-only">LinkedIn</span>
+          </a>
+
+          <a
+            href="mailto:hello@describemusic.net"
+            class="group p-2 rounded-lg bg-slate-800/50 hover:bg-slate-800 shadow-sm hover:shadow-md transition-all duration-300 hover:scale-105">
+            <Icon
+              name="heroicons:envelope-20-solid"
+              class="w-5 h-5 text-slate-400 group-hover:text-violet-400 transition-colors"
+            />
+            <span class="sr-only">Email</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Product Links -->
+      <div>
+        <h3 class="font-semibold text-white mb-4">
+          {t("footer.product")}
+        </h3>
+        <ul class="space-y-3">
+          <li>
+            <a
+              href="/analyze"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.audio_analyzer")}
+            </a>
+          </li>
+          <!-- <li>
+            <a
+              href="/pricing"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.pricing")}
+            </a>
+          </li>
+          <li>
+            <a
+              href="/#features"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.features")}
+            </a>
+          </li> -->
+          <li>
+            <a
+              href="/blog"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.blog")}
+            </a>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Company Links -->
+      <div>
+        <h3 class="font-semibold text-white mb-4">
+          {t("footer.company")}
+        </h3>
+        <ul class="space-y-3">
+          <li>
+            <a
+              href="/about"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.about")}
+            </a>
+          </li>
+          <li>
+            <a
+              href="/contact"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.contact")}
+            </a>
+          </li>
+          <!-- <li>
+            <a
+              href="/privacy"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.privacy")}
+            </a>
+          </li>
+          <li>
+            <a
+              href="/terms"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.terms")}
+            </a>
+          </li> -->
+        </ul>
+      </div>
+
+      <!-- External Links -->
+      <div>
+        <h3 class="font-semibold text-white mb-4">
+          {t("footer.links")}
+        </h3>
+        <ul class="space-y-3">
+          <li>
+            <a
+              href="https://openai.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.openai")}
+            </a>
+          </li>
+          <!-- <li>
+            <a
+              href="https://huggingface.co"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.huggingface")}
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://replicate.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.replicate")}
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://runpod.io"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.runpod")}
+            </a>
+          </li>
+          <li>
+            <a
+              href="https://musicai.dev"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="text-slate-400 hover:text-violet-400 transition-colors duration-200">
+              {t("footer.music_ai")}
+            </a>
+          </li> -->
+        </ul>
       </div>
     </div>
+
+    <!-- Divider -->
+    <div class="border-t border-slate-800 pt-8">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+        <!-- Copyright -->
+        <p
+          class="text-sm text-slate-400"
+          set:html={t("footer.copyright").replace(
+            "{year}",
+            currentYear.toString()
+          )}
+        />
+
+        <!-- Language Switcher & Additional Links -->
+        <div class="flex items-center gap-6">
+          <!-- Language Switcher -->
+          <div class="relative" id="language-dropdown">
+            <button
+              onclick="toggleLanguageDropdown()"
+              class="flex items-center gap-2 px-3 py-2 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-md hover:bg-slate-800 transition-all duration-300">
+              <Icon name="heroicons:language-20-solid" class="w-4 h-4" />
+              <span>{t("footer.language_current")}</span>
+              <Icon name="heroicons:chevron-down-20-solid" class="w-3 h-3" />
+            </button>
+
+            <!-- Language Dropdown Menu -->
+            <div
+              id="language-menu"
+              class="absolute bottom-full mb-2 right-0 w-40 bg-slate-800 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible transform scale-95 transition-all duration-200 z-50">
+              <div class="p-2">
+                <button
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 rounded-md transition-colors">
+                  <span class="text-base">🇺🇸</span>
+                  English
+                </button>
+                <button
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 rounded-md transition-colors">
+                  <span class="text-base">🇨🇳</span>
+                  中文
+                </button>
+                <button
+                  class="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:bg-slate-700 rounded-md transition-colors">
+                  <span class="text-base">🇪🇸</span>
+                  Español
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Status Link -->
+          <a
+            href="https://status.describemusic.net"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="flex items-center gap-2 text-sm text-slate-400 hover:text-green-400 transition-colors">
+            <div class="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+            {t("footer.status")}
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 </footer>
+
+<style>
+  /* Enhance footer visual depth for dark theme */
+  footer {
+    background-image: radial-gradient(
+        circle at 25% 25%,
+        rgba(139, 92, 246, 0.1) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 75% 75%,
+        rgba(59, 130, 246, 0.1) 0%,
+        transparent 50%
+      );
+  }
+</style>
+
+<script>
+  // Language dropdown functionality
+  function toggleLanguageDropdown() {
+    const menu = document.getElementById("language-menu");
+    if (!menu) return;
+
+    const isVisible = !menu.classList.contains("invisible");
+
+    if (isVisible) {
+      menu.classList.add("invisible", "opacity-0", "scale-95");
+      menu.classList.remove("opacity-100", "scale-100");
+    } else {
+      menu.classList.remove("invisible", "opacity-0", "scale-95");
+      menu.classList.add("opacity-100", "scale-100");
+    }
+  }
+
+  // Make function globally accessible
+  (window as any).toggleLanguageDropdown = toggleLanguageDropdown;
+
+  // Close dropdown when clicking outside
+  document.addEventListener("click", function (event) {
+    const dropdown = document.getElementById("language-dropdown");
+    const target = event.target as Element;
+
+    if (!dropdown?.contains(target)) {
+      const menu = document.getElementById("language-menu");
+      if (menu) {
+        menu.classList.add("invisible", "opacity-0", "scale-95");
+        menu.classList.remove("opacity-100", "scale-100");
+      }
+    }
+  });
+</script>

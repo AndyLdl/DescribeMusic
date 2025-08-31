@@ -18,6 +18,13 @@ body {
   background-image: linear-gradient(to bottom, #1e1b4b 0%, #0d0c1d 50%, #020617 100%);
 }
 
+/* Header spacing utilities for fixed navigation */
+.page-content {
+  @apply pt-40;
+  /* For main header (h-20) */
+}
+
+
 .glass-pane {
   @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl;
 }

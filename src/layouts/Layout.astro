@@ -5,6 +5,7 @@ import "@fontsource-variable/bricolage-grotesque";
 import "../styles/global.css";
 import en from "../i18n/en.json";
 import Header from "@/components/Header.astro";
+import Footer from "@/components/footer.astro";
 
 const t = (key) => key.split(".").reduce((o, i) => o[i], en);
 
@@ -115,7 +116,10 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
   </head>
   <body>
     <Header />
-    <slot />
+    <main class="page-content">
+      <slot />
+    </main>
+    <Footer />
     <script>
       document.addEventListener("DOMContentLoaded", () => {
         const animatedElements =
