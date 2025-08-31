@@ -20,7 +20,7 @@ Describing music in words has been a challenge that has fascinated musicians, cr
 
 In our increasingly digital world, the ability to describe music accurately has become more important than ever. Content creators need compelling descriptions for their videos, streaming platforms require detailed metadata, and educators must find ways to communicate musical concepts to students.
 
-This is where platforms like **[Describe Music](/analyze)** come into play. Our AI-powered audio analysis tool doesn't just identify technical elements like tempo and key – it helps bridge the gap between raw audio data and meaningful, human-readable descriptions. Whether you're managing a large music catalog, creating content, or simply trying to understand music better, combining human descriptive skills with AI assistance creates the most powerful approach to music analysis.
+This is where platforms like **[Describe Music](/analyze/)** come into play. Our AI-powered audio analysis tool doesn't just identify technical elements like tempo and key – it helps bridge the gap between raw audio data and meaningful, human-readable descriptions. Whether you're managing a large music catalog, creating content, or simply trying to understand music better, combining human descriptive skills with AI assistance creates the most powerful approach to music analysis.
 
 ## The Fundamental Elements of Music Description
 
@@ -191,7 +191,7 @@ Music unfolds over time, so describe its journey:
 
 ## Modern Tools and Technology
 
-While developing your descriptive vocabulary is essential, modern AI tools can dramatically enhance your capabilities. **[Describe Music](/analyze)** represents the cutting edge of this technology, offering:
+While developing your descriptive vocabulary is essential, modern AI tools can dramatically enhance your capabilities. **[Describe Music](/analyze/)** represents the cutting edge of this technology, offering:
 
 ### **Comprehensive Audio Analysis**
 
@@ -204,7 +204,7 @@ While developing your descriptive vocabulary is essential, modern AI tools can d
 
 The real power comes from combining AI analysis with human creativity:
 
-1. **Start with AI**: Upload your track to [Describe Music](/analyze) for instant technical analysis
+1. **Start with AI**: Upload your track to [Describe Music](/analyze/) for instant technical analysis
 2. **Review Insights**: Use the AI-generated data as a foundation for your description
 3. **Add Human Touch**: Layer in emotional interpretation, cultural context, and creative metaphors
 4. **Refine and Personalize**: Adapt the language for your specific audience and purpose
@@ -265,11 +265,11 @@ The real power comes from combining AI analysis with human creativity:
 
 ## The Future of Music Description
 
-As technology advances, the relationship between human description and AI analysis becomes increasingly symbiotic. **[Describe Music](/analyze)** is at the forefront of this evolution, providing objective data and consistent analysis while empowering human creativity and emotional intelligence.
+As technology advances, the relationship between human description and AI analysis becomes increasingly symbiotic. **[Describe Music](/analyze/)** is at the forefront of this evolution, providing objective data and consistent analysis while empowering human creativity and emotional intelligence.
 
 ### **What Makes Describe Music Different**
 
-Unlike basic audio analysis tools, [Describe Music](/analyze) understands that music description isn't just about technical data – it's about communication, emotion, and connection. Our platform:
+Unlike basic audio analysis tools, [Describe Music](/analyze/) understands that music description isn't just about technical data – it's about communication, emotion, and connection. Our platform:
 
 - **Learns from Context**: Our AI considers genre conventions, cultural associations, and listener expectations
 - **Adapts to Your Voice**: The more you use it, the better it understands your descriptive style
@@ -278,9 +278,9 @@ Unlike basic audio analysis tools, [Describe Music](/analyze) understands that m
 
 ### **Ready to Transform Your Music Description Process?**
 
-Whether you're describing a single track or managing thousands of audio files, [Describe Music](/analyze) can revolutionize your workflow. Our AI handles the technical heavy lifting, freeing you to focus on crafting compelling, engaging descriptions that connect with your audience.
+Whether you're describing a single track or managing thousands of audio files, [Describe Music](/analyze/) can revolutionize your workflow. Our AI handles the technical heavy lifting, freeing you to focus on crafting compelling, engaging descriptions that connect with your audience.
 
-**[Try Describe Music today](/analyze)** and discover how AI-assisted music description can save you time while improving the quality and consistency of your content.
+**[Try Describe Music today](/analyze/)** and discover how AI-assisted music description can save you time while improving the quality and consistency of your content.
 
 ## Conclusion
 
@@ -288,8 +288,8 @@ Describing music effectively is both an art and a skill that improves with pract
 
 Remember that the best music descriptions don't just tell readers what they'll hear – they make them excited to listen. They bridge the gap between the ineffable experience of music and the concrete world of language, helping others discover and appreciate the infinite nuances that make each piece of music unique.
 
-**Ready to put these techniques into practice?** Start by uploading a track to [Describe Music](/analyze) and see how AI analysis can provide the foundation for your own creative descriptions. Use our technical insights as a springboard for your own artistic interpretation, and discover how the combination of AI precision and human creativity creates the most compelling music descriptions.
+**Ready to put these techniques into practice?** Start by uploading a track to [Describe Music](/analyze/) and see how AI analysis can provide the foundation for your own creative descriptions. Use our technical insights as a springboard for your own artistic interpretation, and discover how the combination of AI precision and human creativity creates the most compelling music descriptions.
 
-Start practicing with your favorite songs, experiment with different approaches, and don't be afraid to develop your own descriptive voice. With **[Describe Music](/analyze)** as your analytical foundation and the techniques in this guide as your creative framework, you'll find that putting music into words becomes not just easier, but a deeply rewarding way to deepen your own musical understanding and share that passion with others.
+Start practicing with your favorite songs, experiment with different approaches, and don't be afraid to develop your own descriptive voice. With **[Describe Music](/analyze/)** as your analytical foundation and the techniques in this guide as your creative framework, you'll find that putting music into words becomes not just easier, but a deeply rewarding way to deepen your own musical understanding and share that passion with others.
 
 The next time someone asks you to describe a piece of music, you'll have both a comprehensive toolkit and powerful AI assistance to draw from – and maybe, you'll help them hear something they never noticed before.
