@@ -105,14 +105,26 @@ export default function AnalyzeApp() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentProgress, setCurrentProgress] = useState<ProgressUpdate | null>(null);
   
-  // Cleanup function for audio URL
+  // Cleanup function for audio URL and global variables
   React.useEffect(() => {
     return () => {
       if (analysisResult?.audioUrl) {
         URL.revokeObjectURL(analysisResult.audioUrl);
       }
+      // Clean up global analysis result when component unmounts
+      (window as any).currentAnalysisResult = null;
     };
   }, [analysisResult?.audioUrl]);
+
+  // Clear any previous analysis result when component mounts
+  React.useEffect(() => {
+    (window as any).currentAnalysisResult = null;
+    (window as any).backupAnalysisResult = null;
+    
+    // Dispatch event to hide export buttons initially
+    const event = new CustomEvent('analysisResultCleared');
+    window.dispatchEvent(event);
+  }, []);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFiles = useCallback((files: FileList | null) => {
@@ -208,6 +220,13 @@ export default function AnalyzeApp() {
   const startAnalysis = useCallback(async (file: File) => {
     setStage('analyzing');
     setIsAnalyzing(true);
+    
+    // Clear previous results and hide export buttons during analysis
+    (window as any).currentAnalysisResult = null;
+    (window as any).backupAnalysisResult = null;
+    const clearEvent = new CustomEvent('analysisResultCleared');
+    window.dispatchEvent(clearEvent);
+    
     setErrorMessage('');
     setCurrentProgress(null);
     
@@ -277,6 +296,16 @@ export default function AnalyzeApp() {
       HistoryStorage.addRecord(historyRecord);
       
       setAnalysisResult(result);
+      
+      // Make the current analysis result available globally for export functionality
+      (window as any).currentAnalysisResult = result;
+      
+      // Also dispatch a custom event to notify that analysis result is ready
+      const event = new CustomEvent('analysisResultReady', { 
+        detail: result 
+      });
+      window.dispatchEvent(event);
+      
       setStage('results');
     } catch (error: any) {
       console.error('Analysis failed:', error);
@@ -396,6 +425,16 @@ export default function AnalyzeApp() {
     setAnalysisResult(result);
     setStage('results');
     setShowMobileSidebar(false);
+    
+    // Make the history analysis result available globally for export functionality
+    (window as any).currentAnalysisResult = result;
+    (window as any).backupAnalysisResult = result;
+    
+    // Dispatch event to show export buttons
+    const event = new CustomEvent('analysisResultReady', { 
+      detail: result 
+    });
+    window.dispatchEvent(event);
   }, []);
 
   const handleNewAnalysis = useCallback(() => {
@@ -404,6 +443,12 @@ export default function AnalyzeApp() {
     setUploadedFile(null);
     setErrorMessage('');
     setIsAnalyzing(false);
+    
+    // Clear global analysis results and hide export buttons
+    (window as any).currentAnalysisResult = null;
+    (window as any).backupAnalysisResult = null;
+    const clearEvent = new CustomEvent('analysisResultCleared');
+    window.dispatchEvent(clearEvent);
   }, []);
 
   const handleRetryAnalysis = useCallback(() => {

@@ -83,6 +83,7 @@ interface AnalysisResult {
   quality: any;
   similarity: any;
   tags: string[];
+  aiDescription?: string; // AI-generated description of the audio
   audioUrl?: string; // Add optional audio URL for playback
 }
 
@@ -159,7 +160,7 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
   ];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8" data-component="dashboard">
       {/* Audio Player */}
       <AudioPlayer result={result} />
 
@@ -179,13 +180,13 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
               </span>
             </h3>
             <p className="text-slate-300 text-base leading-relaxed">
-              {generateMusicDescription(result)}
+              {result.aiDescription || generateMusicDescription(result)}
             </p>
             
             {/* Copy description button */}
             <button 
               onClick={() => {
-                navigator.clipboard.writeText(generateMusicDescription(result));
+                navigator.clipboard.writeText(result.aiDescription || generateMusicDescription(result));
                 setDescriptionCopied(true);
                 setTimeout(() => setDescriptionCopied(false), 2000);
               }}
@@ -400,7 +401,7 @@ function SoundEffectsTab({ result }: { result: AnalysisResult }) {
   console.log('🐛 SoundEffectsTab Debug:', {
     contentType,
     soundEffects,
-    hasDetected: soundEffects?.detected?.length > 0,
+    hasDetected: soundEffects?.detected?.length ? soundEffects.detected.length > 0 : false,
     fullResult: result
   });
 

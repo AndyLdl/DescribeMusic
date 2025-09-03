@@ -70,9 +70,12 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
   return (
     <>
       {/* Sidebar */}
-      <div className={`relative bg-slate-900/50 backdrop-blur-xl border-r border-white/10 flex flex-col transition-all duration-300 ${
-        isCollapsed ? 'w-16' : 'w-80'
-      }`}>
+      <div 
+        className={`relative bg-slate-900/50 backdrop-blur-xl border-r border-white/10 flex flex-col transition-all duration-300 ${
+          isCollapsed ? 'w-16' : 'w-80'
+        }`}
+        data-sidebar="history"
+        data-state={isCollapsed ? "collapsed" : "open"}>
         {/* Header */}
         <div className="p-4 border-b border-white/10">
           <div className="flex items-center justify-between">
@@ -142,6 +145,7 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
                     }
                     ${isCollapsed ? 'mx-1' : ''}
                   `}
+                  data-history-item={selectedRecordId === record.id ? "selected" : "unselected"}
                 >
                   {isCollapsed ? (
                     // Collapsed view - just icon and indicator

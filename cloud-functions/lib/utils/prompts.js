@@ -260,7 +260,7 @@ Return your analysis in the following JSON structure:
     "genre_confidence": number
   },
   "tags": ["string"],
-  "aiDescription": "A comprehensive one-sentence description of the audio"
+  "aiDescription": "A comprehensive, engaging description of the audio content that thoroughly captures its essence and key characteristics. Provide sufficient detail to give listeners a clear understanding of what to expect, while maintaining accessibility for general audiences."
 }
 
 For music content, populate the musical fields. For sound effects/ambient content, focus on the soundEffects section. For mixed content, analyze all applicable sections. 
@@ -284,14 +284,61 @@ Respond with valid JSON only, no additional text or formatting.`;
         };
     }
     /**
-     * Generate prompt for music description only
-     */
+   * Generate prompt for audio description
+   */
     static getDescriptionPrompt(filename) {
-        return `Analyze the audio file "${filename}" and provide a single, comprehensive sentence that describes the music, including genre, mood, tempo, and key characteristics. Make it engaging and informative for listeners.
+        return `Analyze the audio file "${filename}" and provide a comprehensive, engaging description that thoroughly captures the essence and key characteristics of the audio content. Use multiple sentences as needed to fully convey the audio experience.
 
-Example: "A high-energy electronic dance track with pulsing synthesizers, driving 128 BPM beat, and uplifting melodies that create an euphoric, club-ready atmosphere."
+Guidelines for different content types:
 
-Respond with just the description sentence, no additional formatting.`;
+For MUSIC:
+- Genre, subgenre, and style characteristics
+- Mood, energy level, and emotional tone
+- Tempo, rhythm, and musical structure
+- Instrumentation and production qualities
+- Vocal characteristics (if present)
+- Overall atmosphere and listening experience
+
+For SPEECH:
+- Speaker characteristics (gender, age impression, accent)
+- Vocal tone, clarity, and delivery style
+- Emotional quality and confidence level
+- Speaking pace and articulation
+- Content context (if discernible)
+- Audio recording quality and environment
+
+For SOUND EFFECTS:
+- Specific sounds and their sources
+- Environmental context and setting
+- Spatial characteristics and acoustics
+- Intensity, duration, and progression
+- Potential use cases or applications
+- Overall atmosphere created
+
+For AMBIENT/SOUNDSCAPE:
+- Environmental setting and location type
+- Layered sound elements and their interaction
+- Temporal progression and variations
+- Immersive qualities and mood
+- Natural vs artificial sound sources
+- Listening experience and emotional impact
+
+Example descriptions:
+- Music: "A sophisticated jazz ballad featuring a sultry female vocalist accompanied by gentle piano melodies, soft brushed drums, and a warm upright bass. The track maintains a slow, intimate tempo around 70 BPM with rich harmonic progressions that create a romantic, late-night lounge atmosphere perfect for quiet contemplation."
+
+- Speech: "A professional male narrator with a deep, authoritative voice delivers clear, well-paced commentary in American English. His confident tone and precise articulation suggest expertise in the subject matter, while the clean studio recording quality ensures excellent clarity throughout the presentation."
+
+- Sound Effects: "An immersive thunderstorm sequence begins with distant rumbling that gradually intensifies into sharp, crackling thunder strikes accompanied by heavy rainfall. The stereo field captures the storm's movement and depth, creating a dramatic natural soundscape ideal for relaxation or atmospheric enhancement."
+
+Make the description:
+- Thorough and detailed while remaining engaging
+- Professional and constructive in tone
+- Rich in sensory and contextual details
+- Informative about the complete listening experience
+- Accessible to both casual and professional listeners
+- Specific about technical and artistic qualities
+
+Respond with just the description, no additional formatting.`;
     }
     /**
      * Generate prompt for tag generation only

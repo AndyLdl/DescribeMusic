@@ -36,66 +36,61 @@ const samples: AudioSample[] = [
   {
     id: 'rock',
     title: '🎸 Rock Anthem',
-    description: 'High-energy rock track with driving guitars',
+    description: 'High-energy hard rock anthem with driving rhythm and powerful instrumentation',
     audioSrc: '/audio/samples/rock-anthem.wav',
     analysis: { 
-      genre: 'Rock', 
-      mood: 'Energetic', 
+      genre: 'Hard Rock', 
+      mood: 'Energetic, Anthemic', 
       tempo: '140 BPM', 
-      key: 'E Major',
-      energy: 'High',
-      vocals: 'Male Lead',
-      instruments: ['Electric Guitar', 'Bass', 'Drums', 'Keyboard'],
-      quality: 'Studio Quality',
-      tags: ['rock', 'energetic', 'guitar-driven', 'upbeat', 'male-vocals', 'studio-recording'],
-      voiceAnalysis: {
-        gender: 'Male',
-        emotion: 'Confident',
-        clarity: 'Excellent'
-      }
+      key: 'E minor',
+      energy: 'Very High (0.95)',
+      vocals: 'None (Instrumental)',
+      instruments: ['Electric Guitar', 'Bass Guitar', 'Drums'],
+      quality: 'Studio Quality (7/10)',
+      tags: ['hard-rock', 'rock-anthem', 'energetic', 'anthemic', 'powerful', 'driving-rhythm', 'electric-guitar', 'drums', 'bass', 'high-energy', 'live-recording', 'rock-music', 'e-minor', 'loud', 'intense'],
     },
-    summary: 'A powerful rock anthem with driving guitars and energetic drums that showcases the raw energy of modern rock music.'
+    summary: 'A high-energy hard rock anthem with a driving rhythm, powerful vocals, and a classic rock feel, reminiscent of bands like The White Stripes and Foo Fighters.'
   },
   {
-    id: 'interview',
-    title: '🎙️ Interview Segment',
-    description: 'Professional podcast audio with clear vocals',
-    audioSrc: '/audio/samples/interview-segment.wav',
+    id: 'speech',
+    title: '🎙️ Female Voice Sample',
+    description: 'High-quality female speech with clear pronunciation',
+    audioSrc: '/audio/samples/femal-vocal.mp3',
     analysis: { 
-      genre: 'Spoken Word', 
-      mood: 'Professional', 
-      tempo: 'Variable', 
+      genre: 'Speech/TTS', 
+      mood: 'Calm, Neutral', 
+      tempo: 'Normal Speech (150 WPM)', 
       key: 'N/A',
-      energy: 'Medium',
-      vocals: 'Clear Speech',
+      energy: 'Low (0.0)',
+      vocals: 'Female Voice - Clear Speech',
       instruments: [],
-      quality: 'Broadcast Quality',
-      tags: ['podcast', 'interview', 'professional', 'clear-speech', 'broadcast-quality', 'spoken-word'],
+      quality: 'High Quality (7/10)',
+      tags: ['speech', 'female-voice', 'tts', 'text-to-speech', 'calm', 'neutral', 'clear-speech', 'short-audio', 'english', 'low-noise'],
       voiceAnalysis: {
-        gender: 'Mixed',
-        emotion: 'Neutral',
-        clarity: 'Excellent'
+        gender: 'Female',
+        emotion: 'Neutral, Calm',
+        clarity: 'Excellent (0.9)',
       }
     },
-    summary: 'Clear, professional interview audio demonstrating excellent vocal clarity and balanced audio levels perfect for podcasting.'
+    summary: 'A short, high-quality audio clip features a calm female voice speaking in English with a General American accent.'
   },
   {
     id: 'ambient',
     title: '🌲 Forest Ambience',
-    description: 'Natural soundscape with birds and wind',
-    audioSrc: '/audio/samples/forest-ambience.wav',
+    description: 'Natural soundscape with birds, wind, and distant water',
+    audioSrc: '/audio/samples/forest-ambience.mp3',
     analysis: { 
       genre: 'Ambient', 
       mood: 'Peaceful', 
-      tempo: 'Slow', 
-      key: 'Natural',
-      energy: 'Low',
-      vocals: 'None',
-      instruments: ['Natural Sounds'],
-      quality: 'Field Recording',
-      tags: ['ambient', 'nature', 'peaceful', 'forest', 'birds', 'relaxing', 'meditation', 'field-recording']
+      tempo: '60 BPM', 
+      key: 'C Major',
+      energy: 'Very Low (0.2)',
+      vocals: 'None (Instrumental)',
+      instruments: ['Natural Sounds', 'Birds', 'Wind', 'Water'],
+      quality: 'High Quality (7/10)',
+      tags: ['ambient', 'nature-sounds', 'forest-ambience', 'birds', 'wind', 'water', 'peaceful', 'calm', 'relaxing', 'outdoor', 'high-quality']
     },
-    summary: 'Serene forest sounds creating a peaceful, meditative atmosphere with natural reverb and organic textures.'
+    summary: 'A high-quality recording of a peaceful forest ambience featuring gentle wind, birdsong, and distant water sounds, ideal for relaxation or meditation.'
   }
 ];
 
