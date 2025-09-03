@@ -115,7 +115,9 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
     </script>
   </head>
   <body>
-    <Header />
+    <slot name="header">
+      <Header />
+    </slot>
     <main class="page-content">
       <slot />
     </main>
