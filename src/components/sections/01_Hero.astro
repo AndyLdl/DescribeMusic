@@ -10,6 +10,15 @@ import { Icon } from "astro-icon/components";
 
   <div class="relative text-center z-10 p-6">
     <div id="hero-content">
+      <!-- Launch Special Banner -->
+      <div class="mb-6">
+        <div class="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-500/20 to-red-500/20 border border-orange-500/30 rounded-full backdrop-blur-xl">
+          <Icon name="heroicons:fire-20-solid" class="w-4 h-4 text-orange-400 animate-pulse" />
+          <span class="text-sm font-medium text-orange-300">🚀 Launch Special - Everything Free During Beta</span>
+          <Icon name="heroicons:fire-20-solid" class="w-4 h-4 text-orange-400 animate-pulse" />
+        </div>
+      </div>
+
       <h1
         class="text-5xl md:text-8xl font-bold tracking-tighter !leading-tight text-white/90">
         Describe Music.
@@ -17,15 +26,18 @@ import { Icon } from "astro-icon/components";
       <p class="mt-4 text-xl md:text-2xl text-slate-300/80">
         AI-Powered Audio Analysis.
       </p>
-      <a
-        href="/analyze/"
-        class="mt-8 inline-flex items-center justify-center gap-2 px-6 py-3 text-lg font-medium text-white bg-white/5 border border-white/10 rounded-full backdrop-blur-xl hover:bg-white/10 transition duration-300 group">
-        Start Analyzing for Free
-        <Icon
-          name="heroicons:arrow-right-20-solid"
-          class="w-5 h-5 transition-transform group-hover:translate-x-1"
-        />
-      </a>
+
+      <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
+        <a
+          href="/analyze/"
+          class="inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-violet-500/25 group">
+          Start Free Analysis Now
+          <Icon
+            name="heroicons:arrow-right-20-solid"
+            class="w-5 h-5 transition-transform group-hover:translate-x-1"
+          />
+        </a>
+      </div>
 
       <!-- Badges Section -->
       <div class="mt-6 flex items-center justify-center gap-4 flex-wrap">

@@ -1,71 +1,208 @@
 ---
 import Layout from "@/layouts/Layout.astro";
 import Container from "@/components/container.astro";
-import Sectionhead from "@/components/sectionhead.astro";
-import PricingCard from "@/components/pricing.astro";
-
-const pricing = [
-  {
-    name: "Free",
-    price: "$0",
-    popular: false,
-    features: [
-      "10 minutes/month",
-      "Standard analysis features",
-      "Community Support",
-    ],
-    button: {
-      text: "Get Started",
-      link: "/analyze",
-    },
-  },
-  {
-    name: "Creator",
-    price: {
-      monthly: "$19",
-      annual: "$16",
-    },
-    popular: true,
-    features: [
-      "120 minutes/month",
-      "Advanced analysis features (Coming Soon)",
-      "Priority Support",
-    ],
-    button: {
-      text: "Choose Creator",
-      link: "#",
-    },
-  },
-  {
-    name: "Business",
-    price: "Custom",
-    popular: false,
-    features: [
-      "Unlimited usage",
-      "API Access",
-      "Dedicated Account Manager",
-      "SAML & SSO Integration",
-    ],
-    button: {
-      text: "Contact Sales",
-      link: "/contact",
-    },
-  },
-];
+import { Icon } from "astro-icon/components";
 ---
 
-<Layout title="Pricing">
-  <Container>
-    <Sectionhead>
-      <Fragment slot="title">Pricing Plans</Fragment>
-      <Fragment slot="desc">
-        Simple, predictable pricing. No surprises.
-      </Fragment>
-    </Sectionhead>
+<Layout 
+  title="Pricing - Describe Music" 
+  description="Describe Music is completely free to use. No hidden fees, no subscriptions, no limits. Start analyzing your music with AI-powered descriptions today.">
+  
+  <!-- Hero Section -->
+  <div class="relative bg-gradient-to-b from-slate-900 to-slate-950 -mt-20 pt-32 pb-20">
+    <!-- Decorative background elements -->
+    <div class="absolute inset-0 overflow-hidden">
+      <div class="absolute top-1/4 left-1/4 w-64 h-64 bg-violet-500/10 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-1/4 right-1/4 w-80 h-80 bg-blue-500/10 rounded-full blur-3xl"></div>
+    </div>
 
-    <div
-      class="grid md:grid-cols-3 gap-10 mx-auto max-w-5xl mt-12">
-      {pricing.map((item) => <PricingCard plan={item} />)}
+    <Container>
+      <div class="relative text-center max-w-4xl mx-auto">
+        <h1 class="text-5xl lg:text-6xl font-bold text-white mb-6 tracking-tight">
+          Launch Pricing
+        </h1>
+        <p class="text-xl text-slate-300 leading-relaxed mb-12">
+          We're in our launch phase! Get unlimited access to all features completely free during our promotional period.
+        </p>
+
+        <!-- Main Pricing Card -->
+        <div class="max-w-md mx-auto">
+          <div class="relative bg-gradient-to-br from-slate-800/50 to-slate-900/50 rounded-2xl border border-violet-500/30 p-8 backdrop-blur-sm shadow-2xl">
+            <!-- Popular badge -->
+            <div class="absolute -top-4 left-1/2 transform -translate-x-1/2">
+              <span class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-2 rounded-full text-sm font-semibold animate-pulse">
+                🚀 Launch Special
+              </span>
+            </div>
+
+            <div class="text-center mb-8">
+              <div class="text-6xl font-bold text-white mb-2">$0</div>
+              <p class="text-slate-300">During promotional period</p>
+              <div class="mt-2 text-sm text-orange-400 font-medium">
+                Limited time offer
+              </div>
+            </div>
+
+            <!-- Features -->
+            <ul class="space-y-4 mb-8">
+              <li class="flex items-center gap-3 text-slate-300">
+                <Icon name="heroicons:check-circle-20-solid" class="w-6 h-6 text-green-400 flex-shrink-0" />
+                <span>Unlimited music analysis</span>
+              </li>
+              <li class="flex items-center gap-3 text-slate-300">
+                <Icon name="heroicons:check-circle-20-solid" class="w-6 h-6 text-green-400 flex-shrink-0" />
+                <span>AI-powered descriptions</span>
+              </li>
+              <li class="flex items-center gap-3 text-slate-300">
+                <Icon name="heroicons:check-circle-20-solid" class="w-6 h-6 text-green-400 flex-shrink-0" />
+                <span>All audio formats supported</span>
+              </li>
+              <li class="flex items-center gap-3 text-slate-300">
+                <Icon name="heroicons:check-circle-20-solid" class="w-6 h-6 text-green-400 flex-shrink-0" />
+                <span>Instant results</span>
+              </li>
+              <li class="flex items-center gap-3 text-slate-300">
+                <Icon name="heroicons:check-circle-20-solid" class="w-6 h-6 text-green-400 flex-shrink-0" />
+                <span>No registration required</span>
+              </li>
+              <li class="flex items-center gap-3 text-slate-300">
+                <Icon name="heroicons:check-circle-20-solid" class="w-6 h-6 text-green-400 flex-shrink-0" />
+                <span>Email support</span>
+              </li>
+            </ul>
+
+            <!-- CTA Button -->
+            <a
+              href="/analyze"
+              class="w-full inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-violet-500 to-blue-500 text-white font-semibold rounded-xl hover:from-violet-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-violet-500/25">
+              Start Analyzing Music
+              <Icon name="heroicons:arrow-right-20-solid" class="w-5 h-5" />
+            </a>
+          </div>
+        </div>
+      </div>
+    </Container>
+  </div>
+
+  <Container>
+    <!-- Why Free Section -->
+    <div class="py-20">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-white mb-4">Launch Special Benefits</h2>
+        <p class="text-xl text-slate-300 max-w-3xl mx-auto">
+          As an early user, you'll get exclusive access to all premium features during our launch phase. Help us shape the future of AI audio analysis!
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div class="text-center p-8 bg-slate-800/30 rounded-xl border border-slate-700">
+          <div class="w-16 h-16 mx-auto mb-6 bg-orange-500/20 rounded-xl flex items-center justify-center">
+            <Icon name="heroicons:rocket-launch-20-solid" class="w-8 h-8 text-orange-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-white mb-4">Early Access</h3>
+          <p class="text-slate-300">
+            Be among the first to experience our cutting-edge AI technology before anyone else.
+          </p>
+        </div>
+
+        <div class="text-center p-8 bg-slate-800/30 rounded-xl border border-slate-700">
+          <div class="w-16 h-16 mx-auto mb-6 bg-blue-500/20 rounded-xl flex items-center justify-center">
+            <Icon name="heroicons:chat-bubble-left-right-20-solid" class="w-8 h-8 text-blue-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-white mb-4">Shape the Product</h3>
+          <p class="text-slate-300">
+            Your feedback directly influences our development. Help us build the perfect audio analysis tool.
+          </p>
+        </div>
+
+        <div class="text-center p-8 bg-slate-800/30 rounded-xl border border-slate-700">
+          <div class="w-16 h-16 mx-auto mb-6 bg-green-500/20 rounded-xl flex items-center justify-center">
+            <Icon name="heroicons:star-20-solid" class="w-8 h-8 text-green-400" />
+          </div>
+          <h3 class="text-xl font-semibold text-white mb-4">Founder Benefits</h3>
+          <p class="text-slate-300">
+            Early users may receive special perks and recognition as we grow our community.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="py-20">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-white mb-4">Frequently Asked Questions</h2>
+        <p class="text-xl text-slate-300">Everything you need to know about our pricing</p>
+      </div>
+
+      <div class="max-w-3xl mx-auto space-y-6">
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon name="heroicons:question-mark-circle-20-solid" class="w-5 h-5 text-violet-400" />
+            How long is the promotional period?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            We're currently in our launch phase offering free access to all features. This promotional period allows us to gather feedback and improve our service based on real user needs.
+          </p>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon name="heroicons:question-mark-circle-20-solid" class="w-5 h-5 text-violet-400" />
+            Do I need to create an account?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            No registration required. Simply upload your music file and get instant AI-powered descriptions. Your privacy is our priority.
+          </p>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon name="heroicons:question-mark-circle-20-solid" class="w-5 h-5 text-violet-400" />
+            What audio formats are supported?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            We support all major audio formats including MP3, WAV, FLAC, AAC, OGG, and more. No conversion needed.
+          </p>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon name="heroicons:question-mark-circle-20-solid" class="w-5 h-5 text-violet-400" />
+            Will there be paid plans in the future?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            Yes, we plan to introduce premium tiers with advanced features. However, early users during our launch phase will have special benefits and the core functionality will remain accessible.
+          </p>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4 class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon name="heroicons:question-mark-circle-20-solid" class="w-5 h-5 text-violet-400" />
+            What happens after the launch period?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            We'll introduce tiered pricing with premium features, but early users will receive special benefits. We're committed to keeping essential features accessible to everyone.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="py-20 text-center">
+      <div class="max-w-2xl mx-auto">
+        <h2 class="text-3xl font-bold text-white mb-6">
+          Ready to analyze your music?
+        </h2>
+        <p class="text-xl text-slate-300 mb-8">
+          Join thousands of creators who use Describe Music to understand their audio better.
+        </p>
+        <a
+          href="/analyze"
+          class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-violet-500 to-blue-500 text-white font-semibold rounded-xl hover:from-violet-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-violet-500/25">
+          Start Analyzing Now
+          <Icon name="heroicons:arrow-right-20-solid" class="w-5 h-5" />
+        </a>
+      </div>
     </div>
   </Container>
 </Layout>
