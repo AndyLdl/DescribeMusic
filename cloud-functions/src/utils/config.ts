@@ -22,6 +22,12 @@ export interface Config {
         storageBucket: string;
     };
 
+    // Supabase
+    supabase: {
+        url: string;
+        serviceRoleKey: string;
+    };
+
     // CORS
     cors: {
         allowedOrigins: string[];
@@ -50,6 +56,11 @@ const config: Config = {
         // Try Firebase config first, then defaults for emulator
         projectId: firebaseConfig?.app?.project_id || 'describe-music',
         storageBucket: firebaseConfig?.app?.storage_bucket || 'describe-music.appspot.com',
+    },
+
+    supabase: {
+        url: firebaseConfig?.supabase?.url || process.env.SUPABASE_URL || '',
+        serviceRoleKey: firebaseConfig?.supabase?.service_role_key || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     },
 
     cors: {
@@ -82,6 +93,14 @@ export function validateConfig(): { isValid: boolean; errors: string[] } {
 
     if (!config.firebase.projectId) {
         errors.push('FIREBASE_PROJECT_ID is required (set via app.project_id in Firebase config or FIREBASE_PROJECT_ID env var)');
+    }
+
+    if (!config.supabase.url) {
+        errors.push('SUPABASE_URL is required');
+    }
+
+    if (!config.supabase.serviceRoleKey) {
+        errors.push('SUPABASE_SERVICE_ROLE_KEY is required');
     }
 
     if (config.googleAI.maxTokens <= 0) {

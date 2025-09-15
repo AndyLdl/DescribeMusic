@@ -181,7 +181,7 @@ export interface AnalysisOptions {
 
 export interface ProgressUpdate {
     phase: 'uploading' | 'analyzing';
-    percentage: number; // 统一的0-100进度
+    percentage: number; // Unified 0-100 progress
     message: string;
 }
 
@@ -196,6 +196,48 @@ export class CloudFunctionsError extends Error {
         this.code = code;
         this.details = details;
         this.requestId = requestId;
+    }
+
+    /**
+     * Check if this is a usage limit error
+     */
+    isUsageLimitError(): boolean {
+        return this.code === 'USAGE_LIMIT_EXCEEDED' ||
+            this.code === 'TRIAL_LIMIT_EXCEEDED' ||
+            this.code === 'MONTHLY_LIMIT_EXCEEDED';
+    }
+
+    /**
+     * Check if this is an authentication error
+     */
+    isAuthError(): boolean {
+        return this.code === 'AUTHENTICATION_REQUIRED' ||
+            this.code === 'INVALID_TOKEN' ||
+            this.code === 'SESSION_EXPIRED';
+    }
+
+    /**
+     * Get user-friendly error message
+     */
+    getUserFriendlyMessage(): string {
+        switch (this.code) {
+            case 'USAGE_LIMIT_EXCEEDED':
+            case 'TRIAL_LIMIT_EXCEEDED':
+                return 'Free trial uses exhausted, please register for 10 monthly analyses';
+            case 'MONTHLY_LIMIT_EXCEEDED':
+                return 'Monthly analyses exhausted, will reset next month';
+            case 'AUTHENTICATION_REQUIRED':
+                return 'Please login to continue';
+            case 'INVALID_TOKEN':
+            case 'SESSION_EXPIRED':
+                return 'Login expired, please login again';
+            case 'NETWORK_ERROR':
+                return 'Network connection failed, please check your network and try again';
+            case 'TIMEOUT':
+                return 'Request timeout, please try again';
+            default:
+                return this.message || 'Analysis failed, please try again';
+        }
     }
 }
 
@@ -213,6 +255,89 @@ export class CloudFunctionsClient {
         // Debug log to see what URL is being used
         console.log('CloudFunctionsClient initialized with URL:', this.baseUrl);
         console.log('Environment variable VITE_CLOUD_FUNCTIONS_URL:', import.meta.env.VITE_CLOUD_FUNCTIONS_URL);
+    }
+
+    /**
+     * Get authentication headers for requests
+     */
+    private async getAuthHeaders(): Promise<Record<string, string>> {
+        const headers: Record<string, string> = {};
+
+        try {
+            // Import DeviceFingerprint dynamically to avoid circular dependencies
+            const { DeviceFingerprint } = await import('./deviceFingerprint');
+
+            // Get device fingerprint (always required)
+            const deviceFingerprint = await DeviceFingerprint.generate();
+            headers['X-Device-Fingerprint'] = deviceFingerprint;
+
+            // Try to get user information from Supabase
+            const { supabase } = await import('../lib/supabase');
+
+            // Check current session first
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+            if (sessionError) {
+                console.warn('Error getting session:', sessionError);
+                return headers; // Return with just device fingerprint
+            }
+
+            if (session?.user) {
+                headers['X-User-ID'] = session.user.id;
+
+                // Check if token is still valid (not expired)
+                const now = Math.floor(Date.now() / 1000);
+                const tokenExpiry = session.expires_at || 0;
+
+                if (tokenExpiry > now + 60) { // Token valid for at least 1 more minute
+                    headers['Authorization'] = `Bearer ${session.access_token}`;
+                } else {
+                    console.log('Token is expiring soon, attempting refresh...');
+
+                    // Try to refresh the token
+                    const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+
+                    if (refreshError) {
+                        console.warn('Failed to refresh session:', refreshError);
+                        // Continue with expired token, let the server handle it
+                        headers['Authorization'] = `Bearer ${session.access_token}`;
+                    } else if (refreshData.session) {
+                        console.log('Session refreshed successfully');
+                        headers['Authorization'] = `Bearer ${refreshData.session.access_token}`;
+                        headers['X-User-ID'] = refreshData.session.user.id;
+                    }
+                }
+            }
+
+        } catch (error) {
+            console.warn('Failed to get authentication headers:', error);
+            // Continue without auth headers - the cloud function will handle this
+        }
+
+        return headers;
+    }
+
+    /**
+     * Handle authentication errors and provide user guidance
+     */
+    private handleAuthError(error: CloudFunctionsError): void {
+        if (error.isUsageLimitError()) {
+            // Dispatch custom event for usage limit errors
+            window.dispatchEvent(new CustomEvent('usageLimitExceeded', {
+                detail: {
+                    error,
+                    message: error.getUserFriendlyMessage()
+                }
+            }));
+        } else if (error.isAuthError()) {
+            // Dispatch custom event for auth errors
+            window.dispatchEvent(new CustomEvent('authenticationRequired', {
+                detail: {
+                    error,
+                    message: error.getUserFriendlyMessage()
+                }
+            }));
+        }
     }
 
     /**
@@ -393,6 +518,12 @@ export class CloudFunctionsClient {
 
         } catch (error) {
             console.error('Audio analysis failed:', error);
+
+            // Handle specific error types
+            if (error instanceof CloudFunctionsError) {
+                this.handleAuthError(error);
+            }
+
             throw error;
         }
     }
@@ -450,16 +581,20 @@ export class CloudFunctionsClient {
     }
 
     /**
-     * Make HTTP request to cloud function
+     * Make HTTP request to cloud function with retry logic
      */
     private async makeRequest(
         endpoint: string,
-        options: RequestInit
+        options: RequestInit,
+        retryCount: number = 0
     ): Promise<CloudApiResponse> {
         const url = `${this.baseUrl}${endpoint}`;
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+
+        // Get authentication headers
+        const authHeaders = await this.getAuthHeaders();
 
         try {
             const response = await fetch(url, {
@@ -469,6 +604,7 @@ export class CloudFunctionsClient {
                     'Accept': 'application/json',
                     // Don't set Content-Type for FormData - let browser set it automatically
                     ...(options.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
+                    ...authHeaders,
                     ...options.headers,
                 },
             });
@@ -477,9 +613,26 @@ export class CloudFunctionsClient {
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
+
+                // Map specific HTTP status codes to error types
+                let errorCode = errorData.error?.code || 'HTTP_ERROR';
+                let errorMessage = errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`;
+
+                // Handle specific status codes
+                if (response.status === 429) {
+                    errorCode = 'USAGE_LIMIT_EXCEEDED';
+                    errorMessage = errorMessage || 'Usage limit reached';
+                } else if (response.status === 401) {
+                    errorCode = 'AUTHENTICATION_REQUIRED';
+                    errorMessage = errorMessage || 'Authentication required';
+                } else if (response.status === 403) {
+                    errorCode = 'ACCESS_DENIED';
+                    errorMessage = errorMessage || 'Access denied';
+                }
+
                 throw new CloudFunctionsError(
-                    errorData.error?.code || 'HTTP_ERROR',
-                    errorData.error?.message || `HTTP ${response.status}: ${response.statusText}`,
+                    errorCode,
+                    errorMessage,
                     errorData.error?.details || { status: response.status, statusText: response.statusText },
                     errorData.requestId
                 );
@@ -499,6 +652,22 @@ export class CloudFunctionsClient {
             }
 
             if (error instanceof CloudFunctionsError) {
+                // Retry logic for specific errors
+                if (error.isAuthError() && retryCount < 1) {
+                    console.log('Authentication error, refreshing session and retrying...');
+                    try {
+                        // Try to refresh the session
+                        const { supabase } = await import('../lib/supabase');
+                        await supabase.auth.refreshSession();
+
+                        // Retry the request with fresh auth headers
+                        return this.makeRequest(endpoint, options, retryCount + 1);
+                    } catch (refreshError) {
+                        console.error('Failed to refresh session:', refreshError);
+                        // Fall through to throw the original error
+                    }
+                }
+
                 throw error;
             }
 

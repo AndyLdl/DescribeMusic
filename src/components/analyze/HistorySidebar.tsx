@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HistoryStorage, type HistoryRecord } from '../../utils/historyStorage';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface HistorySidebarProps {
   selectedRecordId?: string;
@@ -11,18 +12,37 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  const { user } = useAuth();
 
   useEffect(() => {
     loadHistory();
-  }, []);
+  }, [user]); // Reload history when user changes
 
-  const loadHistory = () => {
-    const records = HistoryStorage.getHistory();
-    setHistory(records);
+  const loadHistory = async () => {
+    setLoading(true);
+    try {
+      const records = await HistoryStorage.getCurrentUserHistory();
+      setHistory(records);
+    } catch (error) {
+      console.error('Error loading history:', error);
+      // Fallback to all history
+      const records = HistoryStorage.getHistory();
+      setHistory(records);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleClearHistory = () => {
-    HistoryStorage.clearHistory();
+    if (user) {
+      // Clear only user's history
+      HistoryStorage.clearUserHistory(user.id);
+    } else {
+      // Clear anonymous history
+      HistoryStorage.clearHistory();
+    }
     setHistory([]);
     setShowClearConfirm(false);
     onNewAnalysis(); // 返回到上传页面
@@ -32,7 +52,7 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
     event.stopPropagation();
     HistoryStorage.removeRecord(id);
     loadHistory();
-    
+
     // 如果删除的是当前选中的记录，返回到上传页面
     if (id === selectedRecordId) {
       onNewAnalysis();
@@ -70,10 +90,9 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
   return (
     <>
       {/* Sidebar */}
-      <div 
-        className={`relative bg-slate-900/50 backdrop-blur-xl border-r border-white/10 flex flex-col transition-all duration-300 ${
-          isCollapsed ? 'w-16' : 'w-80'
-        }`}
+      <div
+        className={`relative bg-slate-900/50 backdrop-blur-xl border-r border-white/10 flex flex-col transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-80'
+          }`}
         data-sidebar="history"
         data-state={isCollapsed ? "collapsed" : "open"}>
         {/* Header */}
@@ -82,7 +101,19 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
             {!isCollapsed && (
               <div>
                 <h3 className="text-lg font-semibold text-white">History</h3>
-                <p className="text-xs text-slate-400">{history.length} analysis</p>
+                <div className="flex items-center gap-2 text-xs text-slate-400">
+                  <span>{history.length} analysis</span>
+                  {user && (
+                    <span className="px-2 py-1 bg-violet-500/20 text-violet-300 rounded-full">
+                      Synced
+                    </span>
+                  )}
+                  {!user && history.length > 0 && (
+                    <span className="px-2 py-1 bg-orange-500/20 text-orange-300 rounded-full">
+                      Local
+                    </span>
+                  )}
+                </div>
               </div>
             )}
             <button
@@ -108,7 +139,7 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
               </svg>
               New Analysis
             </button>
-            
+
             {history.length > 0 && (
               <button
                 onClick={() => setShowClearConfirm(true)}
@@ -125,11 +156,23 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
 
         {/* History List */}
         <div className="flex-1 overflow-y-auto">
-          {history.length === 0 ? (
+          {loading ? (
+            <div className={`p-4 text-center ${isCollapsed ? 'hidden' : ''}`}>
+              <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
+                <div className="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin"></div>
+                Loading history...
+              </div>
+            </div>
+          ) : history.length === 0 ? (
             <div className={`p-4 text-center ${isCollapsed ? 'hidden' : ''}`}>
               <div className="text-slate-400 text-sm">
-                No history yet
+                {user ? 'No analysis history yet' : 'No local history yet'}
               </div>
+              {!user && (
+                <div className="mt-2 text-xs text-slate-500">
+                  Sign in to sync your history across devices
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-1 p-2">
@@ -139,8 +182,8 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
                   onClick={() => onSelectRecord(record)}
                   className={`
                     group cursor-pointer p-3 rounded-lg transition-all duration-300 relative
-                    ${selectedRecordId === record.id 
-                      ? 'bg-violet-500/20 border border-violet-400/30' 
+                    ${selectedRecordId === record.id
+                      ? 'bg-violet-500/20 border border-violet-400/30'
                       : 'hover:bg-white/5 border border-transparent hover:border-white/10'
                     }
                     ${isCollapsed ? 'mx-1' : ''}
@@ -152,7 +195,7 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
                     <div className="flex flex-col items-center">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getGenreColor(record.basicInfo.genre)}`}>
                         <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
                         </svg>
                       </div>
                       {selectedRecordId === record.id && (
@@ -166,7 +209,7 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${getGenreColor(record.basicInfo.genre)}`}>
                             <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
                             </svg>
                           </div>
                           <div className="min-w-0 flex-1">
@@ -178,7 +221,7 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
                             </p>
                           </div>
                         </div>
-                        
+
                         <button
                           onClick={(e) => handleRemoveRecord(record.id, e)}
                           className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-400 transition-all duration-300 flex-shrink-0"
@@ -192,9 +235,9 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
                       {/* Waveform Preview */}
                       {record.thumbnail && (
                         <div className="h-8 bg-white/5 rounded overflow-hidden mb-2">
-                          <img 
-                            src={record.thumbnail} 
-                            alt="Waveform" 
+                          <img
+                            src={record.thumbnail}
+                            alt="Waveform"
                             className="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity"
                           />
                         </div>

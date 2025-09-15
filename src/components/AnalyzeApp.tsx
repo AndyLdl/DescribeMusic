@@ -3,8 +3,11 @@ import UploadSection from './analyze/UploadSection';
 import LoadingSection from './analyze/LoadingSection';
 import DashboardSection from './analyze/DashboardSection';
 import HistorySidebar from './analyze/HistorySidebar';
+import LoginModal from './auth/LoginModal';
+import AnalyzeHeader from './AnalyzeHeader';
 import { HistoryStorage, type HistoryRecord } from '../utils/historyStorage';
 import { cloudFunctions, validateAudioFile, type CloudAnalysisResult, type ProgressUpdate } from '../utils/cloudFunctions';
+import { useAuth, useUsageStatus } from '../contexts/AuthContext';
 
 type AnalysisStage = 'upload' | 'analyzing' | 'results' | 'error';
 
@@ -96,6 +99,11 @@ interface AnalysisResult {
 }
 
 export default function AnalyzeApp() {
+  // Auth hooks must be called before all other hooks
+  const { user, loading: authLoading } = useAuth();
+  const { usageStatus, canAnalyze, needsAuth } = useUsageStatus();
+
+  // Component state hooks
   const [stage, setStage] = useState<AnalysisStage>('upload');
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -104,7 +112,8 @@ export default function AnalyzeApp() {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentProgress, setCurrentProgress] = useState<ProgressUpdate | null>(null);
-  
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
   // Cleanup function for audio URL and global variables
   React.useEffect(() => {
     return () => {
@@ -120,18 +129,23 @@ export default function AnalyzeApp() {
   React.useEffect(() => {
     (window as any).currentAnalysisResult = null;
     (window as any).backupAnalysisResult = null;
-    
+
     // Dispatch event to hide export buttons initially
     const event = new CustomEvent('analysisResultCleared');
     window.dispatchEvent(event);
   }, []);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleFiles = useCallback((files: FileList | null) => {
+  // Open login modal
+  const openLogin = useCallback(() => {
+    setShowLoginModal(true);
+  }, []);
+
+  const handleFiles = useCallback(async (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    
+
     const file = files[0];
-    
+
     // Use cloud functions validation
     const validation = validateAudioFile(file);
     if (!validation.valid) {
@@ -140,21 +154,34 @@ export default function AnalyzeApp() {
       return;
     }
 
+    // Check usage limits
+    if (!canAnalyze) {
+      if (needsAuth) {
+        setErrorMessage(usageStatus?.message || 'Login required to continue');
+        setStage('error');
+        return;
+      } else {
+        setErrorMessage(usageStatus?.message || 'Usage limit reached');
+        setStage('error');
+        return;
+      }
+    }
+
     setUploadedFile(file);
     setErrorMessage('');
     startAnalysis(file);
-  }, []);
+  }, [canAnalyze, needsAuth, usageStatus]);
 
   // Function to generate AI tags based on analysis results
   const generateAITags = (basicInfo: any, emotions: any, quality: any, filename: string) => {
     const tags: string[] = [];
-    
+
     // Genre-based tags
     tags.push(basicInfo.genre.toLowerCase());
-    
+
     // Mood-based tags
     tags.push(basicInfo.mood.toLowerCase());
-    
+
     // Energy level tags
     if (basicInfo.energy > 0.8) {
       tags.push('high-energy', 'energetic', 'intense');
@@ -163,7 +190,7 @@ export default function AnalyzeApp() {
     } else {
       tags.push('low-energy', 'calm', 'relaxed');
     }
-    
+
     // BPM-based tags
     if (basicInfo.bpm > 140) {
       tags.push('fast-tempo', 'dance', 'workout');
@@ -172,47 +199,47 @@ export default function AnalyzeApp() {
     } else {
       tags.push('slow-tempo', 'chill', 'ambient');
     }
-    
+
     // Emotion-based tags
     const topEmotion = Object.entries(emotions).reduce((a, b) => emotions[a[0]] > emotions[b[0]] ? a : b)[0];
     tags.push(topEmotion);
-    
+
     if (emotions.happy > 0.6) tags.push('uplifting', 'positive');
     if (emotions.sad > 0.6) tags.push('melancholic', 'emotional');
     if (emotions.excited > 0.7) tags.push('exciting', 'dynamic');
     if (emotions.calm > 0.6) tags.push('peaceful', 'serene');
-    
+
     // Quality-based tags
     if (quality.overall > 8) {
       tags.push('high-quality', 'professional', 'studio-quality');
     } else if (quality.overall > 6) {
       tags.push('good-quality');
     }
-    
+
     if (quality.clarity > 8) tags.push('clear', 'crisp');
     if (quality.dynamic_range > 7) tags.push('dynamic');
-    
+
     // Danceability tags
     if (basicInfo.danceability > 0.8) {
       tags.push('danceable', 'groovy', 'rhythmic');
     }
-    
+
     // Valence-based tags
     if (basicInfo.valence > 0.7) {
       tags.push('positive', 'bright');
     } else if (basicInfo.valence < 0.4) {
       tags.push('dark', 'moody');
     }
-    
+
     // File type based tags
     const fileExtension = filename.split('.').pop()?.toLowerCase();
     if (fileExtension) {
       tags.push(`${fileExtension}-file`);
     }
-    
+
     // SEO-friendly tags
     tags.push('ai-analyzed', 'music-analysis', 'audio-processing');
-    
+
     // Remove duplicates and limit to 15 tags
     return [...new Set(tags)].slice(0, 15);
   };
@@ -220,23 +247,23 @@ export default function AnalyzeApp() {
   const startAnalysis = useCallback(async (file: File) => {
     setStage('analyzing');
     setIsAnalyzing(true);
-    
+
     // Clear previous results and hide export buttons during analysis
     (window as any).currentAnalysisResult = null;
     (window as any).backupAnalysisResult = null;
     const clearEvent = new CustomEvent('analysisResultCleared');
     window.dispatchEvent(clearEvent);
-    
+
     setErrorMessage('');
     setCurrentProgress(null);
-    
+
     try {
       // Create local URL for audio preview
       const audioUrl = URL.createObjectURL(file);
-      
+
       // Generate thumbnail for history
       const thumbnail = await HistoryStorage.generateThumbnail(file);
-      
+
       // Call cloud function for analysis with progress callback
       const startTime = Date.now();
       const cloudResult: CloudAnalysisResult = await cloudFunctions.analyzeAudio(file, {
@@ -248,9 +275,9 @@ export default function AnalyzeApp() {
           setCurrentProgress(progress);
         }
       });
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       // Convert cloud result to frontend format
       const result: AnalysisResult = {
         id: cloudResult.id,
@@ -272,7 +299,7 @@ export default function AnalyzeApp() {
         processingTime: Math.round(processingTime / 1000), // Convert to seconds
         audioUrl: audioUrl // Add the local audio URL
       };
-      
+
       // Save to history
       const historyRecord: HistoryRecord = {
         id: result.id,
@@ -292,20 +319,20 @@ export default function AnalyzeApp() {
           primaryGenre: result.basicInfo.genre
         }
       };
-      
-      HistoryStorage.addRecord(historyRecord);
-      
+
+      await HistoryStorage.addRecordWithUser(historyRecord);
+
       setAnalysisResult(result);
-      
+
       // Make the current analysis result available globally for export functionality
       (window as any).currentAnalysisResult = result;
-      
+
       // Also dispatch a custom event to notify that analysis result is ready
-      const event = new CustomEvent('analysisResultReady', { 
-        detail: result 
+      const event = new CustomEvent('analysisResultReady', {
+        detail: result
       });
       window.dispatchEvent(event);
-      
+
       setStage('results');
     } catch (error: any) {
       console.error('Analysis failed:', error);
@@ -330,7 +357,7 @@ export default function AnalyzeApp() {
     e.preventDefault();
     e.stopPropagation();
     setDragActive(false);
-    
+
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFiles(e.dataTransfer.files);
     }
@@ -357,9 +384,9 @@ export default function AnalyzeApp() {
         hasVoice: false,
         speakerCount: 0,
         genderDetection: { primary: 'unknown', confidence: 0.0, multipleGenders: false },
-        speakerEmotion: { 
-          primary: 'neutral', 
-          confidence: 0.0, 
+        speakerEmotion: {
+          primary: 'neutral',
+          confidence: 0.0,
           emotions: {
             happy: 0.0, sad: 0.0, angry: 0.0, calm: 0.0,
             excited: 0.0, nervous: 0.0, confident: 0.0, stressed: 0.0
@@ -421,18 +448,18 @@ export default function AnalyzeApp() {
       aiDescription: `A ${record.basicInfo.mood.toLowerCase()} ${record.basicInfo.genre.toLowerCase()} track with professional quality.`,
       processingTime: 0 // Historical data
     };
-    
+
     setAnalysisResult(result);
     setStage('results');
     setShowMobileSidebar(false);
-    
+
     // Make the history analysis result available globally for export functionality
     (window as any).currentAnalysisResult = result;
     (window as any).backupAnalysisResult = result;
-    
+
     // Dispatch event to show export buttons
-    const event = new CustomEvent('analysisResultReady', { 
-      detail: result 
+    const event = new CustomEvent('analysisResultReady', {
+      detail: result
     });
     window.dispatchEvent(event);
   }, []);
@@ -443,7 +470,7 @@ export default function AnalyzeApp() {
     setUploadedFile(null);
     setErrorMessage('');
     setIsAnalyzing(false);
-    
+
     // Clear global analysis results and hide export buttons
     (window as any).currentAnalysisResult = null;
     (window as any).backupAnalysisResult = null;
@@ -459,8 +486,25 @@ export default function AnalyzeApp() {
     }
   }, [uploadedFile, startAnalysis, handleNewAnalysis]);
 
+  // Show loading state if authentication is loading
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
+        <div className="glass-pane p-8">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 border-2 border-violet-400 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-white">正在初始化...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-dark-bg">
+      {/* React Header Component */}
+      <AnalyzeHeader />
+
       {/* Mobile Header */}
       <div className="md:hidden pt-16 pb-4 px-6">
         <div className="flex items-center justify-between">
@@ -476,7 +520,7 @@ export default function AnalyzeApp() {
           </button>
         </div>
       </div>
-      
+
       {/* Desktop spacer */}
       <div className="hidden md:block pt-16"></div>
 
@@ -486,14 +530,14 @@ export default function AnalyzeApp() {
         {showMobileSidebar && (
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden">
             <div className="absolute left-0 top-0 bottom-0 w-80 max-w-[90vw]">
-              <HistorySidebar 
+              <HistorySidebar
                 selectedRecordId={analysisResult?.id}
                 onSelectRecord={(record) => {
                   handleSelectHistoryRecord(record);
                   setShowMobileSidebar(false);
                 }}
                 onNewAnalysis={() => {
-                  resetAnalysis();
+                  handleNewAnalysis();
                   setShowMobileSidebar(false);
                 }}
               />
@@ -508,39 +552,42 @@ export default function AnalyzeApp() {
             </button>
           </div>
         )}
-        
+
         {/* Desktop Layout */}
         <div className="hidden md:flex h-[calc(100vh-64px)] min-h-[600px]">
           {/* Left Sidebar - History */}
-          <HistorySidebar 
+          <HistorySidebar
             selectedRecordId={analysisResult?.id}
             onSelectRecord={handleSelectHistoryRecord}
             onNewAnalysis={handleNewAnalysis}
           />
-          
+
           {/* Right Main Area */}
           <div className="flex-1 overflow-auto">
             <div className="max-w-6xl mx-auto px-6 py-8">
               {stage === 'upload' && (
-                <UploadSection 
+                <UploadSection
                   onFileSelect={handleFiles}
                   dragActive={dragActive}
                   onDrag={handleDrag}
                   onDrop={handleDrop}
                   inputRef={inputRef}
+                  usageStatus={usageStatus}
+                  user={user}
+                  onOpenLogin={openLogin}
                 />
               )}
-              
+
               {stage === 'analyzing' && uploadedFile && (
-                <LoadingSection 
+                <LoadingSection
                   filename={uploadedFile.name}
                   onCancel={handleNewAnalysis}
                   progress={currentProgress}
                 />
               )}
-              
+
               {stage === 'results' && analysisResult && (
-                <DashboardSection 
+                <DashboardSection
                   result={analysisResult}
                 />
               )}
@@ -556,12 +603,21 @@ export default function AnalyzeApp() {
                     <h3 className="text-xl font-semibold text-white mb-2">Analysis Failed</h3>
                     <p className="text-slate-400 mb-6">{errorMessage}</p>
                     <div className="flex gap-3 justify-center">
-                      <button
-                        onClick={handleRetryAnalysis}
-                        className="btn btn-primary"
-                      >
-                        Try Again
-                      </button>
+                      {needsAuth ? (
+                        <button
+                          onClick={openLogin}
+                          className="btn btn-primary"
+                        >
+                          登录
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleRetryAnalysis}
+                          className="btn btn-primary"
+                        >
+                          Try Again
+                        </button>
+                      )}
                       <button
                         onClick={handleNewAnalysis}
                         className="btn btn-secondary"
@@ -580,25 +636,28 @@ export default function AnalyzeApp() {
         <div className="md:hidden">
           <div className="max-w-6xl mx-auto px-6 py-8">
             {stage === 'upload' && (
-              <UploadSection 
+              <UploadSection
                 onFileSelect={handleFiles}
                 dragActive={dragActive}
                 onDrag={handleDrag}
                 onDrop={handleDrop}
                 inputRef={inputRef}
+                usageStatus={usageStatus}
+                user={user}
+                onOpenLogin={openLogin}
               />
             )}
-            
+
             {stage === 'analyzing' && uploadedFile && (
-              <LoadingSection 
+              <LoadingSection
                 filename={uploadedFile.name}
                 onCancel={handleNewAnalysis}
                 progress={currentProgress}
               />
             )}
-            
+
             {stage === 'results' && analysisResult && (
-              <DashboardSection 
+              <DashboardSection
                 result={analysisResult}
               />
             )}
@@ -614,12 +673,21 @@ export default function AnalyzeApp() {
                   <h3 className="text-xl font-semibold text-white mb-2">Analysis Failed</h3>
                   <p className="text-slate-400 mb-6">{errorMessage}</p>
                   <div className="flex gap-3 justify-center">
-                    <button
-                      onClick={handleRetryAnalysis}
-                      className="btn btn-primary"
-                    >
-                      Try Again
-                    </button>
+                    {needsAuth ? (
+                      <button
+                        onClick={openLogin}
+                        className="btn btn-primary"
+                      >
+                        登录
+                      </button>
+                    ) : (
+                      <button
+                        onClick={handleRetryAnalysis}
+                        className="btn btn-primary"
+                      >
+                        Try Again
+                      </button>
+                    )}
                     <button
                       onClick={handleNewAnalysis}
                       className="btn btn-secondary"
@@ -633,6 +701,13 @@ export default function AnalyzeApp() {
           </div>
         </div>
       </div>
+
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        defaultMode="login"
+      />
     </div>
   );
 }

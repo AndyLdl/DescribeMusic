@@ -44,6 +44,7 @@ const cors_1 = __importDefault(require("cors"));
 const multer_1 = __importDefault(require("multer"));
 const uuid_1 = require("uuid");
 const types_1 = require("../types");
+const supabase_1 = require("../utils/supabase");
 const geminiService_1 = require("../services/geminiService");
 const prompts_1 = require("../utils/prompts");
 const errors_1 = require("../utils/errors");
@@ -62,7 +63,16 @@ if (!admin.apps.length) {
 const corsHandler = (0, cors_1.default)({
     origin: config_1.default.cors.allowedOrigins,
     credentials: true,
-    optionsSuccessStatus: 200
+    optionsSuccessStatus: 200,
+    allowedHeaders: [
+        'Content-Type',
+        'Authorization',
+        'X-Device-Fingerprint',
+        'X-User-ID',
+        'Accept',
+        'Origin',
+        'X-Requested-With'
+    ]
 });
 // Configure Multer for file uploads (simplified for debugging)
 const upload = (0, multer_1.default)({
@@ -136,6 +146,8 @@ exports.analyzeAudio = functions
         const audioFile = await processFileUploadWithFallback(req, requestId);
         // Validate request
         validateAnalysisRequest(audioFile, requestId);
+        // Check and consume usage limits
+        await checkAndConsumeUsage(req, audioFile, requestId);
         // Perform actual AI analysis
         const analysisResult = await performAnalysis(audioFile, {}, requestId);
         const processingTime = Date.now() - startTime;
@@ -977,5 +989,100 @@ function generateAIDescription(analysisData) {
     const { basicInfo, emotions } = analysisData;
     const topEmotion = Object.entries(emotions).reduce((a, b) => emotions[a[0]] > emotions[b[0]] ? a : b)[0];
     return `A ${topEmotion} ${basicInfo.genre.toLowerCase()} track with ${basicInfo.bpm} BPM in ${basicInfo.key}, featuring ${basicInfo.mood.toLowerCase()} energy and ${Math.round(basicInfo.danceability * 100)}% danceability.`;
+}
+/**
+ * Check and consume usage limits
+ */
+async function checkAndConsumeUsage(req, audioFile, requestId) {
+    const startTime = Date.now();
+    try {
+        // Extract user information from request headers
+        const authHeader = req.get('Authorization');
+        const deviceFingerprint = req.get('X-Device-Fingerprint');
+        let userId;
+        // Check if user is authenticated
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            // For now, we'll extract user ID from a custom header
+            // In a real implementation, you'd verify the JWT token
+            userId = req.get('X-User-ID');
+        }
+        if (userId) {
+            // Handle registered user
+            logger_1.default.info('Checking usage for registered user', { userId, requestId });
+            const userUsage = await (0, supabase_1.checkUserUsage)(userId);
+            if (!userUsage.canAnalyze) {
+                throw new errors_1.ValidationError(`Monthly analysis limit reached. You have used all ${userUsage.monthlyLimit} analyses for this month.`);
+            }
+            // Consume user usage
+            const consumed = await (0, supabase_1.consumeUserUsage)(userId);
+            if (!consumed) {
+                throw new errors_1.ValidationError('Failed to consume user usage. Please try again.');
+            }
+            logger_1.default.info('User usage consumed', {
+                userId,
+                remainingBefore: userUsage.remainingAnalyses,
+                requestId
+            });
+            // Log usage activity
+            await (0, supabase_1.logUsageActivity)({
+                userId,
+                analysisType: 'audio',
+                fileSize: audioFile.size,
+                processingTime: Date.now() - startTime,
+                success: true
+            });
+        }
+        else if (deviceFingerprint) {
+            // Handle trial user
+            logger_1.default.info('Checking usage for trial user', { deviceFingerprint, requestId });
+            const deviceUsage = await (0, supabase_1.checkDeviceUsage)(deviceFingerprint);
+            if (!deviceUsage.canAnalyze) {
+                if (deviceUsage.isRegistered) {
+                    throw new errors_1.ValidationError('This device is already registered. Please log in to continue using the service.');
+                }
+                else {
+                    throw new errors_1.ValidationError('Free trial limit reached (5 analyses). Please register for a free account to get 10 analyses per month.');
+                }
+            }
+            // Consume device usage
+            const consumed = await (0, supabase_1.consumeDeviceUsage)(deviceFingerprint);
+            if (!consumed) {
+                throw new errors_1.ValidationError('Failed to consume trial usage. Please try again.');
+            }
+            logger_1.default.info('Device trial usage consumed', {
+                deviceFingerprint,
+                remainingBefore: deviceUsage.remainingTrials,
+                requestId
+            });
+            // Log usage activity
+            await (0, supabase_1.logUsageActivity)({
+                deviceFingerprint,
+                analysisType: 'audio',
+                fileSize: audioFile.size,
+                processingTime: Date.now() - startTime,
+                success: true
+            });
+        }
+        else {
+            // No authentication or device fingerprint
+            throw new errors_1.ValidationError('Authentication required. Please provide either user authentication or device fingerprint.');
+        }
+    }
+    catch (error) {
+        logger_1.default.error('Error in usage check', error, undefined, requestId);
+        // Log failed usage attempt
+        if (req.get('X-Device-Fingerprint') || req.get('X-User-ID')) {
+            await (0, supabase_1.logUsageActivity)({
+                userId: req.get('X-User-ID'),
+                deviceFingerprint: req.get('X-Device-Fingerprint'),
+                analysisType: 'audio',
+                fileSize: audioFile.size,
+                processingTime: Date.now() - startTime,
+                success: false,
+                errorMessage: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
+        throw error;
+    }
 }
 exports.default = exports.analyzeAudio;

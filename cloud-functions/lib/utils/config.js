@@ -32,7 +32,7 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var _a, _b, _c, _d;
+var _a, _b, _c, _d, _e, _f;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateConfig = validateConfig;
 const dotenv = __importStar(require("dotenv"));
@@ -54,8 +54,12 @@ const config = {
         projectId: ((_b = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.app) === null || _b === void 0 ? void 0 : _b.project_id) || 'describe-music',
         storageBucket: ((_c = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.app) === null || _c === void 0 ? void 0 : _c.storage_bucket) || 'describe-music.appspot.com',
     },
+    supabase: {
+        url: ((_d = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.supabase) === null || _d === void 0 ? void 0 : _d.url) || process.env.SUPABASE_URL || '',
+        serviceRoleKey: ((_e = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.supabase) === null || _e === void 0 ? void 0 : _e.service_role_key) || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    },
     cors: {
-        allowedOrigins: (((_d = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.cors) === null || _d === void 0 ? void 0 : _d.allowed_origins) || process.env.ALLOWED_ORIGINS || '')
+        allowedOrigins: (((_f = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.cors) === null || _f === void 0 ? void 0 : _f.allowed_origins) || process.env.ALLOWED_ORIGINS || '')
             .split(',')
             .filter(Boolean) || [
             'http://localhost:4321',
@@ -79,6 +83,12 @@ function validateConfig() {
     }
     if (!config.firebase.projectId) {
         errors.push('FIREBASE_PROJECT_ID is required (set via app.project_id in Firebase config or FIREBASE_PROJECT_ID env var)');
+    }
+    if (!config.supabase.url) {
+        errors.push('SUPABASE_URL is required');
+    }
+    if (!config.supabase.serviceRoleKey) {
+        errors.push('SUPABASE_SERVICE_ROLE_KEY is required');
     }
     if (config.googleAI.maxTokens <= 0) {
         errors.push('GEMINI_MAX_TOKENS must be a positive number');

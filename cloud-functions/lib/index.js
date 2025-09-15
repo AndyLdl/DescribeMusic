@@ -47,6 +47,7 @@ const admin = __importStar(require("firebase-admin"));
 const config_1 = __importStar(require("./utils/config"));
 const logger_1 = __importDefault(require("./utils/logger"));
 const analyzeAudio_1 = require("./functions/analyzeAudio");
+const supabase_1 = require("./utils/supabase");
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
     admin.initializeApp({
@@ -125,7 +126,7 @@ exports.generateUploadUrl = functions
     .onRequest(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Fingerprint, X-User-ID, Accept, Origin, X-Requested-With');
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
@@ -196,7 +197,7 @@ exports.analyzeAudioFromUrl = functions
     .onRequest(async (req, res) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Fingerprint, X-User-ID, Accept, Origin, X-Requested-With');
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
@@ -215,6 +216,8 @@ exports.analyzeAudioFromUrl = functions
             return;
         }
         console.log('Analyzing audio from GCS URL:', { fileUrl, fileName });
+        // Check and consume usage limits
+        await checkAndConsumeUsageFromUrl(req, fileName);
         // Download file from GCS and analyze with Gemini
         const analysisResult = await performRealAnalysis(fileUrl, fileName, options || {});
         res.json({
@@ -297,6 +300,102 @@ function extractFilePathFromUrl(url) {
     catch (error) {
         // Fallback: assume it's just the file path
         return url.split('/').pop() || url;
+    }
+}
+/**
+ * Check and consume usage limits for URL-based analysis
+ */
+async function checkAndConsumeUsageFromUrl(req, fileName) {
+    const startTime = Date.now();
+    const requestId = `req_${Date.now()}`;
+    try {
+        // Extract user information from request headers
+        const authHeader = req.get('Authorization');
+        const deviceFingerprint = req.get('X-Device-Fingerprint');
+        let userId;
+        // Check if user is authenticated
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            // For now, we'll extract user ID from a custom header
+            // In a real implementation, you'd verify the JWT token
+            userId = req.get('X-User-ID');
+        }
+        if (userId) {
+            // Handle registered user
+            logger_1.default.info('Checking usage for registered user', { userId, requestId });
+            const userUsage = await (0, supabase_1.checkUserUsage)(userId);
+            if (!userUsage.canAnalyze) {
+                throw new Error(`Monthly analysis limit reached. You have used all ${userUsage.monthlyLimit} analyses for this month.`);
+            }
+            // Consume user usage
+            const consumed = await (0, supabase_1.consumeUserUsage)(userId);
+            if (!consumed) {
+                throw new Error('Failed to consume user usage. Please try again.');
+            }
+            logger_1.default.info('User usage consumed', {
+                userId,
+                remainingBefore: userUsage.remainingAnalyses,
+                requestId
+            });
+            // Log usage activity
+            await (0, supabase_1.logUsageActivity)({
+                userId,
+                analysisType: 'audio',
+                fileSize: 0, // We don't have file size here
+                processingTime: Date.now() - startTime,
+                success: true
+            });
+        }
+        else if (deviceFingerprint) {
+            // Handle trial user
+            logger_1.default.info('Checking usage for trial user', { deviceFingerprint, requestId });
+            const deviceUsage = await (0, supabase_1.checkDeviceUsage)(deviceFingerprint);
+            if (!deviceUsage.canAnalyze) {
+                if (deviceUsage.isRegistered) {
+                    throw new Error('This device is already registered. Please log in to continue using the service.');
+                }
+                else {
+                    throw new Error('Free trial limit reached (5 analyses). Please register for a free account to get 10 analyses per month.');
+                }
+            }
+            // Consume device usage
+            const consumed = await (0, supabase_1.consumeDeviceUsage)(deviceFingerprint);
+            if (!consumed) {
+                throw new Error('Failed to consume trial usage. Please try again.');
+            }
+            logger_1.default.info('Device trial usage consumed', {
+                deviceFingerprint,
+                remainingBefore: deviceUsage.remainingTrials,
+                requestId
+            });
+            // Log usage activity
+            await (0, supabase_1.logUsageActivity)({
+                deviceFingerprint,
+                analysisType: 'audio',
+                fileSize: 0, // We don't have file size here
+                processingTime: Date.now() - startTime,
+                success: true
+            });
+        }
+        else {
+            // No authentication or device fingerprint
+            throw new Error('Authentication required. Please provide either user authentication or device fingerprint.');
+        }
+    }
+    catch (error) {
+        logger_1.default.error('Error in usage check', error, undefined, requestId);
+        // Log failed usage attempt
+        if (req.get('X-Device-Fingerprint') || req.get('X-User-ID')) {
+            await (0, supabase_1.logUsageActivity)({
+                userId: req.get('X-User-ID'),
+                deviceFingerprint: req.get('X-Device-Fingerprint'),
+                analysisType: 'audio',
+                fileSize: 0,
+                processingTime: Date.now() - startTime,
+                success: false,
+                errorMessage: error instanceof Error ? error.message : 'Unknown error'
+            });
+        }
+        throw error;
     }
 }
 logger_1.default.info('Cloud Functions initialized', {

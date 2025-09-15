@@ -1,4 +1,6 @@
 import React from 'react';
+import UsageIndicator from './UsageIndicator';
+import type { UsageStatus, User } from '../../lib/supabase';
 
 interface UploadSectionProps {
   onFileSelect: (files: FileList | null) => void;
@@ -6,49 +8,74 @@ interface UploadSectionProps {
   onDrag: (e: React.DragEvent) => void;
   onDrop: (e: React.DragEvent) => void;
   inputRef: React.RefObject<HTMLInputElement>;
+  usageStatus?: UsageStatus | null;
+  user?: User | null;
+  onOpenLogin?: () => void;
 }
 
-export default function UploadSection({ 
-  onFileSelect, 
-  dragActive, 
-  onDrag, 
-  onDrop, 
-  inputRef 
+export default function UploadSection({
+  onFileSelect,
+  dragActive,
+  onDrag,
+  onDrop,
+  inputRef,
+  usageStatus,
+  user,
+  onOpenLogin
 }: UploadSectionProps) {
-  
+
   const openFileDialog = () => {
     inputRef.current?.click();
   };
 
+  // 检查是否可以上传
+  const canUpload = !usageStatus || usageStatus.allowed;
+  const needsAuth = usageStatus?.requiresAuth || false;
+
+
+
   return (
     <div className="space-y-12">
+      {/* Usage Indicator */}
+      <UsageIndicator
+        usageStatus={usageStatus}
+        user={user}
+        onOpenLogin={onOpenLogin}
+      />
+
       {/* Upload Area */}
       <div className="relative">
         {/* Background Decorations */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-20 right-20 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
-          
+
           {/* Floating musical notes */}
-          <div className="absolute top-16 left-1/4 text-violet-400/20 text-6xl animate-bounce" style={{animationDelay: '0s', animationDuration: '3s'}}>♪</div>
-          <div className="absolute top-32 right-1/3 text-blue-400/20 text-4xl animate-bounce" style={{animationDelay: '1s', animationDuration: '4s'}}>♫</div>
-          <div className="absolute bottom-32 left-1/3 text-purple-400/20 text-5xl animate-bounce" style={{animationDelay: '2s', animationDuration: '3.5s'}}>♬</div>
+          <div className="absolute top-16 left-1/4 text-violet-400/20 text-6xl animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}>♪</div>
+          <div className="absolute top-32 right-1/3 text-blue-400/20 text-4xl animate-bounce" style={{ animationDelay: '1s', animationDuration: '4s' }}>♫</div>
+          <div className="absolute bottom-32 left-1/3 text-purple-400/20 text-5xl animate-bounce" style={{ animationDelay: '2s', animationDuration: '3.5s' }}>♬</div>
         </div>
 
         {/* Main Upload Zone */}
-        <div 
+        <div
           className={`
-            relative z-10 glass-pane p-16 text-center transition-all duration-300 cursor-pointer
-            ${dragActive 
-              ? 'border-violet-400/50 bg-violet-500/10 scale-105' 
-              : 'border-white/10 hover:border-white/20 hover:bg-white/[0.08]'
+            relative z-10 glass-pane p-16 text-center transition-all duration-300 
+            ${!canUpload
+              ? 'cursor-not-allowed opacity-50'
+              : 'cursor-pointer'
+            }
+            ${dragActive && canUpload
+              ? 'border-violet-400/50 bg-violet-500/10 scale-105'
+              : canUpload
+                ? 'border-white/10 hover:border-white/20 hover:bg-white/[0.08]'
+                : 'border-red-500/30 bg-red-500/5'
             }
           `}
-          onDragEnter={onDrag}
-          onDragLeave={onDrag}
-          onDragOver={onDrag}
-          onDrop={onDrop}
-          onClick={openFileDialog}
+          onDragEnter={canUpload ? onDrag : undefined}
+          onDragLeave={canUpload ? onDrag : undefined}
+          onDragOver={canUpload ? onDrag : undefined}
+          onDrop={canUpload ? onDrop : undefined}
+          onClick={canUpload ? openFileDialog : undefined}
         >
           <input
             ref={inputRef}
@@ -57,7 +84,7 @@ export default function UploadSection({
             accept="audio/*"
             onChange={(e) => onFileSelect(e.target.files)}
           />
-          
+
           {/* Upload Icon */}
           <div className="mb-8">
             <div className="w-24 h-24 mx-auto bg-gradient-to-r from-violet-500 to-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
@@ -68,30 +95,65 @@ export default function UploadSection({
           </div>
 
           <h3 className="text-3xl font-bold text-white mb-4">
-            Drop your audio file here
+            {!canUpload && needsAuth
+              ? 'Login required to continue'
+              : !canUpload
+                ? 'Usage limit reached'
+                : 'Drop your audio file here'
+            }
           </h3>
           <p className="text-slate-300/80 text-lg mb-8 max-w-2xl mx-auto">
-            Or click to browse files. We support MP3, WAV, OGG, MP4, M4A formats up to 50MB.
+            {!canUpload && needsAuth
+              ? 'Sign up to get 10 free analyses per month'
+              : !canUpload
+                ? usageStatus?.message || 'Please wait for next month reset or upgrade your account'
+                : 'Or click to browse files. We support MP3, WAV, OGG, MP4, M4A formats up to 50MB.'
+            }
           </p>
 
           {/* Upload Button */}
-          <button 
-            className="inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
-            onClick={(e) => {
-              e.stopPropagation();
-              openFileDialog();
-            }}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-            </svg>
-            Choose Audio File
-          </button>
+          {canUpload ? (
+            <button
+              className="inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
+              onClick={(e) => {
+                e.stopPropagation();
+                openFileDialog();
+              }}
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Choose Audio File
+            </button>
+          ) : needsAuth && onOpenLogin ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenLogin();
+              }}
+              className="inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+              Sign Up Now
+            </button>
+          ) : (
+            <button
+              disabled
+              className="inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-medium text-slate-400 bg-slate-700/50 rounded-full cursor-not-allowed"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728" />
+              </svg>
+              Usage Limit Reached
+            </button>
+          )}
 
           {/* Format Info */}
           <div className="mt-12 flex flex-wrap justify-center gap-3">
             {['MP3', 'WAV', 'OGG', 'MP4', 'M4A'].map((format) => (
-              <span 
+              <span
                 key={format}
                 className="px-4 py-2 bg-white/5 text-slate-300 text-sm rounded-full border border-white/10"
               >
