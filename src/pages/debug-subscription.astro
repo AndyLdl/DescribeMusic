@@ -1,0 +1,145 @@
+---
+// Debug subscription status page
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Debug Subscription - DescribeMusic</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        background: #0f172a;
+        color: white;
+        padding: 2rem;
+        line-height: 1.6;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .debug-section {
+        background: #1e293b;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1rem;
+        border: 1px solid #334155;
+      }
+      .debug-title {
+        color: #a78bfa;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+      }
+      .debug-result {
+        background: #0f172a;
+        padding: 1rem;
+        border-radius: 0.25rem;
+        font-family: monospace;
+        font-size: 0.875rem;
+        white-space: pre-wrap;
+      }
+      .success {
+        border-left: 4px solid #10b981;
+      }
+      .error {
+        border-left: 4px solid #ef4444;
+      }
+      .info {
+        border-left: 4px solid #3b82f6;
+      }
+      button {
+        background: #6366f1;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        margin: 0.5rem 0.5rem 0.5rem 0;
+      }
+      button:hover {
+        background: #4f46e5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Subscription Debug Page</h1>
+      <p>This page helps debug subscription status issues.</p>
+
+      <div class="debug-section info">
+        <div class="debug-title">Debug Controls</div>
+        <button onclick="testSubscriptionHook()">Test Subscription Hook</button>
+        <button onclick="testDatabaseQuery()">Test Database Query</button>
+        <button onclick="testCustomerPortal()">Test Customer Portal</button>
+        <button onclick="clearResults()">Clear Results</button>
+      </div>
+
+      <div class="debug-section">
+        <div class="debug-title">Debug Results</div>
+        <div id="debug-results" class="debug-result">
+          Click a button above to start debugging...
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Import the subscription hook (this won't work in static build, but helps with debugging)
+      let debugResults = document.getElementById("debug-results");
+
+      function log(message) {
+        const timestamp = new Date().toLocaleTimeString();
+        debugResults.textContent += `[${timestamp}] ${message}\n`;
+      }
+
+      function clearResults() {
+        debugResults.textContent = "Debug results cleared...\n";
+      }
+
+      async function testSubscriptionHook() {
+        log("🔍 Testing subscription hook...");
+
+        try {
+          // This is a simplified test - in real app this would use the hook
+          log("✅ Subscription hook test would run here");
+          log("📋 Check browser console for actual hook results");
+
+          // Trigger a console log for debugging
+          console.log("🧪 Subscription Hook Debug Test");
+          console.log("📍 Current URL:", window.location.href);
+          console.log(
+            "🔐 User authentication status:",
+            !!window.localStorage.getItem("supabase.auth.token"),
+          );
+        } catch (error) {
+          log(`❌ Error testing subscription hook: ${error.message}`);
+        }
+      }
+
+      async function testDatabaseQuery() {
+        log("🔍 Testing database query...");
+        log("⚠️ This requires authentication and would be done server-side");
+        log("📋 Check network tab for actual database calls");
+      }
+
+      async function testCustomerPortal() {
+        log("🔍 Testing customer portal URL...");
+        log("📋 This would test the getCustomerPortalUrl method");
+        log("🔗 Default portal: https://app.lemonsqueezy.com/my-orders");
+      }
+
+      // Auto-run basic tests
+      window.addEventListener("load", () => {
+        log("🚀 Debug page loaded");
+        log("📍 Ready for subscription debugging");
+
+        // Check if we're in a development environment
+        if (window.location.hostname === "localhost") {
+          log("🔧 Development environment detected");
+        }
+      });
+    </script>
+  </body>
+</html>

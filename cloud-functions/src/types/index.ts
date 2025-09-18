@@ -43,6 +43,7 @@ export enum HttpStatus {
     CREATED = 201,
     BAD_REQUEST = 400,
     UNAUTHORIZED = 401,
+    PAYMENT_REQUIRED = 402,
     FORBIDDEN = 403,
     NOT_FOUND = 404,
     METHOD_NOT_ALLOWED = 405,
@@ -78,5 +79,24 @@ export enum ErrorCode {
     TIMEOUT_ERROR = 'TIMEOUT_ERROR',
 
     // Rate limiting
-    RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED'
+    RATE_LIMIT_EXCEEDED = 'RATE_LIMIT_EXCEEDED',
+
+    // Credit system errors
+    INSUFFICIENT_CREDITS = 'INSUFFICIENT_CREDITS',
+    CREDIT_CALCULATION_ERROR = 'CREDIT_CALCULATION_ERROR',
+    CREDIT_CONSUMPTION_FAILED = 'CREDIT_CONSUMPTION_FAILED'
+}
+
+// Credit system interfaces
+export interface CreditCheckResult {
+    hasEnoughCredits: boolean;
+    currentCredits: number;
+    requiredCredits: number;
+    isTrialUser: boolean;
+}
+
+export interface CreditConsumptionResult {
+    success: boolean;
+    remainingCredits: number;
+    transactionId?: string;
 }

@@ -15,4 +15,5 @@ export default defineConfig({
       'simple-icons': ['*']
     }
   }), tailwind(), react()],
+
 });

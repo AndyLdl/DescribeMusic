@@ -1,6 +1,9 @@
-import React from 'react';
-import UsageIndicator from './UsageIndicator';
+import React, { useState, useEffect } from 'react';
+import CreditIndicator from './CreditIndicator';
+import { useTrialCredit } from '../../contexts/CreditContext';
 import type { UsageStatus, User } from '../../lib/supabase';
+import type { AudioDurationResult } from '../../utils/audioDurationDetector';
+import type { CreditConsumptionEstimate } from '../../utils/creditCalculator';
 
 interface UploadSectionProps {
   onFileSelect: (files: FileList | null) => void;
@@ -11,6 +14,11 @@ interface UploadSectionProps {
   usageStatus?: UsageStatus | null;
   user?: User | null;
   onOpenLogin?: () => void;
+  // Credit system props
+  currentCredits?: number;
+  audioDuration?: AudioDurationResult | null;
+  creditEstimate?: CreditConsumptionEstimate | null;
+  onPurchaseCredits?: () => void;
 }
 
 export default function UploadSection({
@@ -21,8 +29,36 @@ export default function UploadSection({
   inputRef,
   usageStatus,
   user,
-  onOpenLogin
+  onOpenLogin,
+  currentCredits = 0,
+  audioDuration,
+  creditEstimate,
+  onPurchaseCredits
 }: UploadSectionProps) {
+
+  // Trial credit hooks for non-authenticated users with error handling
+  let getTrialCreditBalance: (() => Promise<{ total: number; used: number; remaining: number; }>) | null = null;
+
+  try {
+    const trialCreditContext = useTrialCredit();
+    getTrialCreditBalance = trialCreditContext.getTrialCreditBalance;
+  } catch (error) {
+    console.warn('Trial credit context not available in UploadSection component:', error);
+  }
+
+  const [trialCredits, setTrialCredits] = useState<number>(0);
+
+  // Get trial credits for non-authenticated users
+  useEffect(() => {
+    if (!user && getTrialCreditBalance) {
+      getTrialCreditBalance().then(balance => {
+        setTrialCredits(balance.remaining);
+      }).catch(error => {
+        console.error('Failed to get trial credit balance:', error);
+        setTrialCredits(100); // Default trial credits
+      });
+    }
+  }, [user, getTrialCreditBalance]);
 
   const openFileDialog = () => {
     inputRef.current?.click();
@@ -32,16 +68,48 @@ export default function UploadSection({
   const canUpload = !usageStatus || usageStatus.allowed;
   const needsAuth = usageStatus?.requiresAuth || false;
 
+  // 获取当前积分（认证用户或试用用户）
+  const effectiveCredits = user ? currentCredits : trialCredits;
+
 
 
   return (
     <div className="space-y-12">
-      {/* Usage Indicator */}
-      <UsageIndicator
-        usageStatus={usageStatus}
-        user={user}
-        onOpenLogin={onOpenLogin}
+      {/* Credit Indicator */}
+      <CreditIndicator
+        currentCredits={effectiveCredits}
+        audioDuration={audioDuration}
+        creditEstimate={creditEstimate}
+        onPurchaseCredits={onPurchaseCredits}
+        className={!user ? 'border-blue-500/20 bg-blue-500/5' : ''}
       />
+
+      {/* Trial User Notice */}
+      {!user && (
+        <div className="glass-pane p-4 border-blue-500/20 bg-blue-500/5">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <div>
+              <p className="text-blue-400 text-sm font-medium">Trial Mode</p>
+              <p className="text-blue-300 text-xs mt-1">
+                You are using trial credits. Register to get 200 credits monthly and purchase more credits.
+              </p>
+              {onOpenLogin && (
+                <button
+                  onClick={onOpenLogin}
+                  className="mt-2 text-xs text-blue-400 hover:text-blue-300 underline"
+                >
+                  Register Now →
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+
 
       {/* Upload Area */}
       <div className="relative">
@@ -104,7 +172,7 @@ export default function UploadSection({
           </h3>
           <p className="text-slate-300/80 text-lg mb-8 max-w-2xl mx-auto">
             {!canUpload && needsAuth
-              ? 'Sign up to get 10 free analyses per month'
+              ? 'Sign up to get 200 credits for audio analysis'
               : !canUpload
                 ? usageStatus?.message || 'Please wait for next month reset or upgrade your account'
                 : 'Or click to browse files. We support MP3, WAV, OGG, MP4, M4A formats up to 50MB.'

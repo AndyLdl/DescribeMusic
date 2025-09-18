@@ -42,7 +42,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.analyzeAudioFromUrl = exports.generateUploadUrl = exports.version = exports.healthCheck = exports.analyzeAudio = void 0;
+exports.analyzeAudioFromUrl = exports.generateUploadUrl = exports.version = exports.healthCheck = exports.lemonsqueezyWebhook = exports.analyzeAudio = void 0;
 const admin = __importStar(require("firebase-admin"));
 const config_1 = __importStar(require("./utils/config"));
 const logger_1 = __importDefault(require("./utils/logger"));
@@ -75,6 +75,8 @@ else {
 // Export all cloud functions
 var analyzeAudio_2 = require("./functions/analyzeAudio");
 Object.defineProperty(exports, "analyzeAudio", { enumerable: true, get: function () { return analyzeAudio_2.analyzeAudio; } });
+var lemonsqueezyWebhook_1 = require("./functions/lemonsqueezyWebhook");
+Object.defineProperty(exports, "lemonsqueezyWebhook", { enumerable: true, get: function () { return lemonsqueezyWebhook_1.lemonsqueezyWebhook; } });
 // Health check function
 const functions = __importStar(require("firebase-functions/v1"));
 exports.healthCheck = functions
@@ -206,6 +208,7 @@ exports.analyzeAudioFromUrl = functions
         res.status(405).json({ error: 'Method not allowed' });
         return;
     }
+    let userInfo = {};
     try {
         const { fileUrl, fileName, options } = req.body;
         if (!fileUrl) {
@@ -216,10 +219,39 @@ exports.analyzeAudioFromUrl = functions
             return;
         }
         console.log('Analyzing audio from GCS URL:', { fileUrl, fileName });
-        // Check and consume usage limits
-        await checkAndConsumeUsageFromUrl(req, fileName);
-        // Download file from GCS and analyze with Gemini
-        const analysisResult = await performRealAnalysis(fileUrl, fileName, options || {});
+        // Extract user information for potential refund
+        const authHeader = req.get('Authorization');
+        const deviceFingerprint = req.get('X-Device-Fingerprint');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            userInfo.userId = req.get('X-User-ID');
+        }
+        else if (deviceFingerprint) {
+            userInfo.deviceFingerprint = deviceFingerprint;
+        }
+        // Get duration from frontend (more efficient than downloading entire file)
+        const frontendDuration = options.audioDuration || 0;
+        console.log('Received request with options:', {
+            audioDuration: options.audioDuration,
+            frontendDuration,
+            fileName,
+            optionsKeys: Object.keys(options)
+        });
+        // Validate duration is reasonable
+        if (frontendDuration <= 0) {
+            throw new Error(`Audio duration is required and must be greater than 0. Received: ${frontendDuration}`);
+        }
+        if (frontendDuration > 3600) { // Max 1 hour
+            throw new Error('Audio duration exceeds maximum allowed length (1 hour)');
+        }
+        console.log('Using frontend-detected duration:', { frontendDuration, fileName });
+        // Calculate credits needed and store for potential refund
+        userInfo.creditsConsumed = Math.ceil(frontendDuration);
+        // Check and consume usage limits based on frontend-detected duration
+        await checkAndConsumeUsageFromUrl(req, fileName, frontendDuration);
+        // Download file only for analysis (not for duration detection)
+        const audioFile = await downloadForAnalysis(fileUrl, fileName);
+        // Analyze with Gemini using the downloaded file
+        const analysisResult = await performAnalysisWithFile(audioFile, options || {});
         res.json({
             success: true,
             data: analysisResult,
@@ -229,6 +261,28 @@ exports.analyzeAudioFromUrl = functions
     }
     catch (error) {
         console.error('Analysis error:', error);
+        // Refund credits if analysis failed after consumption
+        if (userInfo.creditsConsumed && userInfo.creditsConsumed > 0) {
+            try {
+                if (userInfo.userId) {
+                    await (0, supabase_1.refundUserCredits)(userInfo.userId, userInfo.creditsConsumed, `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    logger_1.default.info('Credits refunded for failed analysis', {
+                        userId: userInfo.userId,
+                        creditsRefunded: userInfo.creditsConsumed
+                    });
+                }
+                else if (userInfo.deviceFingerprint) {
+                    await (0, supabase_1.refundTrialCredits)(userInfo.deviceFingerprint, userInfo.creditsConsumed, `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    logger_1.default.info('Trial credits refunded for failed analysis', {
+                        deviceFingerprint: userInfo.deviceFingerprint,
+                        creditsRefunded: userInfo.creditsConsumed
+                    });
+                }
+            }
+            catch (refundError) {
+                logger_1.default.error('Failed to refund credits after analysis failure', refundError);
+            }
+        }
         res.status(500).json({
             success: false,
             error: {
@@ -239,7 +293,70 @@ exports.analyzeAudioFromUrl = functions
     }
 });
 /**
- * Perform real AI analysis using Gemini
+ * Download audio file for analysis only (duration already known from frontend)
+ */
+async function downloadForAnalysis(fileUrl, fileName) {
+    var _a;
+    const startTime = Date.now();
+    const requestId = `download_${startTime}`;
+    try {
+        logger_1.default.info('Downloading audio file for analysis', { fileUrl, fileName, requestId });
+        // Download file from GCS
+        const bucket = admin.storage().bucket('describe-music');
+        const filePath = extractFilePathFromUrl(fileUrl);
+        const file = bucket.file(filePath);
+        // Check if file exists
+        const [exists] = await file.exists();
+        if (!exists) {
+            throw new Error(`File not found: ${filePath}`);
+        }
+        // Get file metadata
+        const [metadata] = await file.getMetadata();
+        const fileSize = metadata.size || 0;
+        // Download file content
+        const [fileBuffer] = await file.download();
+        // Create AudioFile object
+        const audioFile = {
+            originalName: fileName,
+            mimeType: metadata.contentType || 'audio/mpeg',
+            size: fileSize,
+            buffer: fileBuffer,
+            format: ((_a = fileName.split('.').pop()) === null || _a === void 0 ? void 0 : _a.toUpperCase()) || 'MP3'
+        };
+        logger_1.default.info('Audio file downloaded for analysis', {
+            size: fileSize,
+            requestId
+        });
+        return audioFile;
+    }
+    catch (error) {
+        logger_1.default.error(`Download failed: ${error.message}`, error, { fileUrl, fileName }, requestId);
+        throw error;
+    }
+}
+/**
+ * Perform AI analysis using already downloaded audio file
+ */
+async function performAnalysisWithFile(audioFile, options) {
+    const startTime = Date.now();
+    const requestId = `analysis_${startTime}`;
+    try {
+        logger_1.default.info('Starting AI analysis with downloaded file', {
+            fileName: audioFile.originalName,
+            size: audioFile.size,
+            requestId
+        });
+        // Use the unified analysis logic from analyzeAudio.ts
+        const result = await (0, analyzeAudio_1.performAnalysis)(audioFile, options, requestId);
+        return result;
+    }
+    catch (error) {
+        logger_1.default.error(`Analysis failed: ${error.message}`, error, { fileName: audioFile.originalName }, requestId);
+        throw error;
+    }
+}
+/**
+ * Perform real AI analysis using Gemini (legacy function, kept for compatibility)
  */
 async function performRealAnalysis(fileUrl, fileName, options) {
     var _a;
@@ -305,7 +422,7 @@ function extractFilePathFromUrl(url) {
 /**
  * Check and consume usage limits for URL-based analysis
  */
-async function checkAndConsumeUsageFromUrl(req, fileName) {
+async function checkAndConsumeUsageFromUrl(req, fileName, audioDurationSeconds) {
     const startTime = Date.now();
     const requestId = `req_${Date.now()}`;
     try {
@@ -326,11 +443,19 @@ async function checkAndConsumeUsageFromUrl(req, fileName) {
             if (!userUsage.canAnalyze) {
                 throw new Error(`Monthly analysis limit reached. You have used all ${userUsage.monthlyLimit} analyses for this month.`);
             }
-            // Consume user usage
-            const consumed = await (0, supabase_1.consumeUserUsage)(userId);
+            // Calculate credits needed based on audio duration (1 credit per second)
+            const creditsNeeded = Math.ceil(audioDurationSeconds);
+            // Consume user credits based on actual audio duration
+            const consumed = await (0, supabase_1.consumeUserUsage)(userId, creditsNeeded, `Audio analysis: ${fileName} (${audioDurationSeconds}s)`);
             if (!consumed) {
-                throw new Error('Failed to consume user usage. Please try again.');
+                throw new Error('Failed to consume user credits. Please try again.');
             }
+            logger_1.default.info('User credits consumed based on audio duration', {
+                userId,
+                audioDurationSeconds,
+                creditsNeeded,
+                requestId
+            });
             logger_1.default.info('User usage consumed', {
                 userId,
                 remainingBefore: userUsage.remainingAnalyses,
@@ -354,17 +479,26 @@ async function checkAndConsumeUsageFromUrl(req, fileName) {
                     throw new Error('This device is already registered. Please log in to continue using the service.');
                 }
                 else {
-                    throw new Error('Free trial limit reached (5 analyses). Please register for a free account to get 10 analyses per month.');
+                    throw new Error('Free trial limit reached (5 analyses). Please register for a free account to get 200 credits for audio analysis.');
                 }
             }
-            // Consume device usage
-            const consumed = await (0, supabase_1.consumeDeviceUsage)(deviceFingerprint);
-            if (!consumed) {
-                throw new Error('Failed to consume trial usage. Please try again.');
+            // Calculate credits needed based on audio duration (1 credit per second)
+            const creditsNeeded = Math.ceil(audioDurationSeconds);
+            // Check if trial user has enough credits
+            const hasEnoughCredits = await (0, supabase_1.checkTrialCredits)(deviceFingerprint, creditsNeeded);
+            if (!hasEnoughCredits.hasEnoughCredits) {
+                throw new Error(`Insufficient trial credits. You need ${creditsNeeded} credits but only have ${hasEnoughCredits.currentCredits} remaining.`);
             }
-            logger_1.default.info('Device trial usage consumed', {
+            // Consume trial credits based on actual audio duration
+            const consumed = await (0, supabase_1.consumeTrialCredits)(deviceFingerprint, creditsNeeded, `Audio analysis: ${fileName} (${audioDurationSeconds}s)`);
+            if (!consumed.success) {
+                throw new Error('Failed to consume trial credits. Please try again.');
+            }
+            logger_1.default.info('Trial credits consumed based on audio duration', {
                 deviceFingerprint,
-                remainingBefore: deviceUsage.remainingTrials,
+                audioDurationSeconds,
+                creditsNeeded,
+                remainingCredits: consumed.remainingCredits,
                 requestId
             });
             // Log usage activity

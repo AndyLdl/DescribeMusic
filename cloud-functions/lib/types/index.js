@@ -25,6 +25,7 @@ var HttpStatus;
     HttpStatus[HttpStatus["CREATED"] = 201] = "CREATED";
     HttpStatus[HttpStatus["BAD_REQUEST"] = 400] = "BAD_REQUEST";
     HttpStatus[HttpStatus["UNAUTHORIZED"] = 401] = "UNAUTHORIZED";
+    HttpStatus[HttpStatus["PAYMENT_REQUIRED"] = 402] = "PAYMENT_REQUIRED";
     HttpStatus[HttpStatus["FORBIDDEN"] = 403] = "FORBIDDEN";
     HttpStatus[HttpStatus["NOT_FOUND"] = 404] = "NOT_FOUND";
     HttpStatus[HttpStatus["METHOD_NOT_ALLOWED"] = 405] = "METHOD_NOT_ALLOWED";
@@ -57,4 +58,8 @@ var ErrorCode;
     ErrorCode["TIMEOUT_ERROR"] = "TIMEOUT_ERROR";
     // Rate limiting
     ErrorCode["RATE_LIMIT_EXCEEDED"] = "RATE_LIMIT_EXCEEDED";
+    // Credit system errors
+    ErrorCode["INSUFFICIENT_CREDITS"] = "INSUFFICIENT_CREDITS";
+    ErrorCode["CREDIT_CALCULATION_ERROR"] = "CREDIT_CALCULATION_ERROR";
+    ErrorCode["CREDIT_CONSUMPTION_FAILED"] = "CREDIT_CONSUMPTION_FAILED";
 })(ErrorCode || (exports.ErrorCode = ErrorCode = {}));

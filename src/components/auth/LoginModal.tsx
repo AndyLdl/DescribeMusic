@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useAuth } from '../../contexts/AuthContext';
+import GoogleSignInButton from './GoogleSignInButton';
 
 // Form validation schemas
 const loginSchema = z.object({
@@ -101,32 +102,56 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
 
     // Handle registration
     const handleRegister = async (data: RegisterFormData) => {
+        console.log('🔐 Registration started with data:', { email: data.email, passwordLength: data.password?.length });
+        console.log('🔐 Current modal state - mode:', mode, 'isOpen:', isOpen);
+
+        // 手动验证
+        try {
+            registerSchema.parse(data);
+        } catch (validationError: any) {
+            console.log('🔐 Validation error:', validationError.errors);
+            setMessage({
+                type: 'error',
+                text: validationError.errors[0]?.message || 'Please check your input'
+            });
+            return;
+        }
+
         setLoading(true);
         setMessage(null);
 
         try {
+            console.log('🔐 Calling signUp...');
             const { error } = await signUp(data.email, data.password);
+            console.log('🔐 SignUp result:', { error: error?.message });
 
             if (error) {
+                console.log('🔐 Registration error:', error.message);
                 setMessage({
                     type: 'error',
                     text: getErrorMessage(error.message)
                 });
             } else {
+                console.log('🔐 Registration successful, showing success message');
                 setMessage({
                     type: 'success',
-                    text: 'Registration successful! Please check your email for confirmation link.'
+                    text: 'Registration successful! Please check your email for the confirmation link to complete your account setup.'
                 });
+                console.log('🔐 Setting timeout to close modal in 4 seconds');
+                // 延迟4秒后自动关闭弹窗，给用户足够时间阅读确认信息
                 setTimeout(() => {
+                    console.log('🔐 Timeout reached, closing modal');
                     onClose();
-                }, 2000);
+                }, 1000);
             }
         } catch (error: any) {
+            console.log('🔐 Registration exception:', error);
             setMessage({
                 type: 'error',
                 text: 'Registration failed, please try again later'
             });
         } finally {
+            console.log('🔐 Registration finished, setting loading to false');
             setLoading(false);
         }
     };
@@ -202,11 +227,59 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                 <div className="p-6">
                     {/* Message alert */}
                     {message && (
-                        <div className={`mb-4 p-3 rounded-lg text-sm ${message.type === 'success'
+                        <div className={`mb-4 p-4 rounded-lg text-sm ${message.type === 'success'
                             ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                             : 'bg-red-500/20 text-red-300 border border-red-500/30'
                             }`}>
-                            {message.text}
+                            <div className="flex items-start gap-3">
+                                {message.type === 'success' ? (
+                                    <svg className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                )}
+                                <div>
+                                    <p className="font-medium">{message.text}</p>
+                                    {message.type === 'success' && mode === 'register' && (
+                                        <div className="mt-2 text-xs text-green-400/80">
+                                            <p>• Check your email inbox (including spam folder)</p>
+                                            <p>• Click the confirmation link to activate your account</p>
+                                            <p>• You can close this window and return after confirming</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Google Sign In - 只在登录和注册模式显示 */}
+                    {(mode === 'login' || mode === 'register') && (
+                        <div className="mb-6">
+                            <GoogleSignInButton
+                                onSuccess={() => {
+                                    setMessage({
+                                        type: 'success',
+                                        text: 'Redirecting to Google sign in...'
+                                    });
+                                }}
+                                onError={(error) => {
+                                    setMessage({
+                                        type: 'error',
+                                        text: error
+                                    });
+                                }}
+                                disabled={loading}
+                            />
+
+                            {/* 分隔线 */}
+                            <div className="flex items-center my-6">
+                                <div className="flex-1 border-t border-white/10"></div>
+                                <span className="px-4 text-sm text-slate-400">or</span>
+                                <div className="flex-1 border-t border-white/10"></div>
+                            </div>
                         </div>
                     )}
 
@@ -266,7 +339,10 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
 
                     {/* Registration form */}
                     {mode === 'register' && (
-                        <form onSubmit={registerForm.handleSubmit(handleRegister)} className="space-y-4">
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            registerForm.handleSubmit(handleRegister)(e);
+                        }} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium text-slate-300 mb-2">
                                     Email Address
@@ -437,7 +513,7 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                                 <div>
                                     <h4 className="text-sm font-medium text-white mb-1">Sign up for exclusive benefits</h4>
                                     <ul className="text-xs text-slate-300 space-y-1">
-                                        <li>• 10 free audio analyses per month</li>
+                                        <li>• Get 200 credits for audio analysis</li>
                                         <li>• Save analysis history</li>
                                         <li>• Early access to new features</li>
                                     </ul>

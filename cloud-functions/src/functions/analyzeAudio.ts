@@ -13,18 +13,36 @@ import {
     ApiResponse,
     HttpStatus,
     ErrorCode,
-    VoiceAnalysis
+    VoiceAnalysis,
+    CreditCheckResult,
+    CreditConsumptionResult
 } from '../types';
 import {
     checkDeviceUsage,
     checkUserUsage,
     consumeDeviceUsage,
     consumeUserUsage,
-    logUsageActivity
+    logUsageActivity,
+    checkUserCredits,
+    checkTrialCredits,
+    consumeUserCredits,
+    consumeTrialCredits,
+    refundUserCredits,
+    refundTrialCredits,
+    calculateCreditsRequired
 } from '../utils/supabase';
 import { geminiService } from '../services/geminiService';
 import { PromptTemplates } from '../utils/prompts';
-import { AppError, FileError, ValidationError, createErrorResponse } from '../utils/errors';
+import {
+    AppError,
+    FileError,
+    ValidationError,
+    CreditError,
+    InsufficientCreditsError,
+    CreditCalculationError,
+    CreditConsumptionError,
+    createErrorResponse
+} from '../utils/errors';
 import logger from '../utils/logger';
 import config from '../utils/config';
 import mp3Duration = require('mp3-duration');
@@ -134,11 +152,60 @@ export const analyzeAudio = functions
             // Validate request
             validateAnalysisRequest(audioFile, requestId);
 
-            // Check and consume usage limits
-            await checkAndConsumeUsage(req, audioFile, requestId);
+            // Parse audio metadata to get duration for credit calculation
+            const audioMetadata = await parseAudioMetadata(audioFile, requestId);
+
+            logger.info('Audio metadata for credit calculation', {
+                duration: audioMetadata.duration,
+                format: audioMetadata.format,
+                requestId
+            });
+
+            // Check and consume credits based on audio duration
+            const creditInfo = await checkAndConsumeCredits(req, audioFile, audioMetadata.duration, requestId);
 
             // Perform actual AI analysis
-            const analysisResult = await performAnalysis(audioFile, {}, requestId);
+            let analysisResult: AnalysisResult;
+            try {
+                analysisResult = await performAnalysis(audioFile, {}, requestId);
+            } catch (analysisError) {
+                // If analysis fails, refund the consumed credits
+                logger.error('Analysis failed, refunding credits', analysisError as Error, undefined, requestId);
+
+                if (creditInfo.userId) {
+                    const refundReason = `Analysis failed: ${(analysisError as Error).message}`;
+                    const refunded = await refundUserCredits(
+                        creditInfo.userId,
+                        creditInfo.creditsConsumed,
+                        refundReason,
+                        requestId
+                    );
+
+                    if (refunded) {
+                        logger.creditRefund(creditInfo.userId, undefined, creditInfo.creditsConsumed, refundReason, requestId);
+                    } else {
+                        logger.creditError(creditInfo.userId, undefined, 'REFUND_FAILED',
+                            `Failed to refund ${creditInfo.creditsConsumed} credits`, requestId);
+                    }
+                } else if (creditInfo.deviceFingerprint) {
+                    const refundReason = `Analysis failed: ${(analysisError as Error).message}`;
+                    const refunded = await refundTrialCredits(
+                        creditInfo.deviceFingerprint,
+                        creditInfo.creditsConsumed,
+                        refundReason,
+                        requestId
+                    );
+
+                    if (refunded) {
+                        logger.creditRefund(undefined, creditInfo.deviceFingerprint, creditInfo.creditsConsumed, refundReason, requestId);
+                    } else {
+                        logger.creditError(undefined, creditInfo.deviceFingerprint, 'REFUND_FAILED',
+                            `Failed to refund ${creditInfo.creditsConsumed} credits`, requestId);
+                    }
+                }
+
+                throw analysisError;
+            }
 
             const processingTime = Date.now() - startTime;
             logger.apiResponse(req.method, req.path, 200, processingTime, requestId);
@@ -1107,9 +1174,14 @@ function generateAIDescription(analysisData: any): string {
 }
 
 /**
- * Check and consume usage limits
+ * Check and consume credits based on audio duration
  */
-async function checkAndConsumeUsage(req: Request, audioFile: AudioFile, requestId: string): Promise<void> {
+async function checkAndConsumeCredits(
+    req: Request,
+    audioFile: AudioFile,
+    audioDuration: number,
+    requestId: string
+): Promise<{ userId?: string; deviceFingerprint?: string; creditsConsumed: number }> {
     const startTime = Date.now();
 
     try {
@@ -1126,33 +1198,64 @@ async function checkAndConsumeUsage(req: Request, audioFile: AudioFile, requestI
             userId = req.get('X-User-ID');
         }
 
+        // Calculate required credits based on audio duration
+        let requiredCredits: number;
+        try {
+            requiredCredits = calculateCreditsRequired(audioDuration);
+        } catch (error) {
+            throw new CreditCalculationError(
+                `Failed to calculate required credits for audio duration: ${audioDuration}s`,
+                { audioDuration, error: (error as Error).message }
+            );
+        }
+
+        logger.info('Credit calculation', {
+            audioDuration,
+            requiredCredits,
+            userId,
+            deviceFingerprint,
+            requestId
+        });
+
         if (userId) {
             // Handle registered user
-            logger.info('Checking usage for registered user', { userId, requestId });
+            logger.info('Checking credits for registered user', { userId, requiredCredits, requestId });
 
-            const userUsage = await checkUserUsage(userId);
+            const creditStatus = await checkUserCredits(userId, requiredCredits);
 
-            if (!userUsage.canAnalyze) {
-                throw new ValidationError(
-                    `Monthly analysis limit reached. You have used all ${userUsage.monthlyLimit} analyses for this month.`
+            // Log credit check result
+            logger.creditCheck(userId, undefined, requiredCredits, creditStatus.currentCredits, requestId);
+
+            if (!creditStatus.hasEnoughCredits) {
+                logger.creditError(userId, undefined, 'INSUFFICIENT_CREDITS',
+                    `Required: ${requiredCredits}, Available: ${creditStatus.currentCredits}`, requestId);
+                throw new InsufficientCreditsError(
+                    requiredCredits,
+                    creditStatus.currentCredits,
+                    false
                 );
             }
 
-            // Consume user usage
-            logger.info('About to consume user usage', { userId, requestId });
-            const consumed = await consumeUserUsage(userId);
-            logger.info('User usage consumption result', { userId, consumed, requestId });
+            // Consume user credits
+            logger.info('About to consume user credits', { userId, requiredCredits, requestId });
+            const consumption = await consumeUserCredits(
+                userId,
+                requiredCredits,
+                `Audio analysis: ${audioFile.originalName}`,
+                requestId
+            );
 
-            if (!consumed) {
-                logger.error('Failed to consume user usage', undefined, { userId, requestId });
-                throw new ValidationError('Failed to consume user usage. Please try again.');
+            if (!consumption.success) {
+                logger.creditError(userId, undefined, 'CREDIT_CONSUMPTION_FAILED',
+                    'Failed to consume credits', requestId);
+                throw new CreditConsumptionError(
+                    'Failed to consume credits. Please try again.',
+                    { userId, requiredCredits, requestId }
+                );
             }
 
-            logger.info('User usage consumed', {
-                userId,
-                remainingBefore: userUsage.remainingAnalyses,
-                requestId
-            });
+            // Log successful credit consumption
+            logger.creditConsumption(userId, undefined, requiredCredits, consumption.remainingCredits, requestId);
 
             // Log usage activity
             await logUsageActivity({
@@ -1162,36 +1265,47 @@ async function checkAndConsumeUsage(req: Request, audioFile: AudioFile, requestI
                 processingTime: Date.now() - startTime,
                 success: true
             });
+
+            return { userId, creditsConsumed: requiredCredits };
 
         } else if (deviceFingerprint) {
             // Handle trial user
-            logger.info('Checking usage for trial user', { deviceFingerprint, requestId });
+            logger.info('Checking credits for trial user', { deviceFingerprint, requiredCredits, requestId });
 
-            const deviceUsage = await checkDeviceUsage(deviceFingerprint);
+            const creditStatus = await checkTrialCredits(deviceFingerprint, requiredCredits);
 
-            if (!deviceUsage.canAnalyze) {
-                if (deviceUsage.isRegistered) {
-                    throw new ValidationError(
-                        'This device is already registered. Please log in to continue using the service.'
-                    );
-                } else {
-                    throw new ValidationError(
-                        'Free trial limit reached (5 analyses). Please register for a free account to get 10 analyses per month.'
-                    );
-                }
+            // Log trial credit check result
+            logger.creditCheck(undefined, deviceFingerprint, requiredCredits, creditStatus.currentCredits, requestId);
+
+            if (!creditStatus.hasEnoughCredits) {
+                logger.creditError(undefined, deviceFingerprint, 'INSUFFICIENT_CREDITS',
+                    `Required: ${requiredCredits}, Available: ${creditStatus.currentCredits}`, requestId);
+                throw new InsufficientCreditsError(
+                    requiredCredits,
+                    creditStatus.currentCredits,
+                    true
+                );
             }
 
-            // Consume device usage
-            const consumed = await consumeDeviceUsage(deviceFingerprint);
-            if (!consumed) {
-                throw new ValidationError('Failed to consume trial usage. Please try again.');
-            }
-
-            logger.info('Device trial usage consumed', {
+            // Consume trial credits
+            const consumption = await consumeTrialCredits(
                 deviceFingerprint,
-                remainingBefore: deviceUsage.remainingTrials,
+                requiredCredits,
+                `Audio analysis: ${audioFile.originalName}`,
                 requestId
-            });
+            );
+
+            if (!consumption.success) {
+                logger.creditError(undefined, deviceFingerprint, 'CREDIT_CONSUMPTION_FAILED',
+                    'Failed to consume trial credits', requestId);
+                throw new CreditConsumptionError(
+                    'Failed to consume trial credits. Please try again.',
+                    { deviceFingerprint, requiredCredits, requestId }
+                );
+            }
+
+            // Log successful trial credit consumption
+            logger.creditConsumption(undefined, deviceFingerprint, requiredCredits, consumption.remainingCredits, requestId);
 
             // Log usage activity
             await logUsageActivity({
@@ -1201,6 +1315,8 @@ async function checkAndConsumeUsage(req: Request, audioFile: AudioFile, requestI
                 processingTime: Date.now() - startTime,
                 success: true
             });
+
+            return { deviceFingerprint, creditsConsumed: requiredCredits };
 
         } else {
             // No authentication or device fingerprint
@@ -1210,7 +1326,7 @@ async function checkAndConsumeUsage(req: Request, audioFile: AudioFile, requestI
         }
 
     } catch (error) {
-        logger.error('Error in usage check', error as Error, undefined, requestId);
+        logger.error('Error in credit check', error as Error, undefined, requestId);
 
         // Log failed usage attempt
         if (req.get('X-Device-Fingerprint') || req.get('X-User-ID')) {

@@ -76,6 +76,27 @@ class Logger {
     geminiResponse(tokens, duration, requestId) {
         this.debug(`Gemini API response: ${tokens} tokens in ${duration}ms`, undefined, requestId);
     }
+    // Credit system logging methods
+    creditCheck(userId, deviceFingerprint, requiredCredits, available, requestId) {
+        const userType = userId ? 'registered' : 'trial';
+        const identifier = userId || deviceFingerprint;
+        this.info(`Credit check: ${userType} user ${identifier} - Required: ${requiredCredits}, Available: ${available}`, { userId, deviceFingerprint, requiredCredits, available, userType }, requestId);
+    }
+    creditConsumption(userId, deviceFingerprint, creditsConsumed, remainingCredits, requestId) {
+        const userType = userId ? 'registered' : 'trial';
+        const identifier = userId || deviceFingerprint;
+        this.info(`Credits consumed: ${userType} user ${identifier} - Consumed: ${creditsConsumed}, Remaining: ${remainingCredits}`, { userId, deviceFingerprint, creditsConsumed, remainingCredits, userType }, requestId);
+    }
+    creditRefund(userId, deviceFingerprint, creditsRefunded, reason, requestId) {
+        const userType = userId ? 'registered' : 'trial';
+        const identifier = userId || deviceFingerprint;
+        this.warn(`Credits refunded: ${userType} user ${identifier} - Refunded: ${creditsRefunded}, Reason: ${reason}`, { userId, deviceFingerprint, creditsRefunded, reason, userType }, requestId);
+    }
+    creditError(userId, deviceFingerprint, errorType, errorMessage, requestId) {
+        const userType = userId ? 'registered' : 'trial';
+        const identifier = userId || deviceFingerprint;
+        this.error(`Credit error: ${userType} user ${identifier} - ${errorType}: ${errorMessage}`, undefined, { userId, deviceFingerprint, errorType, userType }, requestId);
+    }
 }
 exports.logger = new Logger();
 exports.default = exports.logger;

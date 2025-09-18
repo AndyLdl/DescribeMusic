@@ -16,6 +16,11 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
+        // 增加会话存储配置
+        storage: typeof window !== 'undefined' ? window.localStorage : undefined,
+        storageKey: 'supabase.auth.token',
+        // 设置更长的刷新间隔
+        refreshTokenRotationEnabled: true,
     },
     // Configure realtime subscriptions (if needed)
     realtime: {

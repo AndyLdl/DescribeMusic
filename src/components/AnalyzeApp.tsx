@@ -3,11 +3,14 @@ import UploadSection from './analyze/UploadSection';
 import LoadingSection from './analyze/LoadingSection';
 import DashboardSection from './analyze/DashboardSection';
 import HistorySidebar from './analyze/HistorySidebar';
-import LoginModal from './auth/LoginModal';
+
 import AnalyzeHeader from './AnalyzeHeader';
 import { HistoryStorage, type HistoryRecord } from '../utils/historyStorage';
 import { cloudFunctions, validateAudioFile, type CloudAnalysisResult, type ProgressUpdate } from '../utils/cloudFunctions';
 import { useAuth, useUsageStatus } from '../contexts/AuthContext';
+import { CreditProvider, useCredit, useTrialCredit } from '../contexts/CreditContext';
+import { AudioDurationDetector, type AudioDurationResult } from '../utils/audioDurationDetector';
+import { CreditCalculator, type CreditConsumptionEstimate } from '../utils/creditCalculator';
 
 type AnalysisStage = 'upload' | 'analyzing' | 'results' | 'error';
 
@@ -98,10 +101,28 @@ interface AnalysisResult {
   audioUrl?: string; // Add optional audio URL for playback
 }
 
-export default function AnalyzeApp() {
+// Main AnalyzeApp component that uses credit system
+function AnalyzeAppContent() {
   // Auth hooks must be called before all other hooks
   const { user, loading: authLoading } = useAuth();
   const { usageStatus, canAnalyze, needsAuth } = useUsageStatus();
+
+  // 使用实际的积分系统
+  const {
+    credits,
+    loading: creditLoading,
+    consumeCredits,
+    refundCredits,
+    estimateConsumption,
+    calculateCreditsForDuration
+  } = useCredit();
+
+  const {
+    checkTrialCredits,
+    consumeTrialCredits,
+    refundTrialCredits,
+    calculateCreditsForDuration: calculateTrialCredits
+  } = useTrialCredit();
 
   // Component state hooks
   const [stage, setStage] = useState<AnalysisStage>('upload');
@@ -112,7 +133,12 @@ export default function AnalyzeApp() {
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [currentProgress, setCurrentProgress] = useState<ProgressUpdate | null>(null);
-  const [showLoginModal, setShowLoginModal] = useState(false);
+
+
+  // Credit system state
+  const [audioDuration, setAudioDuration] = useState<AudioDurationResult | null>(null);
+  const [creditEstimate, setCreditEstimate] = useState<CreditConsumptionEstimate | null>(null);
+  const [analysisCreditsConsumed, setAnalysisCreditsConsumed] = useState<number>(0);
 
   // Cleanup function for audio URL and global variables
   React.useEffect(() => {
@@ -136,9 +162,13 @@ export default function AnalyzeApp() {
   }, []);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Open login modal
+  // Open login modal - now handled by UserAccountDropdown
   const openLogin = useCallback(() => {
-    setShowLoginModal(true);
+    // 触发UserAccountDropdown中的登录模态框
+    const signInButton = document.querySelector('[data-login-trigger]') as HTMLButtonElement;
+    if (signInButton) {
+      signInButton.click();
+    }
   }, []);
 
   const handleFiles = useCallback(async (files: FileList | null) => {
@@ -146,31 +176,80 @@ export default function AnalyzeApp() {
 
     const file = files[0];
 
-    // Use cloud functions validation
-    const validation = validateAudioFile(file);
-    if (!validation.valid) {
-      setErrorMessage(validation.error || 'Invalid file');
-      setStage('error');
-      return;
-    }
-
-    // Check usage limits
-    if (!canAnalyze) {
-      if (needsAuth) {
-        setErrorMessage(usageStatus?.message || 'Login required to continue');
-        setStage('error');
-        return;
-      } else {
-        setErrorMessage(usageStatus?.message || 'Usage limit reached');
+    try {
+      // Use cloud functions validation
+      const validation = validateAudioFile(file);
+      if (!validation.valid) {
+        setErrorMessage(validation.error || 'Invalid file');
         setStage('error');
         return;
       }
-    }
 
-    setUploadedFile(file);
-    setErrorMessage('');
-    startAnalysis(file);
-  }, [canAnalyze, needsAuth, usageStatus]);
+      // 检测音频时长和计算积分
+      setErrorMessage('正在检测音频时长...');
+      const durationResult = await AudioDurationDetector.detectDuration(file);
+      setAudioDuration(durationResult);
+
+      // 计算积分消费预估
+      const creditsRequired = user
+        ? calculateCreditsForDuration(durationResult.duration)
+        : calculateTrialCredits(durationResult.duration);
+
+      const estimate = user
+        ? estimateConsumption(durationResult.duration)
+        : CreditCalculator.estimateConsumption(durationResult.duration, 100); // Assume 100 trial credits
+
+      setCreditEstimate(estimate);
+
+      // 检查积分余额
+      let hasEnoughCredits = false;
+
+      if (user) {
+        // For authenticated users, check credit balance
+        hasEnoughCredits = credits >= creditsRequired;
+        if (!hasEnoughCredits) {
+          setErrorMessage(`积分不足。需要 ${creditsRequired} 积分，当前余额 ${credits} 积分`);
+          setStage('error');
+          return;
+        }
+      } else {
+        // For trial users, check trial credits
+        hasEnoughCredits = await checkTrialCredits(creditsRequired);
+        if (!hasEnoughCredits) {
+          setErrorMessage(`试用积分不足。需要 ${creditsRequired} 积分，请注册获取更多积分`);
+          setStage('error');
+          return;
+        }
+      }
+
+      // Check usage limits (保持现有逻辑作为fallback)
+      if (!canAnalyze) {
+        if (needsAuth) {
+          setErrorMessage(usageStatus?.message || 'Login required to continue');
+          setStage('error');
+          return;
+        } else {
+          setErrorMessage(usageStatus?.message || 'Usage limit reached');
+          setStage('error');
+          return;
+        }
+      }
+
+      setUploadedFile(file);
+      setErrorMessage('');
+
+      // 显示预估信息并等待用户确认
+      console.log(`音频时长: ${durationResult.formattedDuration}, 预估消费: ${creditsRequired} 积分`);
+
+      // 直接开始分析，传递检测到的音频时长
+      startAnalysis(file, creditsRequired, durationResult.duration);
+
+    } catch (error: any) {
+      console.error('Audio duration detection failed:', error);
+      setErrorMessage(error.message || '音频文件处理失败，请检查文件格式');
+      setStage('error');
+    }
+  }, [user, credits, canAnalyze, needsAuth, usageStatus, calculateCreditsForDuration, calculateTrialCredits, estimateConsumption, checkTrialCredits]);
 
   // Function to generate AI tags based on analysis results
   const generateAITags = (basicInfo: any, emotions: any, quality: any, filename: string) => {
@@ -244,7 +323,7 @@ export default function AnalyzeApp() {
     return [...new Set(tags)].slice(0, 15);
   };
 
-  const startAnalysis = useCallback(async (file: File) => {
+  const startAnalysis = useCallback(async (file: File, creditsToConsume: number = 0, audioDurationSeconds?: number) => {
     setStage('analyzing');
     setIsAnalyzing(true);
 
@@ -257,7 +336,12 @@ export default function AnalyzeApp() {
     setErrorMessage('');
     setCurrentProgress(null);
 
+    let analysisId: string | undefined;
+
     try {
+      // 积分扣除现在由云函数处理，更安全
+      console.log(`预估积分消耗: ${creditsToConsume}`);
+
       // Create local URL for audio preview
       const audioUrl = URL.createObjectURL(file);
 
@@ -265,18 +349,22 @@ export default function AnalyzeApp() {
       const thumbnail = await HistoryStorage.generateThumbnail(file);
 
       // Call cloud function for analysis with progress callback
+      console.log(`🎵 开始分析音频，时长: ${audioDurationSeconds} 秒`);
+
       const startTime = Date.now();
       const cloudResult: CloudAnalysisResult = await cloudFunctions.analyzeAudio(file, {
         includeStructure: true,
         includeSimilarity: true,
         detailedAnalysis: true,
         generateTags: true,
+        audioDuration: audioDurationSeconds || 0, // Pass detected duration to cloud function
         onProgress: (progress: ProgressUpdate) => {
           setCurrentProgress(progress);
         }
       });
 
       const processingTime = Date.now() - startTime;
+      analysisId = cloudResult.id;
 
       // Convert cloud result to frontend format
       const result: AnalysisResult = {
@@ -336,12 +424,17 @@ export default function AnalyzeApp() {
       setStage('results');
     } catch (error: any) {
       console.error('Analysis failed:', error);
+
+      // 积分扣除和退款现在由云函数处理，更安全
+      console.log('分析失败，云函数会自动处理积分退款');
+
       setErrorMessage(error.message || 'Analysis failed. Please try again.');
       setStage('error');
     } finally {
       setIsAnalyzing(false);
+      setAnalysisCreditsConsumed(0);
     }
-  }, []);
+  }, [user, consumeCredits, consumeTrialCredits, refundCredits, refundTrialCredits]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -471,6 +564,11 @@ export default function AnalyzeApp() {
     setErrorMessage('');
     setIsAnalyzing(false);
 
+    // Clear credit system state
+    setAudioDuration(null);
+    setCreditEstimate(null);
+    setAnalysisCreditsConsumed(0);
+
     // Clear global analysis results and hide export buttons
     (window as any).currentAnalysisResult = null;
     (window as any).backupAnalysisResult = null;
@@ -480,20 +578,21 @@ export default function AnalyzeApp() {
 
   const handleRetryAnalysis = useCallback(() => {
     if (uploadedFile) {
-      startAnalysis(uploadedFile);
+      // 重新检测时长和计算积分
+      handleFiles([uploadedFile] as any);
     } else {
       handleNewAnalysis();
     }
-  }, [uploadedFile, startAnalysis, handleNewAnalysis]);
+  }, [uploadedFile, handleFiles, handleNewAnalysis]);
 
-  // Show loading state if authentication is loading
-  if (authLoading) {
+  // Show loading state if authentication or credits are loading
+  if (authLoading || creditLoading) {
     return (
       <div className="min-h-screen bg-dark-bg flex items-center justify-center">
         <div className="glass-pane p-8">
           <div className="flex items-center gap-3">
             <div className="w-6 h-6 border-2 border-violet-400 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-white">正在初始化...</span>
+            <span className="text-white">Initializing...</span>
           </div>
         </div>
       </div>
@@ -575,6 +674,10 @@ export default function AnalyzeApp() {
                   usageStatus={usageStatus}
                   user={user}
                   onOpenLogin={openLogin}
+                  currentCredits={credits}
+                  audioDuration={audioDuration}
+                  creditEstimate={creditEstimate}
+                  onPurchaseCredits={() => window.location.href = '/pricing'}
                 />
               )}
 
@@ -645,6 +748,10 @@ export default function AnalyzeApp() {
                 usageStatus={usageStatus}
                 user={user}
                 onOpenLogin={openLogin}
+                currentCredits={credits}
+                audioDuration={audioDuration}
+                creditEstimate={creditEstimate}
+                onPurchaseCredits={() => window.location.href = '/pricing'}
               />
             )}
 
@@ -702,12 +809,16 @@ export default function AnalyzeApp() {
         </div>
       </div>
 
-      {/* Login Modal */}
-      <LoginModal
-        isOpen={showLoginModal}
-        onClose={() => setShowLoginModal(false)}
-        defaultMode="login"
-      />
+
     </div>
+  );
+}
+
+// Main AnalyzeApp component with CreditProvider
+export default function AnalyzeApp() {
+  return (
+    <CreditProvider>
+      <AnalyzeAppContent />
+    </CreditProvider>
   );
 }

@@ -1,4 +1,0 @@
-# Logo Generator Requirements
-# 安装命令: pip install -r requirements_logo.txt
-
-Pillow>=10.0.0

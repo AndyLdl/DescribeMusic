@@ -81,7 +81,7 @@ export default function UsageIndicator({ usageStatus, user, onOpenLogin }: Usage
                                             <div>
                                                 <h4 className="text-sm font-medium text-white mb-1">Sign up for more</h4>
                                                 <p className="text-xs text-slate-300 mb-2">
-                                                    Get 10 free analyses per month and save your history
+                                                    Get 200 credits for audio analysis and save your history
                                                 </p>
                                                 {onOpenLogin && (
                                                     <button
@@ -110,7 +110,7 @@ export default function UsageIndicator({ usageStatus, user, onOpenLogin }: Usage
                                     <div>
                                         <h4 className="text-sm font-medium text-white mb-1">Trial uses exhausted</h4>
                                         <p className="text-xs text-slate-300 mb-2">
-                                            Sign up to get 10 free analyses per month and save your analysis history
+                                            Sign up to get 200 credits for audio analysis and save your analysis history
                                         </p>
                                         {onOpenLogin && (
                                             <button

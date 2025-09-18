@@ -32,7 +32,7 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var _a, _b, _c, _d, _e, _f;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateConfig = validateConfig;
 const dotenv = __importStar(require("dotenv"));
@@ -58,8 +58,16 @@ const config = {
         url: ((_d = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.supabase) === null || _d === void 0 ? void 0 : _d.url) || process.env.SUPABASE_URL || '',
         serviceRoleKey: ((_e = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.supabase) === null || _e === void 0 ? void 0 : _e.service_role_key) || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     },
+    lemonsqueezy: {
+        apiKey: ((_f = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _f === void 0 ? void 0 : _f.api_key) || process.env.LEMONSQUEEZY_API_KEY || '',
+        storeId: ((_g = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _g === void 0 ? void 0 : _g.store_id) || process.env.LEMONSQUEEZY_STORE_ID || '',
+        webhookSecret: ((_h = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _h === void 0 ? void 0 : _h.webhook_secret) || process.env.LEMONSQUEEZY_WEBHOOK_SECRET || '',
+        basicVariantId: ((_j = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _j === void 0 ? void 0 : _j.basic_variant_id) || process.env.LEMONSQUEEZY_BASIC_VARIANT_ID || '',
+        proVariantId: ((_k = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _k === void 0 ? void 0 : _k.pro_variant_id) || process.env.LEMONSQUEEZY_PRO_VARIANT_ID || '',
+        premiumVariantId: ((_l = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _l === void 0 ? void 0 : _l.premium_variant_id) || process.env.LEMONSQUEEZY_PREMIUM_VARIANT_ID || '',
+    },
     cors: {
-        allowedOrigins: (((_f = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.cors) === null || _f === void 0 ? void 0 : _f.allowed_origins) || process.env.ALLOWED_ORIGINS || '')
+        allowedOrigins: (((_m = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.cors) === null || _m === void 0 ? void 0 : _m.allowed_origins) || process.env.ALLOWED_ORIGINS || '')
             .split(',')
             .filter(Boolean) || [
             'http://localhost:4321',
@@ -89,6 +97,15 @@ function validateConfig() {
     }
     if (!config.supabase.serviceRoleKey) {
         errors.push('SUPABASE_SERVICE_ROLE_KEY is required');
+    }
+    if (!config.lemonsqueezy.apiKey) {
+        errors.push('LEMONSQUEEZY_API_KEY is required');
+    }
+    if (!config.lemonsqueezy.storeId) {
+        errors.push('LEMONSQUEEZY_STORE_ID is required');
+    }
+    if (!config.lemonsqueezy.webhookSecret) {
+        errors.push('LEMONSQUEEZY_WEBHOOK_SECRET is required');
     }
     if (config.googleAI.maxTokens <= 0) {
         errors.push('GEMINI_MAX_TOKENS must be a positive number');

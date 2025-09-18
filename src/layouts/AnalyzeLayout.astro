@@ -1,6 +1,12 @@
 ---
-import Layout from "@/layouts/Layout.astro";
-import AnalyzeHeader from "@/components/AnalyzeHeader.astro";
+import { SEO } from "astro-seo";
+import "@fontsource-variable/inter/index.css";
+import "@fontsource-variable/bricolage-grotesque";
+import "../styles/global.css";
+import en from "../i18n/en.json";
+import Footer from "@/components/footer.astro";
+
+const t = (key) => key.split(".").reduce((o, i) => o[i], en);
 
 export interface Props {
   title?: string;
@@ -8,20 +14,137 @@ export interface Props {
 }
 
 const { title, description } = Astro.props;
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
+const resolvedImageWithDomain = new URL(
+  "/images/logo/social/opengraph-1200x630.jpg",
+  Astro.site,
+).toString();
+
+const siteTitle = t("site.title");
+const siteDescription = t("site.description");
+const siteKeywords = t("site.keywords");
+
+const makeTitle = title ? `${title} | Describe Music` : siteTitle;
 ---
 
-<Layout title={title} description={description}>
-  <Fragment slot="header">
-    <AnalyzeHeader />
-  </Fragment>
-  <div>
-    <slot />
-  </div>
-</Layout>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <!-- Favicon -->
+    <link
+      rel="icon"
+      type="image/x-icon"
+      href="/images/logo/favicon/favicon.ico"
+    />
 
-<style>
-  /* Override the default page-content spacing for analyze page */
-  :global(.page-content) {
-    padding-top: 0 !important;
-  }
-</style>
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="32x32"
+      href="/images/logo/favicon/favicon-32x32.png"
+    />
+    <link
+      rel="icon"
+      type="image/png"
+      sizes="16x16"
+      href="/images/logo/favicon/favicon-16x16.png"
+    />
+
+    <!-- Apple Touch Icon -->
+    <link
+      rel="apple-touch-icon"
+      sizes="180x180"
+      href="/images/logo/app-icons/icon-192-rounded.png"
+    />
+
+    <!-- PWA Icons -->
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="keywords" content={siteKeywords} />
+
+    <SEO
+      title={makeTitle}
+      description={description || siteDescription}
+      canonical={canonicalURL}
+      twitter={{
+        creator: "@describemusic",
+        site: "@describemusic",
+        card: "summary_large_image",
+      }}
+      openGraph={{
+        basic: {
+          url: canonicalURL,
+          type: "website",
+          title: makeTitle,
+          image: resolvedImageWithDomain,
+        },
+        image: {
+          alt: "Describe Music AI-Powered Audio Analysis",
+        },
+      }}
+    />
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-HJL4M202R6"
+    ></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag() {
+        dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+
+      gtag("config", "G-HJL4M202R6");
+    </script>
+    <script type="text/javascript">
+      (function (c, l, a, r, i, t, y) {
+        c[a] =
+          c[a] ||
+          function () {
+            (c[a].q = c[a].q || []).push(arguments);
+          };
+        t = l.createElement(r);
+        t.async = 1;
+        t.src = "https://www.clarity.ms/tag/" + i;
+        y = l.getElementsByTagName(r)[0];
+        y.parentNode.insertBefore(t, y);
+      })(window, document, "clarity", "script", "sxmrkwyxg7");
+    </script>
+  </head>
+  <body>
+    <!-- 分析页面不使用默认的header，由AnalyzeAppWithAuth自己管理 -->
+    <main class="page-content" style="padding-top: 0 !important;">
+      <slot />
+    </main>
+    <Footer />
+
+    <!-- Load analyze export functions -->
+    <script src="/src/scripts/analyzeExportFunctions.ts"></script>
+
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const animatedElements =
+          document.querySelectorAll(".animate-on-scroll");
+        const observer = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add("is-visible");
+                observer.unobserve(entry.target);
+              }
+            });
+          },
+          {
+            threshold: 0.1,
+          },
+        );
+
+        animatedElements.forEach((el) => {
+          observer.observe(el);
+        });
+      });
+    </script>
+  </body>
+</html>

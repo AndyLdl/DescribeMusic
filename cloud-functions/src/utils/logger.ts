@@ -97,6 +97,35 @@ class Logger {
     geminiResponse(tokens: number, duration: number, requestId: string): void {
         this.debug(`Gemini API response: ${tokens} tokens in ${duration}ms`, undefined, requestId);
     }
+
+    // Credit system logging methods
+    creditCheck(userId: string | undefined, deviceFingerprint: string | undefined, requiredCredits: number, available: number, requestId: string): void {
+        const userType = userId ? 'registered' : 'trial';
+        const identifier = userId || deviceFingerprint;
+        this.info(`Credit check: ${userType} user ${identifier} - Required: ${requiredCredits}, Available: ${available}`,
+            { userId, deviceFingerprint, requiredCredits, available, userType }, requestId);
+    }
+
+    creditConsumption(userId: string | undefined, deviceFingerprint: string | undefined, creditsConsumed: number, remainingCredits: number, requestId: string): void {
+        const userType = userId ? 'registered' : 'trial';
+        const identifier = userId || deviceFingerprint;
+        this.info(`Credits consumed: ${userType} user ${identifier} - Consumed: ${creditsConsumed}, Remaining: ${remainingCredits}`,
+            { userId, deviceFingerprint, creditsConsumed, remainingCredits, userType }, requestId);
+    }
+
+    creditRefund(userId: string | undefined, deviceFingerprint: string | undefined, creditsRefunded: number, reason: string, requestId: string): void {
+        const userType = userId ? 'registered' : 'trial';
+        const identifier = userId || deviceFingerprint;
+        this.warn(`Credits refunded: ${userType} user ${identifier} - Refunded: ${creditsRefunded}, Reason: ${reason}`,
+            { userId, deviceFingerprint, creditsRefunded, reason, userType }, requestId);
+    }
+
+    creditError(userId: string | undefined, deviceFingerprint: string | undefined, errorType: string, errorMessage: string, requestId: string): void {
+        const userType = userId ? 'registered' : 'trial';
+        const identifier = userId || deviceFingerprint;
+        this.error(`Credit error: ${userType} user ${identifier} - ${errorType}: ${errorMessage}`,
+            undefined, { userId, deviceFingerprint, errorType, userType }, requestId);
+    }
 }
 
 export const logger = new Logger();

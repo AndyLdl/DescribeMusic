@@ -1,10 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import LoginModal from './auth/LoginModal';
+import { useCredit } from '../contexts/CreditContext';
+import UserAccountDropdown from './UserAccountDropdown';
+
 
 export default function AnalyzeHeader() {
     const { user, signOut, usageStatus } = useAuth();
-    const [showLoginModal, setShowLoginModal] = useState(false);
+
+    // Safely use credit context with error handling
+    let credits = 0;
+    let creditLoading = false;
+
+    try {
+        const creditContext = useCredit();
+        credits = creditContext.credits;
+        creditLoading = creditContext.loading;
+    } catch (error) {
+        console.warn('Credit context not available in AnalyzeHeader component:', error);
+    }
+
+
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showExportButtons, setShowExportButtons] = useState(false);
     const [showExportMenu, setShowExportMenu] = useState(false);
@@ -252,105 +267,8 @@ Quality: ${data.quality?.overall || 0}/10`;
                                 </div>
                             )}
 
-                            {/* Pricing Link */}
-                            <a
-                                href="/pricing"
-                                className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-md hover:border-slate-600 transition-all duration-300"
-                            >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                </svg>
-                                Launch Special
-                            </a>
-
                             {/* User Authentication Section */}
-                            {user ? (
-                                <div className="relative">
-                                    <button
-                                        onClick={() => setShowUserMenu(!showUserMenu)}
-                                        className="flex items-center gap-3 px-3 py-1.5 text-sm text-white bg-slate-800 hover:bg-slate-700 rounded-md transition-all duration-300"
-                                    >
-                                        <div className="w-6 h-6 bg-gradient-to-r from-violet-400 to-blue-400 rounded-full flex items-center justify-center text-white text-xs font-semibold">
-                                            {user.email?.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="hidden md:block text-left">
-                                            <div className="text-white text-sm">{user.email}</div>
-                                            {usageStatus && (
-                                                <div className="text-slate-400 text-xs">
-                                                    {usageStatus.remaining}/{usageStatus.total} analyses
-                                                </div>
-                                            )}
-                                        </div>
-                                        <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-
-                                    {/* User Dropdown Menu */}
-                                    {showUserMenu && (
-                                        <div className="absolute right-0 mt-2 w-64 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-xl z-50">
-                                            <div className="p-4 border-b border-slate-700">
-                                                <div className="text-white text-sm font-medium">{user.email}</div>
-                                                <div className="text-slate-400 text-xs mt-1">
-                                                    {usageStatus?.userType === 'registered' ? 'Registered User' : 'Trial User'}
-                                                </div>
-                                                {usageStatus && (
-                                                    <div className="mt-2">
-                                                        <div className="flex justify-between text-xs text-slate-400 mb-1">
-                                                            <span>Monthly Usage</span>
-                                                            <span>{usageStatus.remaining}/{usageStatus.total}</span>
-                                                        </div>
-                                                        <div className="w-full bg-slate-700 rounded-full h-1.5">
-                                                            <div
-                                                                className="bg-gradient-to-r from-violet-400 to-blue-400 h-1.5 rounded-full transition-all duration-300"
-                                                                style={{ width: `${((usageStatus.total - usageStatus.remaining) / usageStatus.total) * 100}%` }}
-                                                            ></div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="p-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setShowUserMenu(false);
-                                                        // Navigate to account settings if available
-                                                    }}
-                                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                                    </svg>
-                                                    Account Settings
-                                                </button>
-                                                <button
-                                                    onClick={handleSignOut}
-                                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                                    </svg>
-                                                    Sign Out
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        onClick={() => setShowLoginModal(true)}
-                                        className="text-slate-400 hover:text-white text-sm transition-colors duration-300"
-                                    >
-                                        Sign In
-                                    </button>
-                                    <button
-                                        onClick={() => setShowLoginModal(true)}
-                                        className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-blue-500 text-white text-sm font-medium rounded-md hover:from-violet-600 hover:to-blue-600 transition-all duration-300"
-                                    >
-                                        Get Started
-                                    </button>
-                                </div>
-                            )}
+                            <UserAccountDropdown />
 
                             {/* Mobile menu button */}
                             <button className="md:hidden p-2 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-all duration-300">
@@ -363,12 +281,7 @@ Quality: ${data.quality?.overall || 0}/10`;
                 </div>
             </header>
 
-            {/* Login Modal */}
-            <LoginModal
-                isOpen={showLoginModal}
-                onClose={() => setShowLoginModal(false)}
-                defaultMode="login"
-            />
+
 
             {/* Click outside to close menus */}
             {(showUserMenu || showExportMenu || showShareMenu) && (

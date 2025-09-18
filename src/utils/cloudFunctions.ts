@@ -176,6 +176,7 @@ export interface AnalysisOptions {
     includeSimilarity?: boolean;
     detailedAnalysis?: boolean;
     generateTags?: boolean;
+    audioDuration?: number; // Duration in seconds, detected by frontend
     onProgress?: (progress: ProgressUpdate) => void;
 }
 
@@ -223,7 +224,7 @@ export class CloudFunctionsError extends Error {
         switch (this.code) {
             case 'USAGE_LIMIT_EXCEEDED':
             case 'TRIAL_LIMIT_EXCEEDED':
-                return 'Free trial uses exhausted, please register for 10 monthly analyses';
+                return 'Free trial exhausted, sign up to get 200 credits for audio analysis';
             case 'MONTHLY_LIMIT_EXCEEDED':
                 return 'Monthly analyses exhausted, will reset next month';
             case 'AUTHENTICATION_REQUIRED':

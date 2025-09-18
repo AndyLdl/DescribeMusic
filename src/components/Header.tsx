@@ -1,35 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
-import LoginModal from './auth/LoginModal';
+import UserAccountDropdown from './UserAccountDropdown';
 
 export default function Header() {
-    const { user, signOut, usageStatus } = useAuth();
-    const [showLoginModal, setShowLoginModal] = useState(false);
-    const [showUserMenu, setShowUserMenu] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [showResourcesMenu, setShowResourcesMenu] = useState(false);
-
-    const handleSignOut = async () => {
-        try {
-            console.log('Starting sign out process...');
-            await signOut();
-            console.log('Sign out successful');
-            setShowUserMenu(false);
-
-            // 可选：重定向到首页
-            window.location.href = '/';
-        } catch (error) {
-            console.error('Error signing out:', error);
-            alert('Failed to sign out. Please try again.');
-        }
-    };
 
     // Close menus when clicking outside
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             const target = event.target as Element;
             if (!target.closest('.dropdown-container')) {
-                setShowUserMenu(false);
                 setShowResourcesMenu(false);
             }
         };
@@ -151,94 +131,7 @@ export default function Header() {
                             </div>
 
                             {/* Auth Section */}
-                            {user ? (
-                                <div className="relative dropdown-container">
-                                    <button
-                                        onClick={() => setShowUserMenu(!showUserMenu)}
-                                        className="flex items-center gap-3 px-3 py-2 text-sm text-white/90 hover:text-white bg-slate-800/50 hover:bg-slate-700/50 rounded-md transition-all duration-300"
-                                    >
-                                        <div className="w-8 h-8 bg-gradient-to-r from-violet-400 to-blue-400 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                                            {user.email?.charAt(0).toUpperCase()}
-                                        </div>
-                                        <div className="text-left">
-                                            <div className="text-white text-sm font-medium">{user.email}</div>
-                                            {usageStatus && (
-                                                <div className="text-slate-400 text-xs">
-                                                    {usageStatus.remaining}/{usageStatus.total} analyses
-                                                </div>
-                                            )}
-                                        </div>
-                                        <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-
-                                    {/* User Dropdown Menu */}
-                                    {showUserMenu && (
-                                        <div className="absolute right-0 mt-2 w-64 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-xl z-50">
-                                            <div className="p-4 border-b border-slate-700">
-                                                <div className="text-white text-sm font-medium">{user.email}</div>
-                                                <div className="text-slate-400 text-xs mt-1">
-                                                    {usageStatus?.userType === 'registered' ? 'Registered User' : 'Trial User'}
-                                                </div>
-                                                {usageStatus && (
-                                                    <div className="mt-2">
-                                                        <div className="flex justify-between text-xs text-slate-400 mb-1">
-                                                            <span>Monthly Usage</span>
-                                                            <span>{usageStatus.remaining}/{usageStatus.total}</span>
-                                                        </div>
-                                                        <div className="w-full bg-slate-700 rounded-full h-1.5">
-                                                            <div
-                                                                className="bg-gradient-to-r from-violet-400 to-blue-400 h-1.5 rounded-full transition-all duration-300"
-                                                                style={{ width: `${((usageStatus.total - usageStatus.remaining) / usageStatus.total) * 100}%` }}
-                                                            ></div>
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </div>
-                                            <div className="p-2">
-                                                <a
-                                                    href="/analyze"
-                                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                                                    </svg>
-                                                    Analyze Audio
-                                                </a>
-                                                <button
-                                                    onClick={handleSignOut}
-                                                    className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200"
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                                    </svg>
-                                                    Sign Out
-                                                </button>
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="flex items-center gap-4">
-                                    <button
-                                        onClick={() => setShowLoginModal(true)}
-                                        className="text-slate-300/90 hover:text-white transition-colors duration-300"
-                                    >
-                                        Sign In
-                                    </button>
-                                    <a
-                                        href="/analyze/"
-                                        className="relative inline-flex items-center justify-center gap-2 px-6 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 group overflow-hidden shadow-lg hover:shadow-violet-500/25"
-                                    >
-                                        <span className="relative z-10">Try Free</span>
-                                        <svg className="relative z-10 w-4 h-4 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                        </svg>
-                                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-                                    </a>
-                                </div>
-                            )}
+                            <UserAccountDropdown />
                         </nav>
 
                         {/* Mobile menu button */}
@@ -321,11 +214,9 @@ export default function Header() {
                                                 </div>
                                                 <div>
                                                     <div className="text-white text-sm font-medium">{user.email}</div>
-                                                    {usageStatus && (
-                                                        <div className="text-slate-400 text-xs">
-                                                            {usageStatus.remaining}/{usageStatus.total} analyses
-                                                        </div>
-                                                    )}
+                                                    <div className="text-slate-400 text-xs">
+                                                        {creditLoading ? '加载中...' : `${credits} 积分`}
+                                                    </div>
                                                 </div>
                                             </div>
                                             <button
@@ -340,21 +231,36 @@ export default function Header() {
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
-                                            <button
-                                                onClick={() => {
-                                                    setShowLoginModal(true);
-                                                    setShowMobileMenu(false);
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200"
-                                            >
-                                                Sign In
-                                            </button>
+                                            {/* Trial Credits Display for Mobile */}
+                                            <div className="px-3 py-3 bg-gradient-to-r from-blue-500/10 to-violet-500/10 border border-blue-500/20 rounded-lg">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                                    </svg>
+                                                    <span className="text-blue-400 font-semibold">Free Trial</span>
+                                                </div>
+                                                <div className="text-white text-lg font-bold">
+                                                    {trialCredits} Credits Available
+                                                </div>
+                                                <div className="text-slate-400 text-sm">
+                                                    Start analyzing music for free
+                                                </div>
+                                            </div>
+
                                             <a
                                                 href="/analyze/"
                                                 className="block w-full text-center px-6 py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-lg hover:from-violet-600 hover:to-blue-600 transition-all duration-300 font-medium"
                                                 onClick={() => setShowMobileMenu(false)}
                                             >
-                                                Try Free Now
+                                                Start Analyzing
+                                            </a>
+
+                                            <a
+                                                href="/analyze/"
+                                                className="w-full text-center px-3 py-2 text-slate-400 hover:text-white border border-slate-600 hover:border-slate-500 rounded-lg transition-all duration-200"
+                                                onClick={() => setShowMobileMenu(false)}
+                                            >
+                                                Sign In for More Features
                                             </a>
                                         </div>
                                     )}
@@ -365,12 +271,7 @@ export default function Header() {
                 </div>
             </header>
 
-            {/* Login Modal */}
-            <LoginModal
-                isOpen={showLoginModal}
-                onClose={() => setShowLoginModal(false)}
-                defaultMode="login"
-            />
+
 
             {/* Click outside overlay for mobile menu */}
             {showMobileMenu && (

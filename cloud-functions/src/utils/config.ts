@@ -28,6 +28,16 @@ export interface Config {
         serviceRoleKey: string;
     };
 
+    // Lemonsqueezy
+    lemonsqueezy: {
+        apiKey: string;
+        storeId: string;
+        webhookSecret: string;
+        basicVariantId: string;
+        proVariantId: string;
+        premiumVariantId: string;
+    };
+
     // CORS
     cors: {
         allowedOrigins: string[];
@@ -61,6 +71,15 @@ const config: Config = {
     supabase: {
         url: firebaseConfig?.supabase?.url || process.env.SUPABASE_URL || '',
         serviceRoleKey: firebaseConfig?.supabase?.service_role_key || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+    },
+
+    lemonsqueezy: {
+        apiKey: firebaseConfig?.lemonsqueezy?.api_key || process.env.LEMONSQUEEZY_API_KEY || '',
+        storeId: firebaseConfig?.lemonsqueezy?.store_id || process.env.LEMONSQUEEZY_STORE_ID || '',
+        webhookSecret: firebaseConfig?.lemonsqueezy?.webhook_secret || process.env.LEMONSQUEEZY_WEBHOOK_SECRET || '',
+        basicVariantId: firebaseConfig?.lemonsqueezy?.basic_variant_id || process.env.LEMONSQUEEZY_BASIC_VARIANT_ID || '',
+        proVariantId: firebaseConfig?.lemonsqueezy?.pro_variant_id || process.env.LEMONSQUEEZY_PRO_VARIANT_ID || '',
+        premiumVariantId: firebaseConfig?.lemonsqueezy?.premium_variant_id || process.env.LEMONSQUEEZY_PREMIUM_VARIANT_ID || '',
     },
 
     cors: {
@@ -101,6 +120,18 @@ export function validateConfig(): { isValid: boolean; errors: string[] } {
 
     if (!config.supabase.serviceRoleKey) {
         errors.push('SUPABASE_SERVICE_ROLE_KEY is required');
+    }
+
+    if (!config.lemonsqueezy.apiKey) {
+        errors.push('LEMONSQUEEZY_API_KEY is required');
+    }
+
+    if (!config.lemonsqueezy.storeId) {
+        errors.push('LEMONSQUEEZY_STORE_ID is required');
+    }
+
+    if (!config.lemonsqueezy.webhookSecret) {
+        errors.push('LEMONSQUEEZY_WEBHOOK_SECRET is required');
     }
 
     if (config.googleAI.maxTokens <= 0) {

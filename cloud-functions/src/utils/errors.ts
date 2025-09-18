@@ -64,6 +64,48 @@ export class TimeoutError extends AppError {
     }
 }
 
+export class CreditError extends AppError {
+    constructor(code: ErrorCode, message: string, details?: any) {
+        const statusCode = code === ErrorCode.INSUFFICIENT_CREDITS
+            ? HttpStatus.PAYMENT_REQUIRED
+            : HttpStatus.BAD_REQUEST;
+
+        super(code, message, statusCode, details);
+        this.name = 'CreditError';
+    }
+}
+
+export class InsufficientCreditsError extends CreditError {
+    constructor(required: number, available: number, isTrialUser: boolean = false) {
+        const userType = isTrialUser ? 'trial' : 'registered';
+        const message = isTrialUser
+            ? `Insufficient trial credits. Required: ${required}, Available: ${available}. Please register for a free account to get more credits.`
+            : `Insufficient credits. Required: ${required}, Available: ${available}. Please purchase more credits to continue.`;
+
+        super(ErrorCode.INSUFFICIENT_CREDITS, message, {
+            required,
+            available,
+            isTrialUser,
+            userType
+        });
+        this.name = 'InsufficientCreditsError';
+    }
+}
+
+export class CreditCalculationError extends CreditError {
+    constructor(message: string, details?: any) {
+        super(ErrorCode.CREDIT_CALCULATION_ERROR, message, details);
+        this.name = 'CreditCalculationError';
+    }
+}
+
+export class CreditConsumptionError extends CreditError {
+    constructor(message: string, details?: any) {
+        super(ErrorCode.CREDIT_CONSUMPTION_FAILED, message, details);
+        this.name = 'CreditConsumptionError';
+    }
+}
+
 // Error handler for Express middleware
 export function errorHandler(
     error: Error,
@@ -122,6 +164,25 @@ export function errorHandler(
         return {
             code: ErrorCode.GEMINI_API_ERROR,
             message: 'Unable to connect to external service',
+            timestamp,
+            requestId,
+        };
+    }
+
+    // Handle credit-related errors
+    if (error.message.includes('Insufficient credits') || error.message.includes('Insufficient trial credits')) {
+        return {
+            code: ErrorCode.INSUFFICIENT_CREDITS,
+            message: error.message,
+            timestamp,
+            requestId,
+        };
+    }
+
+    if (error.message.includes('Failed to consume credits') || error.message.includes('Failed to consume trial credits')) {
+        return {
+            code: ErrorCode.CREDIT_CONSUMPTION_FAILED,
+            message: error.message,
             timestamp,
             requestId,
         };

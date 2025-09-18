@@ -3,7 +3,7 @@
  * Catches errors in React components and displays friendly error messages
  */
 
-import React, { Component, ErrorInfo, ReactNode } from 'react';
+import { Component, type ErrorInfo, type ReactNode } from 'react';
 
 interface Props {
     children: ReactNode;

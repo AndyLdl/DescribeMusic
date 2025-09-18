@@ -137,28 +137,6 @@ import { Icon } from "astro-icon/components";
           </div>
         </div>
 
-        <!-- Divider -->
-        <!-- <div class="hidden md:block w-px h-6 bg-slate-700"></div> -->
-
-        <!-- User actions -->
-        <a
-          href="/pricing"
-          class="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-md hover:border-slate-600 transition-all duration-300">
-          <Icon name="heroicons:tag-20-solid" class="w-4 h-4" />
-          Launch Special
-        </a>
-
-        <!-- User menu -->
-        <!-- <div class="relative">
-          <button
-            class="w-8 h-8 bg-slate-800 rounded-full flex items-center justify-center hover:bg-slate-700 transition-colors duration-300">
-            <Icon
-              name="heroicons:user-20-solid"
-              class="w-4 h-4 text-slate-400"
-            />
-          </button>
-        </div> -->
-
         <!-- Mobile menu button -->
         <button
           class="md:hidden p-2 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-all duration-300">
@@ -335,7 +313,7 @@ import { Icon } from "astro-icon/components";
   window.addEventListener("analysisResultReady", function (event: any) {
     console.log(
       "🔧 Analysis result ready event received for:",
-      event.detail?.filename
+      event.detail?.filename,
     );
 
     // Store in multiple locations for reliability
@@ -369,7 +347,7 @@ import { Icon } from "astro-icon/components";
         "🔧 Button visibility changed from",
         currentButtonsVisible,
         "to",
-        shouldShow
+        shouldShow,
       );
       currentButtonsVisible = shouldShow;
       toggleExportShareButtons(shouldShow);
@@ -392,21 +370,21 @@ import { Icon } from "astro-icon/components";
     // Debug logging with timestamp
     console.log(
       `🐛 Export Debug [${new Date().toISOString()}] - window.currentResult:`,
-      currentResult
+      currentResult,
     );
     console.log(
       `🐛 Export Debug [${new Date().toISOString()}] - backupAnalysisResult:`,
-      (window as any).backupAnalysisResult
+      (window as any).backupAnalysisResult,
     );
     console.log(
       `🐛 Export Debug [${new Date().toISOString()}] - localAnalysisResult:`,
-      localAnalysisResult
+      localAnalysisResult,
     );
     console.log(
       `🐛 Export Debug [${new Date().toISOString()}] - filename:`,
       currentResult?.filename ||
         (window as any).backupAnalysisResult?.filename ||
-        localAnalysisResult?.filename
+        localAnalysisResult?.filename,
     );
 
     // Use backups if primary global is null
@@ -505,7 +483,7 @@ import { Icon } from "astro-icon/components";
     downloadFile(
       `${cleanFilename}-analysis.json`,
       jsonString,
-      "application/json"
+      "application/json",
     );
     closeAllDropdowns();
   }
@@ -793,7 +771,7 @@ import { Icon } from "astro-icon/components";
           "Voice Analysis",
           "Gender Confidence",
           Math.round(
-            (data.voiceAnalysis.genderDetection.confidence || 0) * 100
+            (data.voiceAnalysis.genderDetection.confidence || 0) * 100,
           ) + "%",
           "Gender detection confidence",
         ]);
@@ -810,7 +788,7 @@ import { Icon } from "astro-icon/components";
           "Voice Analysis",
           "Emotion Confidence",
           Math.round(
-            (data.voiceAnalysis.speakerEmotion.confidence || 0) * 100
+            (data.voiceAnalysis.speakerEmotion.confidence || 0) * 100,
           ) + "%",
           "Emotion detection confidence",
         ]);
@@ -970,7 +948,7 @@ import { Icon } from "astro-icon/components";
 
     return rows
       .map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","),
       )
       .join("\n");
   }
@@ -1034,7 +1012,7 @@ Emotional Analysis:
 ${Object.entries(data.emotions)
   .map(
     ([emotion, value]) =>
-      `- ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}: ${Math.round((value as number) * 100)}%`
+      `- ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}: ${Math.round((value as number) * 100)}%`,
   )
   .join("\n")}
 `;
@@ -1082,7 +1060,7 @@ ${data.soundEffects.detected
   - Category: ${sound.category || "Unknown"}
   - Confidence: ${Math.round((sound.confidence || 0) * 100)}%
   - Time: ${formatTime(sound.timestamp?.start || 0)} - ${formatTime(sound.timestamp?.end || 0)}
-  - Description: ${sound.description || "No description"}`
+  - Description: ${sound.description || "No description"}`,
   )
   .join("\n\n")}
 `;
@@ -1116,7 +1094,7 @@ Similar Tracks:
 ${data.similarity.similar_tracks
   .map(
     (track, index) =>
-      `${index + 1}. ${track.artist} - ${track.title} (${Math.round(track.similarity * 100)}% similarity)`
+      `${index + 1}. ${track.artist} - ${track.title} (${Math.round(track.similarity * 100)}% similarity)`,
   )
   .join("\n")}
 `;
@@ -1201,7 +1179,7 @@ Report ID: ${data.id || "Unknown"}
         summary += `\n\n🎭 Top Emotions: ${topEmotions
           .map(
             ([emotion, value]) =>
-              `${emotion} ${Math.round((value as number) * 100)}%`
+              `${emotion} ${Math.round((value as number) * 100)}%`,
           )
           .join(" | ")}`;
       }
@@ -1287,7 +1265,7 @@ Report ID: ${data.id || "Unknown"}
 ${topEmotions
   .map(
     ([emotion, value]) =>
-      `${emotion.charAt(0).toUpperCase() + emotion.slice(1)}: ${Math.round((value as number) * 100)}%`
+      `${emotion.charAt(0).toUpperCase() + emotion.slice(1)}: ${Math.round((value as number) * 100)}%`,
   )
   .join("\n")}`;
       }
