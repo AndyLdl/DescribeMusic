@@ -47,7 +47,7 @@ export const SUBSCRIPTION_PLANS = {
         name: 'Basic Plan',
         price: 9.9,
         credits: 1200, // Monthly credits (20 minutes)
-        variantId: import.meta.env.VITE_LEMONSQUEEZY_BASIC_VARIANT_ID || '999977',
+        variantId: import.meta.env.VITE_LEMONSQUEEZY_BASIC_VARIANT_ID || '999961',
         description: 'Perfect for light users',
         features: [
             '1200 credits monthly (20 minutes)',
@@ -72,7 +72,7 @@ export const SUBSCRIPTION_PLANS = {
         name: 'Professional Plan',
         price: 19.9,
         credits: 3000, // Monthly credits (50 minutes)
-        variantId: import.meta.env.VITE_LEMONSQUEEZY_PRO_VARIANT_ID || '999980',
+        variantId: import.meta.env.VITE_LEMONSQUEEZY_PRO_VARIANT_ID || '999966',
         description: 'Perfect for professional users',
         popular: true,
         features: [
@@ -100,7 +100,7 @@ export const SUBSCRIPTION_PLANS = {
         name: 'Enterprise Plan',
         price: 39.9,
         credits: 7200, // Monthly credits (120 minutes)
-        variantId: import.meta.env.VITE_LEMONSQUEEZY_PREMIUM_VARIANT_ID || '999982',
+        variantId: import.meta.env.VITE_LEMONSQUEEZY_PREMIUM_VARIANT_ID || '999967',
         description: 'Perfect for enterprises and heavy users',
         features: [
             '7200 credits monthly (120 minutes)',
@@ -199,7 +199,7 @@ export class LemonsqueezyService {
     private constructor() {
         // Read configuration from environment variables with fallback values
         const envApiKey = import.meta.env.VITE_LEMONSQUEEZY_API_KEY;
-        const fallbackApiKey = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5NGQ1OWNlZi1kYmI4LTRlYTUtYjE3OC1kMjU0MGZjZDY5MTkiLCJqdGkiOiJkNTQzZmJmOGIxMTdkZjdmODI5MTFiMzI4NTRlYWQ0MjBmNjdkNDk5Y2RlYjU5ZTVkMDg1ZTBmOTE5NTVhNWUyN2MzODRiYzlmODU1MjllMCIsImlhdCI6MTc1Nzk5OTg1Ni44NzMxNTMsIm5iZiI6MTc1Nzk5OTg1Ni44NzMxNTYsImV4cCI6MjA3MzUzMjY1Ni44NTE3MjQsInN1YiI6IjE5MTQwMTEiLCJzY29wZXMiOltdfQ.QaX1W8waHys5KuCgR0TusrmFuAOm9p7dyTq_hH06X0f8VlWbH1x8451DLHTkn2KrEOoKLYSXuMPM3Mf20PKIGk5-9dQFnW4WB7elbe3picWemj4jkviTsQEzmcH4haqyypLfqscNXhxFcRjSyOdYBHmcJU2A83Sl5aDYhynICAXf_BLPttmGy7gMTI9Q7-PmLkz_HgxEHSawgWrDppL1hI8sNI_CgyiX-9J6brLOHmYfrTpHxokd916KjBFtxI7XSQ9SykejsVgGtfo6IC7DgPnu8QcSKATmvJ7OgbpT6uE3LBwCdnH0UGMi-CQQeTO04VPeeCqoJNAAuU75rC9rPcwAetVEVXtwSkiSJSQ5U5kr8lHTd3n8SU2BpwWEXDSajx_rWdxW5da-CcFDyTcyPGlGedH-F8SY85EAYRjt7-JU2ekP19yV7HCHyPwxbP4VFigGhw7kfGX8as2kjrJHBDKfUHNsdExEs-u3aJuVg7L2lTxLu-NGhSsQ7X1eBcsY';
+        const fallbackApiKey = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5NGQ1OWNlZi1kYmI4LTRlYTUtYjE3OC1kMjU0MGZjZDY5MTkiLCJqdGkiOiJjZWY4MDU1Y2E2NzI4YjM3NzAxMTU5MzEwYzkzNmQ0YjA2OGI3OWQ1MDFkODNhYTAxYjAyN2I3N2RjYjkzYTBlNWVmMWM3YWMzZjA0ODBkYyIsImlhdCI6MTc1ODIxNDU0Ny43NTY3OTYsIm5iZiI6MTc1ODIxNDU0Ny43NTY3OTksImV4cCI6MjA3Mzc0NzM0Ny43NDM0NCwic3ViIjoiMTkxNDAxMSIsInNjb3BlcyI6W119.as4QEOlT0uK1bOQC8C464bjvdgH4Icsf0MZMLLps4L2aVPnnVdqInbQYQG-x_PGJwY2qPdugjm1zPorVEFDdyboqMJKWLshEA-j8mXbcZeSu91u05YKKT5vE1ekZTvDrvMN8QAtQNvJ6mZLqWlpasHDOdbZYHM9uwjSYa4-zRMYbjVvEHtB0tJtRF1U8NxlUGnRkGmqWLITx-b-xb5XNjF2Pe-Y85SJJhyU0Sf0K1nfjWvKNebzYoMfwuCHXUdEjVsJvLcrZwNuLRO47YOIGwXJISQa2mqAx2PqONNs37QKz4ACWy6mPSRaz59XhTZueIHz8rqMn5adAQ6oApaEMGvcVpToAGfZknIqKpm5nt0JakFTFCEfGfKDGskpsDDXIyyxaUhVRF87xXNkM7mP7PXRcW4BsJ3EM1H_nj7VzQ194JUFDISc-nQuIefQDnTIShYLKCaMbAfuo_J6GfHUYGrEO11ryljU5q95_Mj5M6ztdjuPDKHkUCURDd7d2rtpX';
 
         // Check if environment variables are complete
         if (envApiKey && envApiKey.length >= 800) {

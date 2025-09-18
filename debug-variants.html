@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Lemonsqueezy Variants</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 5px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Lemonsqueezy Variants Debug Tool</h1>
+    
+    <div>
+        <h3>配置信息</h3>
+        <div>API Key: <input type="text" id="apiKey" placeholder="输入你的 API Key" style="width: 400px;"></div>
+        <div>Store ID: <input type="text" id="storeId" placeholder="输入你的 Store ID" value="76046"></div>
+    </div>
+
+    <div>
+        <h3>测试变体 ID</h3>
+        <button onclick="testVariant('999961', 'Basic Plan')">测试 Basic (999961)</button>
+        <button onclick="testVariant('999967', 'Pro Plan')">测试 Pro (999967)</button>
+        <button onclick="testVariant('999981', 'Premium Plan')">测试 Premium (999981)</button>
+        <button onclick="testAllVariants()">测试所有变体</button>
+    </div>
+
+    <div>
+        <h3>其他测试</h3>
+        <button onclick="testApiKey()">测试 API Key</button>
+        <button onclick="listStores()">获取店铺列表</button>
+        <button onclick="listProducts()">获取产品列表</button>
+        <button onclick="clearResults()">清除结果</button>
+    </div>
+
+    <div id="results"></div>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `result ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        function getApiKey() {
+            const apiKey = document.getElementById('apiKey').value.trim();
+            if (!apiKey) {
+                addResult('❌ 请先输入 API Key', 'error');
+                return null;
+            }
+            return apiKey;
+        }
+
+        async function testVariant(variantId, planName) {
+            const apiKey = getApiKey();
+            if (!apiKey) return;
+
+            addResult(`🔍 测试 ${planName} 变体 ID: ${variantId}`, 'info');
+            
+            try {
+                const response = await fetch(`https://api.lemonsqueezy.com/v1/variants/${variantId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Accept': 'application/vnd.api+json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ ${planName} 变体存在！<br>
+                        <strong>名称:</strong> ${data.data.attributes.name}<br>
+                        <strong>价格:</strong> $${(data.data.attributes.price / 100).toFixed(2)}<br>
+                        <strong>状态:</strong> ${data.data.attributes.status}<br>
+                        <strong>产品 ID:</strong> ${data.data.relationships.product.data.id}`, 'success');
+                } else {
+                    addResult(`❌ ${planName} 变体不存在 (${response.status})<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ ${planName} 请求失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function testAllVariants() {
+            await testVariant('999961', 'Basic Plan');
+            await testVariant('999967', 'Pro Plan');
+            await testVariant('999981', 'Premium Plan');
+        }
+
+        async function testApiKey() {
+            const apiKey = getApiKey();
+            if (!apiKey) return;
+
+            addResult('🔍 测试 API Key 有效性...', 'info');
+            
+            try {
+                const response = await fetch('https://api.lemonsqueezy.com/v1/users/me', {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Accept': 'application/vnd.api+json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addResult(`✅ API Key 有效！<br>
+                        <strong>用户:</strong> ${data.data.attributes.name}<br>
+                        <strong>邮箱:</strong> ${data.data.attributes.email}`, 'success');
+                } else {
+                    addResult(`❌ API Key 无效 (${response.status})<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ API Key 测试失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function listStores() {
+            const apiKey = getApiKey();
+            if (!apiKey) return;
+
+            addResult('🔍 获取店铺列表...', 'info');
+            
+            try {
+                const response = await fetch('https://api.lemonsqueezy.com/v1/stores', {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Accept': 'application/vnd.api+json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const stores = data.data.map(store => 
+                        `<li><strong>${store.attributes.name}</strong> (ID: ${store.id}) - ${store.attributes.domain}</li>`
+                    ).join('');
+                    addResult(`✅ 找到 ${data.data.length} 个店铺:<br><ul>${stores}</ul>`, 'success');
+                } else {
+                    addResult(`❌ 获取店铺失败 (${response.status})<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ 获取店铺失败: ${error.message}`, 'error');
+            }
+        }
+
+        async function listProducts() {
+            const apiKey = getApiKey();
+            if (!apiKey) return;
+
+            const storeId = document.getElementById('storeId').value.trim();
+            if (!storeId) {
+                addResult('❌ 请输入 Store ID', 'error');
+                return;
+            }
+
+            addResult(`🔍 获取店铺 ${storeId} 的产品列表...`, 'info');
+            
+            try {
+                const response = await fetch(`https://api.lemonsqueezy.com/v1/products?filter[store_id]=${storeId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Accept': 'application/vnd.api+json'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    if (data.data.length === 0) {
+                        addResult('⚠️ 没有找到任何产品', 'error');
+                        return;
+                    }
+
+                    let productsHtml = '';
+                    for (const product of data.data) {
+                        productsHtml += `<li><strong>${product.attributes.name}</strong> (ID: ${product.id})<br>`;
+                        productsHtml += `状态: ${product.attributes.status}, 价格: $${(product.attributes.price / 100).toFixed(2)}<br>`;
+                        
+                        // 获取变体信息
+                        try {
+                            const variantsResponse = await fetch(`https://api.lemonsqueezy.com/v1/variants?filter[product_id]=${product.id}`, {
+                                headers: {
+                                    'Authorization': `Bearer ${apiKey}`,
+                                    'Accept': 'application/vnd.api+json'
+                                }
+                            });
+                            const variantsData = await variantsResponse.json();
+                            if (variantsResponse.ok && variantsData.data.length > 0) {
+                                productsHtml += '变体: ';
+                                variantsData.data.forEach(variant => {
+                                    productsHtml += `<code>${variant.id}</code> (${variant.attributes.name}) `;
+                                });
+                            }
+                        } catch (e) {
+                            productsHtml += '变体信息获取失败';
+                        }
+                        productsHtml += '</li><br>';
+                    }
+                    
+                    addResult(`✅ 找到 ${data.data.length} 个产品:<br><ul>${productsHtml}</ul>`, 'success');
+                } else {
+                    addResult(`❌ 获取产品失败 (${response.status})<br>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>`, 'error');
+                }
+            } catch (error) {
+                addResult(`❌ 获取产品失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 页面加载时的提示
+        window.onload = function() {
+            addResult('👋 欢迎使用 Lemonsqueezy 调试工具！<br>请先输入你的 API Key，然后点击相应按钮进行测试。', 'info');
+        };
+    </script>
+</body>
+</html>
