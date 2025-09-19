@@ -1,9 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import UserAccountDropdown from './UserAccountDropdown';
+import { useAuth } from '../contexts/AuthContext';
+import { useCredit } from '../contexts/CreditContext';
+import LoginModal from './auth/LoginModal';
 
 export default function Header() {
     const [showMobileMenu, setShowMobileMenu] = useState(false);
     const [showResourcesMenu, setShowResourcesMenu] = useState(false);
+    const [showLoginModal, setShowLoginModal] = useState(false);
+
+    // Auth and credit context
+    const { user, signOut } = useAuth();
+    const { credits, loading: creditLoading, trialCredits } = useCredit();
+
+    const handleSignOut = async () => {
+        try {
+            await signOut();
+        } catch (error) {
+            console.error('Sign out error:', error);
+        }
+    };
 
     // Close menus when clicking outside
     useEffect(() => {
@@ -134,8 +150,25 @@ export default function Header() {
                             <UserAccountDropdown />
                         </nav>
 
-                        {/* Mobile menu button */}
-                        <div className="md:hidden">
+                        {/* Mobile right section */}
+                        <div className="md:hidden flex items-center gap-3">
+                            {/* Mobile User Account Dropdown */}
+                            {user ? (
+                                <UserAccountDropdown className="mobile-user-dropdown" />
+                            ) : (
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setShowLoginModal(true);
+                                    }}
+                                    className="px-3 py-1.5 text-sm text-slate-300 hover:text-white border border-slate-600 hover:border-slate-500 rounded-md transition-all duration-200"
+                                >
+                                    Sign In
+                                </button>
+                            )}
+
+                            {/* Mobile menu button */}
                             <button
                                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                                 className="relative p-2 text-white/80 hover:text-white transition-colors duration-300 group"
@@ -151,119 +184,59 @@ export default function Header() {
                     {/* Mobile menu */}
                     {showMobileMenu && (
                         <div className="md:hidden absolute top-full left-0 w-full bg-slate-900/95 backdrop-blur-md border-b border-slate-800/50 z-50">
-                            <div className="px-6 py-4 space-y-3">
-                                <a
-                                    href="/analyze/"
-                                    className="block px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200"
-                                    onClick={() => setShowMobileMenu(false)}
-                                >
-                                    Audio Analysis
-                                </a>
-
-                                <a
-                                    href="/#features"
-                                    className="block px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200"
-                                    onClick={() => setShowMobileMenu(false)}
-                                >
-                                    Features
-                                </a>
-
-                                {/* Resources section */}
-                                <div className="space-y-2">
-                                    <div className="px-3 py-1 text-sm font-medium text-slate-400 uppercase tracking-wide">
-                                        Resources
-                                    </div>
+                            <div className="px-6 py-4">
+                                {/* Main Navigation Links */}
+                                <div className="space-y-1 mb-6">
                                     <a
-                                        href="/blog"
-                                        className="block px-6 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200 text-sm"
+                                        href="/analyze/"
+                                        className="block px-3 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200 font-medium"
+                                        onClick={() => setShowMobileMenu(false)}
+                                    >
+                                        Music Analyzer
+                                    </a>
+
+                                    <a
+                                        href="/pricing"
+                                        className="block px-3 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200 font-medium"
+                                        onClick={() => setShowMobileMenu(false)}
+                                    >
+                                        Pricing
+                                    </a>
+
+                                    <a
+                                        href="/blog/"
+                                        className="block px-3 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200 font-medium"
                                         onClick={() => setShowMobileMenu(false)}
                                     >
                                         Blog
                                     </a>
+
                                     <a
-                                        href="/about"
-                                        className="block px-6 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200 text-sm"
+                                        href="/about/"
+                                        className="block px-3 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200 font-medium"
                                         onClick={() => setShowMobileMenu(false)}
                                     >
                                         About
                                     </a>
+
                                     <a
-                                        href="/contact"
-                                        className="block px-6 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200 text-sm"
+                                        href="/contact/"
+                                        className="block px-3 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200 font-medium"
                                         onClick={() => setShowMobileMenu(false)}
                                     >
                                         Contact
                                     </a>
                                 </div>
 
-                                <a
-                                    href="/pricing"
-                                    className="block px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200"
-                                    onClick={() => setShowMobileMenu(false)}
-                                >
-                                    Pricing
-                                </a>
-
-                                {/* Auth Section for Mobile */}
-                                <div className="pt-4 border-t border-slate-800">
-                                    {user ? (
-                                        <div className="space-y-3">
-                                            <div className="flex items-center gap-3 px-3 py-2">
-                                                <div className="w-8 h-8 bg-gradient-to-r from-violet-400 to-blue-400 rounded-full flex items-center justify-center text-white text-sm font-semibold">
-                                                    {user.email?.charAt(0).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <div className="text-white text-sm font-medium">{user.email}</div>
-                                                    <div className="text-slate-400 text-xs">
-                                                        {creditLoading ? '加载中...' : `${credits} 积分`}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <button
-                                                onClick={() => {
-                                                    handleSignOut();
-                                                    setShowMobileMenu(false);
-                                                }}
-                                                className="w-full text-left px-3 py-2 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-md transition-all duration-200"
-                                            >
-                                                Sign Out
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {/* Trial Credits Display for Mobile */}
-                                            <div className="px-3 py-3 bg-gradient-to-r from-blue-500/10 to-violet-500/10 border border-blue-500/20 rounded-lg">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                                                    </svg>
-                                                    <span className="text-blue-400 font-semibold">Free Trial</span>
-                                                </div>
-                                                <div className="text-white text-lg font-bold">
-                                                    {trialCredits} Credits Available
-                                                </div>
-                                                <div className="text-slate-400 text-sm">
-                                                    Start analyzing music for free
-                                                </div>
-                                            </div>
-
-                                            <a
-                                                href="/analyze/"
-                                                className="block w-full text-center px-6 py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-lg hover:from-violet-600 hover:to-blue-600 transition-all duration-300 font-medium"
-                                                onClick={() => setShowMobileMenu(false)}
-                                            >
-                                                Start Analyzing
-                                            </a>
-
-                                            <a
-                                                href="/analyze/"
-                                                className="w-full text-center px-3 py-2 text-slate-400 hover:text-white border border-slate-600 hover:border-slate-500 rounded-lg transition-all duration-200"
-                                                onClick={() => setShowMobileMenu(false)}
-                                            >
-                                                Sign In for More Features
-                                            </a>
-                                        </div>
-                                    )}
+                                {/* CTA Section for Mobile */}
+                                <div className="pt-4 border-t border-slate-800/50">
+                                    <a
+                                        href="/analyze/"
+                                        className="block w-full text-center px-6 py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-lg hover:from-violet-600 hover:to-blue-600 transition-all duration-300 font-medium shadow-lg"
+                                        onClick={() => setShowMobileMenu(false)}
+                                    >
+                                        Try Free
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -278,6 +251,14 @@ export default function Header() {
                 <div
                     className="fixed inset-0 bg-black/20 z-40 md:hidden"
                     onClick={() => setShowMobileMenu(false)}
+                />
+            )}
+
+            {/* Login Modal */}
+            {showLoginModal && (
+                <LoginModal
+                    isOpen={showLoginModal}
+                    onClose={() => setShowLoginModal(false)}
                 />
             )}
         </>
