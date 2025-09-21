@@ -193,42 +193,39 @@ export const analyzeAudioFromUrl = functions
     .onRequest(async (req, res) => {
         const requestId = uuidv4();
 
-        // 严格的CORS配置
-        const corsHandler = cors({
-            origin: (origin, callback) => {
-                const allowedOrigins = config.cors.allowedOrigins;
+        // 安全的CORS配置
+        const origin = req.get('Origin');
+        const allowedOrigins = [
+            'https://describemusic.net',
+            'https://www.describemusic.net',
+            'https://describemusic.net/',
+            'https://www.describemusic.net/',
+            'http://localhost:4321',
+            'http://localhost:4322',
+            'http://localhost:4323',
+            'http://localhost:4327',
+            'https://localhost:4321',
+            'https://localhost:4322',
+            'https://localhost:4323',
+            'https://localhost:4327'
+        ];
 
-                if (!origin && config.environment === 'development') {
-                    return callback(null, true);
-                }
-
-                if (allowedOrigins.includes(origin || '')) {
-                    callback(null, true);
-                } else {
-                    logger.warn('CORS blocked unauthorized origin', { origin, requestId });
-                    callback(new Error('Not allowed by CORS'));
-                }
-            },
-            credentials: true,
-            optionsSuccessStatus: 200,
-            allowedHeaders: [
-                'Content-Type',
-                'Authorization',
-                'X-Device-Fingerprint',
-                'X-User-ID',
-                'Accept',
-                'Origin',
-                'X-Requested-With'
-            ]
-        });
-
-        // 应用CORS
-        await new Promise<void>((resolve, reject) => {
-            corsHandler(req, res, (error?: any) => {
-                if (error) reject(error);
-                else resolve();
+        if (allowedOrigins.includes(origin || '')) {
+            res.setHeader('Access-Control-Allow-Origin', origin || '');
+            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Fingerprint, X-User-ID, Accept, Origin, X-Requested-With');
+            res.setHeader('Access-Control-Allow-Credentials', 'true');
+        } else {
+            logger.warn('CORS blocked unauthorized origin', { origin, requestId });
+            res.status(403).json({
+                success: false,
+                error: { code: 'CORS_NOT_ALLOWED', message: 'Origin not allowed' },
+                requestId
             });
-        });
+            return;
+        }
+
+        // CORS验证已完成
 
         if (req.method === 'OPTIONS') {
             res.status(200).end();
@@ -247,6 +244,26 @@ export const analyzeAudioFromUrl = functions
         let userInfo: { userId?: string, deviceFingerprint?: string, creditsConsumed?: number } = {};
 
         try {
+            // 额外的安全检查
+            const userAgent = req.get('User-Agent') || '';
+            const referer = req.get('Referer') || '';
+
+            // 检查是否来自可信的referer
+            if (referer && !allowedOrigins.some(origin => referer.startsWith(origin))) {
+                logger.warn('Suspicious referer detected', { referer, origin, requestId });
+            }
+
+            // 检查User-Agent是否可疑
+            if (userAgent.toLowerCase().includes('bot') || userAgent.toLowerCase().includes('crawler')) {
+                logger.warn('Bot detected, blocking request', { userAgent, origin, requestId });
+                res.status(403).json({
+                    success: false,
+                    error: { code: 'BOT_NOT_ALLOWED', message: 'Automated requests not allowed' },
+                    requestId
+                });
+                return;
+            }
+
             const { fileUrl, fileName, options } = req.body;
 
             // 验证必需参数

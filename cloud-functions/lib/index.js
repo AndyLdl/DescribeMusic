@@ -45,7 +45,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.analyzeAudioFromUrl = exports.generateUploadUrl = exports.version = exports.healthCheck = exports.lemonsqueezyWebhook = exports.analyzeAudio = void 0;
 const admin = __importStar(require("firebase-admin"));
 const functions = __importStar(require("firebase-functions/v1"));
-const cors_1 = __importDefault(require("cors"));
 const uuid_1 = require("uuid");
 const config_1 = __importStar(require("./utils/config"));
 const logger_1 = __importDefault(require("./utils/logger"));
@@ -203,42 +202,38 @@ exports.analyzeAudioFromUrl = functions
     .https
     .onRequest(async (req, res) => {
     const requestId = (0, uuid_1.v4)();
-    // 严格的CORS配置
-    const corsHandler = (0, cors_1.default)({
-        origin: (origin, callback) => {
-            const allowedOrigins = config_1.default.cors.allowedOrigins;
-            if (!origin && config_1.default.environment === 'development') {
-                return callback(null, true);
-            }
-            if (allowedOrigins.includes(origin || '')) {
-                callback(null, true);
-            }
-            else {
-                logger_1.default.warn('CORS blocked unauthorized origin', { origin, requestId });
-                callback(new Error('Not allowed by CORS'));
-            }
-        },
-        credentials: true,
-        optionsSuccessStatus: 200,
-        allowedHeaders: [
-            'Content-Type',
-            'Authorization',
-            'X-Device-Fingerprint',
-            'X-User-ID',
-            'Accept',
-            'Origin',
-            'X-Requested-With'
-        ]
-    });
-    // 应用CORS
-    await new Promise((resolve, reject) => {
-        corsHandler(req, res, (error) => {
-            if (error)
-                reject(error);
-            else
-                resolve();
+    // 安全的CORS配置
+    const origin = req.get('Origin');
+    const allowedOrigins = [
+        'https://describemusic.net',
+        'https://www.describemusic.net',
+        'https://describemusic.net/',
+        'https://www.describemusic.net/',
+        'http://localhost:4321',
+        'http://localhost:4322',
+        'http://localhost:4323',
+        'http://localhost:4327',
+        'https://localhost:4321',
+        'https://localhost:4322',
+        'https://localhost:4323',
+        'https://localhost:4327'
+    ];
+    if (allowedOrigins.includes(origin || '')) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Fingerprint, X-User-ID, Accept, Origin, X-Requested-With');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    else {
+        logger_1.default.warn('CORS blocked unauthorized origin', { origin, requestId });
+        res.status(403).json({
+            success: false,
+            error: { code: 'CORS_NOT_ALLOWED', message: 'Origin not allowed' },
+            requestId
         });
-    });
+        return;
+    }
+    // CORS验证已完成
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
@@ -253,6 +248,23 @@ exports.analyzeAudioFromUrl = functions
     }
     let userInfo = {};
     try {
+        // 额外的安全检查
+        const userAgent = req.get('User-Agent') || '';
+        const referer = req.get('Referer') || '';
+        // 检查是否来自可信的referer
+        if (referer && !allowedOrigins.some(origin => referer.startsWith(origin))) {
+            logger_1.default.warn('Suspicious referer detected', { referer, origin, requestId });
+        }
+        // 检查User-Agent是否可疑
+        if (userAgent.toLowerCase().includes('bot') || userAgent.toLowerCase().includes('crawler')) {
+            logger_1.default.warn('Bot detected, blocking request', { userAgent, origin, requestId });
+            res.status(403).json({
+                success: false,
+                error: { code: 'BOT_NOT_ALLOWED', message: 'Automated requests not allowed' },
+                requestId
+            });
+            return;
+        }
         const { fileUrl, fileName, options } = req.body;
         // 验证必需参数
         if (!fileUrl || !fileName) {

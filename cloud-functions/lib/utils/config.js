@@ -87,8 +87,10 @@ const config = {
             'https://localhost:4327',
             'http://localhost:3000',
             'https://localhost:3000',
+            'https://www.describemusic.net',
             'https://www.describemusic.net/',
-            'https://describemusic.net'
+            'https://describemusic.net',
+            'https://describemusic.net/'
         ],
     },
     rateLimit: {
