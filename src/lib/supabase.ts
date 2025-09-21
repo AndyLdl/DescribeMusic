@@ -9,20 +9,9 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://fsmgroeytsburlgmoxcj.supabase.co';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-// Debug environment variables
-console.log('🔍 Environment variables debug:', {
-    url: supabaseUrl,
-    hasAnonKey: !!supabaseAnonKey,
-    anonKeyLength: supabaseAnonKey?.length,
-    envMode: import.meta.env.MODE,
-    isDev: import.meta.env.DEV,
-    allEnvKeys: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
-});
-
 // Validate required environment variables
 if (!supabaseAnonKey) {
     console.error('❌ Missing VITE_SUPABASE_ANON_KEY environment variable');
-    console.error('Available env vars:', Object.keys(import.meta.env));
     throw new Error('VITE_SUPABASE_ANON_KEY is required but not found in environment variables');
 }
 
@@ -33,14 +22,23 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: true,
-        // 增加会话存储配置
+        // 修复生产环境会话存储问题
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         storageKey: 'supabase.auth.token',
+        // 添加生产环境兼容性配置
+        flowType: 'pkce',
+        debug: import.meta.env.DEV,
     },
     // Configure realtime subscriptions (if needed)
     realtime: {
         params: {
             eventsPerSecond: 10,
+        },
+    },
+    // 添加全局配置
+    global: {
+        headers: {
+            'X-Client-Info': 'describe-music-web',
         },
     },
 });
