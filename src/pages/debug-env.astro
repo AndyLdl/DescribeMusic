@@ -1,0 +1,57 @@
+---
+// 调试环境变量页面
+const envVars = {
+  VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL,
+  VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY
+    ? "✅ Present"
+    : "❌ Missing",
+  VITE_CLOUD_FUNCTIONS_URL: import.meta.env.VITE_CLOUD_FUNCTIONS_URL,
+  VITE_DEVICE_FINGERPRINT_SALT: import.meta.env.VITE_DEVICE_FINGERPRINT_SALT
+    ? "✅ Present"
+    : "❌ Missing",
+  MODE: import.meta.env.MODE,
+  DEV: import.meta.env.DEV,
+  PROD: import.meta.env.PROD,
+};
+---
+
+<html>
+  <head>
+    <title>Environment Variables Debug</title>
+    <style>
+      body {
+        font-family: monospace;
+        padding: 20px;
+        background: #1a1a1a;
+        color: #fff;
+      }
+      .var {
+        margin: 10px 0;
+        padding: 10px;
+        background: #2a2a2a;
+        border-radius: 5px;
+      }
+      .missing {
+        background: #4a1a1a;
+      }
+      .present {
+        background: #1a4a1a;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Environment Variables Debug</h1>
+    {
+      Object.entries(envVars).map(([key, value]) => (
+        <div
+          class={`var ${value?.toString().includes("❌") ? "missing" : "present"}`}>
+          <strong>{key}:</strong> {value}
+        </div>
+      ))
+    }
+
+    <script>
+      console.log("Environment variables:", import.meta.env);
+    </script>
+  </body>
+</html>
