@@ -50,15 +50,33 @@ export default function UserAccountDropdown({ className = '' }: UserAccountDropd
     const handleSignOut = async () => {
         try {
             console.log('Starting sign out process...');
-            await signOut();
-            console.log('Sign out successful');
             setShowUserMenu(false);
 
-            // 可选：重定向到首页
-            window.location.href = '/';
-        } catch (error) {
+            // 调用 signOut，但不依赖其成功
+            await signOut();
+            console.log('Sign out completed');
+
+            // 强制重定向到首页，确保用户状态清除
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 100);
+        } catch (error: any) {
             console.error('Error signing out:', error);
-            alert('Failed to sign out. Please try again.');
+
+            // 即使出错也要关闭菜单并重定向
+            setShowUserMenu(false);
+
+            // 对于会话缺失错误，不显示警告，直接重定向
+            if (error?.message === 'Auth session missing!' || error?.name === 'AuthSessionMissingError') {
+                console.log('Session already cleared, redirecting...');
+                window.location.href = '/';
+            } else {
+                // 其他错误才显示警告
+                alert('Sign out completed, but there was a minor issue. You will be redirected.');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1000);
+            }
         }
     };
 

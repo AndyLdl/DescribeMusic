@@ -246,11 +246,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         try {
             setLoading(true);
 
-            const { error } = await supabase.auth.signOut();
-            if (error) throw error;
-
-            // 🔧 登出成功后立即清除状态
-            console.log('🔐 Logout successful, clearing state immediately');
+            // 先清除本地状态，避免会话错误
+            console.log('🔐 Clearing local state before signOut');
             setSession(null);
             setUser(null);
             setUsageStatus({
@@ -261,9 +258,34 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 userType: 'trial',
                 message: 'Trial mode'
             });
+
+            // 尝试服务端登出，但不依赖其成功
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error && error.message !== 'Auth session missing!') {
+                    console.warn('🔐 SignOut warning:', error.message);
+                }
+            } catch (signOutError: any) {
+                // 忽略会话缺失错误，这在生产环境中很常见
+                if (signOutError.message !== 'Auth session missing!') {
+                    console.warn('🔐 SignOut error (non-critical):', signOutError.message);
+                }
+            }
+
+            console.log('🔐 Logout completed, state cleared');
         } catch (error) {
-            console.error('🔐 Error in signOut:', error);
-            throw error;
+            console.error('🔐 Critical error in signOut:', error);
+            // 即使出错也要清除本地状态
+            setSession(null);
+            setUser(null);
+            setUsageStatus({
+                allowed: true,
+                remaining: 100,
+                total: 100,
+                requiresAuth: false,
+                userType: 'trial',
+                message: 'Trial mode'
+            });
         } finally {
             setLoading(false);
         }
