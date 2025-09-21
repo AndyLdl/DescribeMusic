@@ -16,5 +16,10 @@ export default defineConfig({
   }), tailwind(), react()],
   vite: {
     envPrefix: ['VITE_'],
+    esbuild: {
+      // 在生产环境中移除调试日志，但保留错误日志
+      drop: process.env.NODE_ENV === 'production' ? ['debugger'] : [],
+      pure: process.env.NODE_ENV === 'production' ? ['console.log', 'console.info', 'console.warn'] : [],
+    },
   }
 });
