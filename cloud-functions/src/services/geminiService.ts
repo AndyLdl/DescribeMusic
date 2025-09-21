@@ -13,6 +13,8 @@ import {
 import { GeminiError } from '../utils/errors';
 import logger from '../utils/logger';
 import config from '../utils/config';
+import { SecurityUtils, CostMonitor } from '../utils/security';
+import * as crypto from 'crypto';
 
 export class GeminiService {
     private genAI: GoogleGenerativeAI;

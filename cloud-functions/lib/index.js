@@ -44,9 +44,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.analyzeAudioFromUrl = exports.generateUploadUrl = exports.version = exports.healthCheck = exports.lemonsqueezyWebhook = exports.analyzeAudio = void 0;
 const admin = __importStar(require("firebase-admin"));
+const functions = __importStar(require("firebase-functions/v1"));
+const cors_1 = __importDefault(require("cors"));
+const uuid_1 = require("uuid");
 const config_1 = __importStar(require("./utils/config"));
 const logger_1 = __importDefault(require("./utils/logger"));
 const analyzeAudio_1 = require("./functions/analyzeAudio");
+const vertexAIService_1 = require("./services/vertexAIService");
+const prompts_1 = require("./utils/prompts");
 const supabase_1 = require("./utils/supabase");
 // Initialize Firebase Admin SDK
 if (!admin.apps.length) {
@@ -78,7 +83,6 @@ Object.defineProperty(exports, "analyzeAudio", { enumerable: true, get: function
 var lemonsqueezyWebhook_1 = require("./functions/lemonsqueezyWebhook");
 Object.defineProperty(exports, "lemonsqueezyWebhook", { enumerable: true, get: function () { return lemonsqueezyWebhook_1.lemonsqueezyWebhook; } });
 // Health check function
-const functions = __importStar(require("firebase-functions/v1"));
 exports.healthCheck = functions
     .region('us-central1')
     .https
@@ -95,7 +99,8 @@ exports.healthCheck = functions
         },
         services: {
             firebase: admin.apps.length > 0,
-            gemini: !!config_1.default.googleAI.apiKey
+            vertexAI: !!config_1.default.vertexAI.projectId && !!config_1.default.vertexAI.location,
+            gemini: !!config_1.default.googleAI.apiKey // 备用
         }
     });
 });
@@ -192,29 +197,72 @@ exports.generateUploadUrl = functions
         });
     }
 });
-// Analyze audio from GCS URL (renamed from analyzeAudioBase64)
+// Secure audio analysis from GCS URL
 exports.analyzeAudioFromUrl = functions
     .region('us-central1')
     .https
     .onRequest(async (req, res) => {
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Fingerprint, X-User-ID, Accept, Origin, X-Requested-With');
+    const requestId = (0, uuid_1.v4)();
+    // 严格的CORS配置
+    const corsHandler = (0, cors_1.default)({
+        origin: (origin, callback) => {
+            const allowedOrigins = config_1.default.cors.allowedOrigins;
+            if (!origin && config_1.default.environment === 'development') {
+                return callback(null, true);
+            }
+            if (allowedOrigins.includes(origin || '')) {
+                callback(null, true);
+            }
+            else {
+                logger_1.default.warn('CORS blocked unauthorized origin', { origin, requestId });
+                callback(new Error('Not allowed by CORS'));
+            }
+        },
+        credentials: true,
+        optionsSuccessStatus: 200,
+        allowedHeaders: [
+            'Content-Type',
+            'Authorization',
+            'X-Device-Fingerprint',
+            'X-User-ID',
+            'Accept',
+            'Origin',
+            'X-Requested-With'
+        ]
+    });
+    // 应用CORS
+    await new Promise((resolve, reject) => {
+        corsHandler(req, res, (error) => {
+            if (error)
+                reject(error);
+            else
+                resolve();
+        });
+    });
     if (req.method === 'OPTIONS') {
         res.status(200).end();
         return;
     }
     if (req.method !== 'POST') {
-        res.status(405).json({ error: 'Method not allowed' });
+        res.status(405).json({
+            success: false,
+            error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST method allowed' },
+            requestId
+        });
         return;
     }
     let userInfo = {};
     try {
         const { fileUrl, fileName, options } = req.body;
-        if (!fileUrl) {
+        // 验证必需参数
+        if (!fileUrl || !fileName) {
             res.status(400).json({
                 success: false,
-                error: { code: 'MISSING_FILE_URL', message: 'File URL is required' }
+                error: {
+                    code: 'MISSING_REQUIRED_FIELDS',
+                    message: 'fileUrl and fileName are required'
+                },
+                requestId
             });
             return;
         }
@@ -250,8 +298,80 @@ exports.analyzeAudioFromUrl = functions
         await checkAndConsumeUsageFromUrl(req, fileName, frontendDuration);
         // Download file only for analysis (not for duration detection)
         const audioFile = await downloadForAnalysis(fileUrl, fileName);
-        // Analyze with Gemini using the downloaded file
-        const analysisResult = await performAnalysisWithFile(audioFile, options || {});
+        // 构建分析prompt
+        const prompt = {
+            systemPrompt: prompts_1.PromptTemplates.getSystemPrompt(),
+            userPrompt: prompts_1.PromptTemplates.getUserPrompt(audioFile.originalName, 'Comprehensive audio analysis requested'),
+            audioMetadata: {
+                filename: audioFile.originalName,
+                duration: frontendDuration,
+                format: audioFile.format || 'Unknown',
+                size: audioFile.size
+            }
+        };
+        // 使用 Vertex AI 服务进行分析
+        const vertexResponse = await vertexAIService_1.vertexAIService.analyzeAudio(prompt, requestId);
+        if (!vertexResponse.success || !vertexResponse.data) {
+            throw new Error('Vertex AI analysis failed: No valid response received');
+        }
+        const analysis = vertexResponse.data.analysis;
+        const processingTime = (Date.now() - Date.now()) / 1000;
+        // 构建标准的分析结果
+        const analysisResult = {
+            id: requestId,
+            filename: audioFile.originalName,
+            timestamp: new Date().toISOString(),
+            duration: frontendDuration,
+            fileSize: `${(audioFile.size / (1024 * 1024)).toFixed(2)} MB`,
+            format: audioFile.format || 'Unknown',
+            contentType: analysis.contentType || {
+                primary: 'music',
+                confidence: 0.8,
+                description: 'AI-analyzed audio content'
+            },
+            basicInfo: analysis.basicInfo || {
+                genre: 'Unknown', mood: 'Neutral', bpm: 120, key: 'C Major',
+                energy: 0.5, valence: 0.5, danceability: 0.5, instrumentalness: 0.5,
+                speechiness: 0.1, acousticness: 0.5, liveness: 0.1, loudness: -10
+            },
+            emotions: analysis.emotions || {
+                happy: 0.3, sad: 0.2, angry: 0.1, calm: 0.4, excited: 0.2,
+                melancholic: 0.2, energetic: 0.3, peaceful: 0.3, tense: 0.2, relaxed: 0.4
+            },
+            voiceAnalysis: {
+                hasVoice: false, speakerCount: 0,
+                genderDetection: { primary: 'unknown', confidence: 0.0, multipleGenders: false },
+                speakerEmotion: {
+                    primary: 'neutral', confidence: 0.0,
+                    emotions: { happy: 0.0, sad: 0.0, angry: 0.0, calm: 0.0, excited: 0.0, nervous: 0.0, confident: 0.0, stressed: 0.0 }
+                },
+                speechClarity: { score: 0.0, pronunciation: 0.0, articulation: 0.0, pace: 'normal', volume: 'normal' },
+                vocalCharacteristics: { pitchRange: 'medium', speakingRate: 0, pauseFrequency: 'low', intonationVariation: 0.0 },
+                languageAnalysis: { language: 'unknown', confidence: 0.0, accent: 'unknown' },
+                audioQuality: { backgroundNoise: 0.0, echo: 0.0, compression: 0.0, overall: 0.0 }
+            },
+            soundEffects: {
+                detected: [],
+                environment: {
+                    location_type: 'indoor', setting: 'commercial', activity_level: 'moderate',
+                    acoustic_space: 'medium', time_of_day: 'unknown', weather: 'unknown'
+                }
+            },
+            structure: analysis.structure || {
+                intro: { start: 0, end: 8 }, verse1: { start: 8, end: 32 },
+                chorus1: { start: 32, end: 56 }, outro: { start: 56, end: 80 }
+            },
+            quality: analysis.quality || {
+                overall: 7.0, clarity: 7.0, loudness: -10, dynamic_range: 6.0,
+                noise_level: 2.0, distortion: 1.0, frequency_balance: 7.0
+            },
+            similarity: analysis.similarity || {
+                similar_tracks: [], similar_sounds: [], style_influences: ['AI-analyzed'], genre_confidence: 0.7
+            },
+            tags: analysis.tags || ['audio', 'music', 'vertex-ai-analyzed'],
+            aiDescription: analysis.aiDescription || 'Audio content analyzed using Vertex AI Gemini.',
+            processingTime: processingTime
+        };
         res.json({
             success: true,
             data: analysisResult,

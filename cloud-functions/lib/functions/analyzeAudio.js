@@ -45,7 +45,7 @@ const multer_1 = __importDefault(require("multer"));
 const uuid_1 = require("uuid");
 const types_1 = require("../types");
 const supabase_1 = require("../utils/supabase");
-const geminiService_1 = require("../services/geminiService");
+const vertexAIService_1 = require("../services/vertexAIService");
 const prompts_1 = require("../utils/prompts");
 const errors_1 = require("../utils/errors");
 const logger_1 = __importDefault(require("../utils/logger"));
@@ -59,9 +59,23 @@ const path = __importStar(require("path"));
 if (!admin.apps.length) {
     admin.initializeApp();
 }
-// Configure CORS
+// Configure CORS - 更严格的配置
 const corsHandler = (0, cors_1.default)({
-    origin: config_1.default.cors.allowedOrigins,
+    origin: (origin, callback) => {
+        // 允许的域名列表
+        const allowedOrigins = config_1.default.cors.allowedOrigins;
+        // 开发环境允许无origin（如Postman）
+        if (!origin && config_1.default.environment === 'development') {
+            return callback(null, true);
+        }
+        if (allowedOrigins.includes(origin || '')) {
+            callback(null, true);
+        }
+        else {
+            logger_1.default.warn('CORS blocked request from unauthorized origin', { origin });
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     optionsSuccessStatus: 200,
     allowedHeaders: [
@@ -890,8 +904,8 @@ async function performAnalysis(audioFile, options = {}, requestId) {
         }, requestId);
         // Create analysis prompt with real metadata
         const prompt = prompts_1.PromptTemplates.createAnalysisPrompt(audioFile.originalName, audioMetadata.duration, audioMetadata.format, audioFile.size);
-        // Call Gemini API
-        const geminiResponse = await geminiService_1.geminiService.analyzeAudio(prompt, requestId);
+        // Call Vertex AI Gemini API
+        const geminiResponse = await vertexAIService_1.vertexAIService.analyzeAudio(prompt, requestId);
         if (!geminiResponse.success || !geminiResponse.data) {
             throw new errors_1.AppError(types_1.ErrorCode.ANALYSIS_FAILED, 'Analysis failed: No data returned from AI service');
         }

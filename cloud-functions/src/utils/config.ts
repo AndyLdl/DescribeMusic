@@ -8,7 +8,16 @@ dotenv.config();
 const firebaseConfig = functions.config();
 
 export interface Config {
-    // Google AI
+    // Vertex AI (替代Google AI)
+    vertexAI: {
+        projectId: string;
+        location: string;
+        model: string;
+        maxTokens: number;
+        temperature: number;
+    };
+
+    // 保留Google AI配置作为备用
     googleAI: {
         apiKey: string;
         model: string;
@@ -54,8 +63,16 @@ export interface Config {
 }
 
 const config: Config = {
+    vertexAI: {
+        projectId: firebaseConfig?.vertex_ai?.project_id || process.env.VERTEX_AI_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'describe-music',
+        location: firebaseConfig?.vertex_ai?.location || process.env.VERTEX_AI_LOCATION || 'us-central1',
+        model: process.env.VERTEX_AI_MODEL || 'gemini-1.5-flash',
+        maxTokens: parseInt(process.env.VERTEX_AI_MAX_TOKENS || '2048'),
+        temperature: parseFloat(process.env.VERTEX_AI_TEMPERATURE || '0.7'),
+    },
+
     googleAI: {
-        // Try Firebase config first, then environment variables
+        // 保留作为备用
         apiKey: firebaseConfig?.google_ai?.api_key || process.env.GOOGLE_AI_API_KEY || '',
         model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
         maxTokens: parseInt(process.env.GEMINI_MAX_TOKENS || '2048'),
@@ -88,9 +105,16 @@ const config: Config = {
             .filter(Boolean) || [
                 'http://localhost:4321',
                 'https://localhost:4321',
+                'http://localhost:4322',
+                'https://localhost:4322',
+                'http://localhost:4323',
+                'https://localhost:4323',
                 'http://localhost:4327',
                 'https://localhost:4327',
-                'https://www.describemusic.net/'
+                'http://localhost:3000',
+                'https://localhost:3000',
+                'https://www.describemusic.net/',
+                'https://describemusic.net'
             ],
     },
 
@@ -134,6 +158,19 @@ export function validateConfig(): { isValid: boolean; errors: string[] } {
         errors.push('LEMONSQUEEZY_WEBHOOK_SECRET is required');
     }
 
+    if (config.vertexAI.maxTokens <= 0) {
+        errors.push('VERTEX_AI_MAX_TOKENS must be a positive number');
+    }
+
+    if (!config.vertexAI.projectId) {
+        errors.push('VERTEX_AI_PROJECT_ID is required');
+    }
+
+    if (!config.vertexAI.location) {
+        errors.push('VERTEX_AI_LOCATION is required');
+    }
+
+    // 保留Google AI验证作为备用
     if (config.googleAI.maxTokens <= 0) {
         errors.push('GEMINI_MAX_TOKENS must be a positive number');
     }

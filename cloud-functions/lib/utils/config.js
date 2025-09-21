@@ -32,7 +32,7 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateConfig = validateConfig;
 const dotenv = __importStar(require("dotenv"));
@@ -42,39 +42,53 @@ dotenv.config();
 // Get Firebase Functions config (for production)
 const firebaseConfig = functions.config();
 const config = {
+    vertexAI: {
+        projectId: ((_a = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.vertex_ai) === null || _a === void 0 ? void 0 : _a.project_id) || process.env.VERTEX_AI_PROJECT_ID || process.env.GOOGLE_CLOUD_PROJECT || 'describe-music',
+        location: ((_b = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.vertex_ai) === null || _b === void 0 ? void 0 : _b.location) || process.env.VERTEX_AI_LOCATION || 'us-central1',
+        model: process.env.VERTEX_AI_MODEL || 'gemini-1.5-flash',
+        maxTokens: parseInt(process.env.VERTEX_AI_MAX_TOKENS || '2048'),
+        temperature: parseFloat(process.env.VERTEX_AI_TEMPERATURE || '0.7'),
+    },
     googleAI: {
-        // Try Firebase config first, then environment variables
-        apiKey: ((_a = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.google_ai) === null || _a === void 0 ? void 0 : _a.api_key) || process.env.GOOGLE_AI_API_KEY || '',
+        // 保留作为备用
+        apiKey: ((_c = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.google_ai) === null || _c === void 0 ? void 0 : _c.api_key) || process.env.GOOGLE_AI_API_KEY || '',
         model: process.env.GEMINI_MODEL || 'gemini-1.5-flash',
         maxTokens: parseInt(process.env.GEMINI_MAX_TOKENS || '2048'),
         temperature: parseFloat(process.env.GEMINI_TEMPERATURE || '0.7'),
     },
     firebase: {
         // Try Firebase config first, then defaults for emulator
-        projectId: ((_b = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.app) === null || _b === void 0 ? void 0 : _b.project_id) || 'describe-music',
-        storageBucket: ((_c = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.app) === null || _c === void 0 ? void 0 : _c.storage_bucket) || 'describe-music.appspot.com',
+        projectId: ((_d = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.app) === null || _d === void 0 ? void 0 : _d.project_id) || 'describe-music',
+        storageBucket: ((_e = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.app) === null || _e === void 0 ? void 0 : _e.storage_bucket) || 'describe-music.appspot.com',
     },
     supabase: {
-        url: ((_d = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.supabase) === null || _d === void 0 ? void 0 : _d.url) || process.env.SUPABASE_URL || '',
-        serviceRoleKey: ((_e = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.supabase) === null || _e === void 0 ? void 0 : _e.service_role_key) || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+        url: ((_f = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.supabase) === null || _f === void 0 ? void 0 : _f.url) || process.env.SUPABASE_URL || '',
+        serviceRoleKey: ((_g = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.supabase) === null || _g === void 0 ? void 0 : _g.service_role_key) || process.env.SUPABASE_SERVICE_ROLE_KEY || '',
     },
     lemonsqueezy: {
-        apiKey: ((_f = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _f === void 0 ? void 0 : _f.api_key) || process.env.LEMONSQUEEZY_API_KEY || '',
-        storeId: ((_g = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _g === void 0 ? void 0 : _g.store_id) || process.env.LEMONSQUEEZY_STORE_ID || '',
-        webhookSecret: ((_h = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _h === void 0 ? void 0 : _h.webhook_secret) || process.env.LEMONSQUEEZY_WEBHOOK_SECRET || '',
-        basicVariantId: ((_j = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _j === void 0 ? void 0 : _j.basic_variant_id) || process.env.LEMONSQUEEZY_BASIC_VARIANT_ID || '',
-        proVariantId: ((_k = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _k === void 0 ? void 0 : _k.pro_variant_id) || process.env.LEMONSQUEEZY_PRO_VARIANT_ID || '',
-        premiumVariantId: ((_l = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _l === void 0 ? void 0 : _l.premium_variant_id) || process.env.LEMONSQUEEZY_PREMIUM_VARIANT_ID || '',
+        apiKey: ((_h = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _h === void 0 ? void 0 : _h.api_key) || process.env.LEMONSQUEEZY_API_KEY || '',
+        storeId: ((_j = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _j === void 0 ? void 0 : _j.store_id) || process.env.LEMONSQUEEZY_STORE_ID || '',
+        webhookSecret: ((_k = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _k === void 0 ? void 0 : _k.webhook_secret) || process.env.LEMONSQUEEZY_WEBHOOK_SECRET || '',
+        basicVariantId: ((_l = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _l === void 0 ? void 0 : _l.basic_variant_id) || process.env.LEMONSQUEEZY_BASIC_VARIANT_ID || '',
+        proVariantId: ((_m = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _m === void 0 ? void 0 : _m.pro_variant_id) || process.env.LEMONSQUEEZY_PRO_VARIANT_ID || '',
+        premiumVariantId: ((_o = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _o === void 0 ? void 0 : _o.premium_variant_id) || process.env.LEMONSQUEEZY_PREMIUM_VARIANT_ID || '',
     },
     cors: {
-        allowedOrigins: (((_m = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.cors) === null || _m === void 0 ? void 0 : _m.allowed_origins) || process.env.ALLOWED_ORIGINS || '')
+        allowedOrigins: (((_p = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.cors) === null || _p === void 0 ? void 0 : _p.allowed_origins) || process.env.ALLOWED_ORIGINS || '')
             .split(',')
             .filter(Boolean) || [
             'http://localhost:4321',
             'https://localhost:4321',
+            'http://localhost:4322',
+            'https://localhost:4322',
+            'http://localhost:4323',
+            'https://localhost:4323',
             'http://localhost:4327',
             'https://localhost:4327',
-            'https://www.describemusic.net/'
+            'http://localhost:3000',
+            'https://localhost:3000',
+            'https://www.describemusic.net/',
+            'https://describemusic.net'
         ],
     },
     rateLimit: {
@@ -107,6 +121,16 @@ function validateConfig() {
     if (!config.lemonsqueezy.webhookSecret) {
         errors.push('LEMONSQUEEZY_WEBHOOK_SECRET is required');
     }
+    if (config.vertexAI.maxTokens <= 0) {
+        errors.push('VERTEX_AI_MAX_TOKENS must be a positive number');
+    }
+    if (!config.vertexAI.projectId) {
+        errors.push('VERTEX_AI_PROJECT_ID is required');
+    }
+    if (!config.vertexAI.location) {
+        errors.push('VERTEX_AI_LOCATION is required');
+    }
+    // 保留Google AI验证作为备用
     if (config.googleAI.maxTokens <= 0) {
         errors.push('GEMINI_MAX_TOKENS must be a positive number');
     }

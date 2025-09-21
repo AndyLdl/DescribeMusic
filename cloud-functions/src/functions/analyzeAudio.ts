@@ -31,7 +31,8 @@ import {
     refundTrialCredits,
     calculateCreditsRequired
 } from '../utils/supabase';
-import { geminiService } from '../services/geminiService';
+import { vertexAIService } from '../services/vertexAIService';
+import { verifyFirebaseToken, rateLimitMiddleware, AuthenticatedRequest } from '../middleware/auth';
 import { PromptTemplates } from '../utils/prompts';
 import {
     AppError,
@@ -56,9 +57,24 @@ if (!admin.apps.length) {
     admin.initializeApp();
 }
 
-// Configure CORS
+// Configure CORS - 更严格的配置
 const corsHandler = cors({
-    origin: config.cors.allowedOrigins,
+    origin: (origin, callback) => {
+        // 允许的域名列表
+        const allowedOrigins = config.cors.allowedOrigins;
+
+        // 开发环境允许无origin（如Postman）
+        if (!origin && config.environment === 'development') {
+            return callback(null, true);
+        }
+
+        if (allowedOrigins.includes(origin || '')) {
+            callback(null, true);
+        } else {
+            logger.warn('CORS blocked request from unauthorized origin', { origin });
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
     optionsSuccessStatus: 200,
     allowedHeaders: [
@@ -1018,8 +1034,8 @@ export async function performAnalysis(
             audioFile.size
         );
 
-        // Call Gemini API
-        const geminiResponse = await geminiService.analyzeAudio(prompt, requestId);
+        // Call Vertex AI Gemini API
+        const geminiResponse = await vertexAIService.analyzeAudio(prompt, requestId);
 
         if (!geminiResponse.success || !geminiResponse.data) {
             throw new AppError(
