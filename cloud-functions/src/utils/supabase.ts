@@ -522,4 +522,40 @@ export function calculateCreditsRequired(durationSeconds: number): number {
     return Math.ceil(durationSeconds);
 }
 
+/**
+ * 验证 Supabase JWT token
+ */
+export async function verifySupabaseToken(token: string): Promise<any> {
+    try {
+        // 使用 Supabase 客户端验证 JWT token
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+
+        if (error) {
+            logger.error('Supabase token verification failed', error as Error);
+            throw new Error(`Invalid token: ${error.message}`);
+        }
+
+        if (!user) {
+            throw new Error('No user found for token');
+        }
+
+        logger.info('Supabase token verified successfully', {
+            userId: user.id,
+            email: user.email
+        });
+
+        return {
+            sub: user.id,           // 用户ID
+            email: user.email,      // 邮箱
+            aud: user.aud,          // 受众
+            user_metadata: user.user_metadata,
+            app_metadata: user.app_metadata
+        };
+
+    } catch (error) {
+        logger.error('Error verifying Supabase token', error as Error);
+        throw error;
+    }
+}
+
 export default supabase;

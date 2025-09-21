@@ -19,6 +19,7 @@ exports.consumeTrialCredits = consumeTrialCredits;
 exports.refundUserCredits = refundUserCredits;
 exports.refundTrialCredits = refundTrialCredits;
 exports.calculateCreditsRequired = calculateCreditsRequired;
+exports.verifySupabaseToken = verifySupabaseToken;
 const supabase_js_1 = require("@supabase/supabase-js");
 const config_1 = __importDefault(require("./config"));
 const logger_1 = __importDefault(require("./logger"));
@@ -432,5 +433,36 @@ async function refundTrialCredits(fingerprint, creditsAmount, reason, analysisId
 function calculateCreditsRequired(durationSeconds) {
     // 1 second = 1 credit, rounded up to nearest second
     return Math.ceil(durationSeconds);
+}
+/**
+ * 验证 Supabase JWT token
+ */
+async function verifySupabaseToken(token) {
+    try {
+        // 使用 Supabase 客户端验证 JWT token
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error) {
+            logger_1.default.error('Supabase token verification failed', error);
+            throw new Error(`Invalid token: ${error.message}`);
+        }
+        if (!user) {
+            throw new Error('No user found for token');
+        }
+        logger_1.default.info('Supabase token verified successfully', {
+            userId: user.id,
+            email: user.email
+        });
+        return {
+            sub: user.id, // 用户ID
+            email: user.email, // 邮箱
+            aud: user.aud, // 受众
+            user_metadata: user.user_metadata,
+            app_metadata: user.app_metadata
+        };
+    }
+    catch (error) {
+        logger_1.default.error('Error verifying Supabase token', error);
+        throw error;
+    }
 }
 exports.default = supabase;

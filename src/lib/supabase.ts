@@ -7,7 +7,24 @@ import { createClient } from '@supabase/supabase-js';
 
 // Get Supabase configuration from environment variables
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://fsmgroeytsburlgmoxcj.supabase.co';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZzbWdyb2V5dHNidXJsZ21veGNqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc5MzUwMjQsImV4cCI6MjA3MzUxMTAyNH0.z6T4B5HtUuLoQD-hmSNJEWCmoXCM0_pNoy5MlaC49ok';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Debug environment variables
+console.log('🔍 Environment variables debug:', {
+    url: supabaseUrl,
+    hasAnonKey: !!supabaseAnonKey,
+    anonKeyLength: supabaseAnonKey?.length,
+    envMode: import.meta.env.MODE,
+    isDev: import.meta.env.DEV,
+    allEnvKeys: Object.keys(import.meta.env).filter(key => key.startsWith('VITE_'))
+});
+
+// Validate required environment variables
+if (!supabaseAnonKey) {
+    console.error('❌ Missing VITE_SUPABASE_ANON_KEY environment variable');
+    console.error('Available env vars:', Object.keys(import.meta.env));
+    throw new Error('VITE_SUPABASE_ANON_KEY is required but not found in environment variables');
+}
 
 // Create Supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -19,8 +36,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
         // 增加会话存储配置
         storage: typeof window !== 'undefined' ? window.localStorage : undefined,
         storageKey: 'supabase.auth.token',
-        // 设置更长的刷新间隔
-        refreshTokenRotationEnabled: true,
     },
     // Configure realtime subscriptions (if needed)
     realtime: {

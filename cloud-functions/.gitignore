@@ -64,3 +64,10 @@ node_modules/
 
 # dotenv environment variables file
 .env
+.env.*
+!.env.example
+.runtimeconfig.json
+
+# debug and test files
+debug-*.js
+test-*.js

@@ -197,17 +197,15 @@ export class LemonsqueezyService {
     private isInitialized = false;
 
     private constructor() {
-        // Read configuration from environment variables with fallback values
+        // Read configuration from environment variables
         const envApiKey = import.meta.env.VITE_LEMONSQUEEZY_API_KEY;
-        const fallbackApiKey = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI5NGQ1OWNlZi1kYmI4LTRlYTUtYjE3OC1kMjU0MGZjZDY5MTkiLCJqdGkiOiJjZWY4MDU1Y2E2NzI4YjM3NzAxMTU5MzEwYzkzNmQ0YjA2OGI3OWQ1MDFkODNhYTAxYjAyN2I3N2RjYjkzYTBlNWVmMWM3YWMzZjA0ODBkYyIsImlhdCI6MTc1ODIxNDU0Ny43NTY3OTYsIm5iZiI6MTc1ODIxNDU0Ny43NTY3OTksImV4cCI6MjA3Mzc0NzM0Ny43NDM0NCwic3ViIjoiMTkxNDAxMSIsInNjb3BlcyI6W119.as4QEOlT0uK1bOQC8C464bjvdgH4Icsf0MZMLLps4L2aVPnnVdqInbQYQG-x_PGJwY2qPdugjm1zPorVEFDdyboqMJKWLshEA-j8mXbcZeSu91u05YKKT5vE1ekZTvDrvMN8QAtQNvJ6mZLqWlpasHDOdbZYHM9uwjSYa4-zRMYbjVvEHtB0tJtRF1U8NxlUGnRkGmqWLITx-b-xb5XNjF2Pe-Y85SJJhyU0Sf0K1nfjWvKNebzYoMfwuCHXUdEjVsJvLcrZwNuLRO47YOIGwXJISQa2mqAx2PqONNs37QKz4ACWy6mPSRaz59XhTZueIHz8rqMn5adAQ6oApaEMGvcVpToAGfZknIqKpm5nt0JakFTFCEfGfKDGskpsDDXIyyxaUhVRF87xXNkM7mP7PXRcW4BsJ3EM1H_nj7VzQ194JUFDISc-nQuIefQDnTIShYLKCaMbAfuo_J6GfHUYGrEO11ryljU5q95_Mj5M6ztdjuPDKHkUCURDd7d2rtpX';
 
         // Check if environment variables are complete
-        if (envApiKey && envApiKey.length >= 800) {
-            this.apiKey = envApiKey;
-        } else {
-            console.warn('⚠️ Environment variable API Key incomplete, using fallback value');
-            this.apiKey = fallbackApiKey;
+        if (!envApiKey) {
+            throw new Error('VITE_LEMONSQUEEZY_API_KEY environment variable is required');
         }
+
+        this.apiKey = envApiKey;
 
         this.storeId = import.meta.env.VITE_LEMONSQUEEZY_STORE_ID || '76046';
 

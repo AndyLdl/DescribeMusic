@@ -24,7 +24,8 @@ import {
     checkTrialCredits,
     consumeTrialCredits,
     refundUserCredits,
-    refundTrialCredits
+    refundTrialCredits,
+    verifySupabaseToken
 } from './utils/supabase';
 
 // Initialize Firebase Admin SDK
@@ -625,9 +626,17 @@ async function checkAndConsumeUsageFromUrl(req: any, fileName: string, audioDura
 
         // Check if user is authenticated
         if (authHeader && authHeader.startsWith('Bearer ')) {
-            // For now, we'll extract user ID from a custom header
-            // In a real implementation, you'd verify the JWT token
-            userId = req.get('X-User-ID');
+            try {
+                // 验证 Supabase JWT token
+                const token = authHeader.substring(7);
+                const decodedToken = await verifySupabaseToken(token);
+                userId = decodedToken.sub; // Supabase 使用 'sub' 作为用户ID
+
+                logger.info('User authenticated via Supabase', { userId, requestId });
+            } catch (tokenError) {
+                logger.error('Invalid Supabase token', tokenError as Error, { requestId });
+                throw new Error('Invalid authentication token');
+            }
         }
 
         if (userId) {

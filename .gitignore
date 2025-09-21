@@ -15,7 +15,13 @@ pnpm-debug.log*
 
 # environment variables
 .env
-.env.production
+.env.*
+!.env.example
+.runtimeconfig.json
+
+# debug files
+debug-*.js
+test-*.js
 
 # macOS-specific files
 .DS_Store

@@ -1051,9 +1051,18 @@ async function checkAndConsumeCredits(req, audioFile, audioDuration, requestId) 
         let userId;
         // Check if user is authenticated
         if (authHeader && authHeader.startsWith('Bearer ')) {
-            // For now, we'll extract user ID from a custom header
-            // In a real implementation, you'd verify the JWT token
-            userId = req.get('X-User-ID');
+            try {
+                // 验证 Supabase JWT token
+                const token = authHeader.substring(7);
+                const { verifySupabaseToken } = await Promise.resolve().then(() => __importStar(require('../utils/supabase')));
+                const decodedToken = await verifySupabaseToken(token);
+                userId = decodedToken.sub; // Supabase 使用 'sub' 作为用户ID
+                logger_1.default.info('User authenticated via Supabase', { userId, requestId });
+            }
+            catch (tokenError) {
+                logger_1.default.error('Invalid Supabase token', tokenError, { requestId });
+                throw new Error('Invalid authentication token');
+            }
         }
         // Calculate required credits based on audio duration
         let requiredCredits;
