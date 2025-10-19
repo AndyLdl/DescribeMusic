@@ -20,6 +20,14 @@ export default function UserAccountDropdown({ className = '' }: UserAccountDropd
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [trialCredits, setTrialCredits] = useState<number>(0);
 
+    // 在顶层调用 hooks
+    let trialCreditContext;
+    try {
+        trialCreditContext = useTrialCredit();
+    } catch (error) {
+        console.warn('Trial credit context not available:', error);
+    }
+
     // 使用实际的积分数据
     let credits = 0;
     let creditBalance = null;
@@ -34,16 +42,11 @@ export default function UserAccountDropdown({ className = '' }: UserAccountDropd
         creditLoading = creditContext.loading;
     } catch (error) {
         console.warn('Credit context not available in UserAccountDropdown:', error);
-        // 回退到试用积分
-        try {
-            const trialCreditContext = useTrialCredit();
-            // 对于未登录用户，显示试用积分
-            if (!user) {
-                credits = 100; // 默认试用积分
-            }
-        } catch (trialError) {
-            console.warn('Trial credit context also not available:', trialError);
-            credits = user ? 200 : 100; // 最后的回退值
+        // 对于未登录用户，使用 state 中的试用积分
+        if (!user) {
+            credits = trialCredits;
+        } else {
+            credits = 200; // 注册用户默认值
         }
     }
 
@@ -80,12 +83,20 @@ export default function UserAccountDropdown({ className = '' }: UserAccountDropd
         }
     };
 
-    // 简化试用积分逻辑，避免无限循环
+    // 获取试用积分余额
     useEffect(() => {
-        if (!user) {
-            setTrialCredits(100); // 固定100试用积分
+        if (!user && trialCreditContext?.getTrialCreditBalance) {
+            trialCreditContext.getTrialCreditBalance()
+                .then(balance => {
+                    console.log('💳 Navbar: Trial credits updated:', balance.remaining);
+                    setTrialCredits(balance.remaining);
+                })
+                .catch(error => {
+                    console.error('Failed to get trial credits in navbar:', error);
+                    setTrialCredits(100); // 回退值
+                });
         }
-    }, [user]);
+    }, [user, trialCreditContext]);
 
     // Close menu when clicking outside
     useEffect(() => {

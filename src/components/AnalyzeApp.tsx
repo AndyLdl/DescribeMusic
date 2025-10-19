@@ -139,6 +139,7 @@ function AnalyzeAppContent() {
   const [audioDuration, setAudioDuration] = useState<AudioDurationResult | null>(null);
   const [creditEstimate, setCreditEstimate] = useState<CreditConsumptionEstimate | null>(null);
   const [analysisCreditsConsumed, setAnalysisCreditsConsumed] = useState<number>(0);
+  const [refreshTrigger, setRefreshTrigger] = useState<number>(0); // 用于触发积分刷新
 
   // Cleanup function for audio URL and global variables
   React.useEffect(() => {
@@ -422,6 +423,10 @@ function AnalyzeAppContent() {
       window.dispatchEvent(event);
 
       setStage('results');
+      
+      // 🔄 触发积分刷新（分析成功后）
+      setRefreshTrigger(prev => prev + 1);
+      console.log('💳 Triggering credit refresh after successful analysis');
     } catch (error: any) {
       console.error('Analysis failed:', error);
 
@@ -678,6 +683,7 @@ function AnalyzeAppContent() {
                   audioDuration={audioDuration}
                   creditEstimate={creditEstimate}
                   onPurchaseCredits={() => window.location.href = '/pricing'}
+                  refreshTrigger={refreshTrigger}
                 />
               )}
 

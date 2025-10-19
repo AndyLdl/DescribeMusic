@@ -481,36 +481,44 @@ export function CreditProvider({ children }: CreditProviderProps) {
         remaining: number;
     }> => {
         try {
-            console.log('💳 Getting trial credit balance');
+            console.log('💳 Getting trial credit balance from database');
 
-            // 🔧 检查是否已经迁移过试用积分
             const fingerprint = await DeviceFingerprint.generate();
-            const migrationKey = `trial_used_${fingerprint}`;
-            const alreadyUsed = localStorage.getItem(migrationKey);
 
-            if (alreadyUsed) {
-                // 如果已经使用过试用积分，返回0
-                const balance = {
-                    total: 100,
-                    used: 100,
-                    remaining: 0
-                };
-                console.log('💳 Trial credits already used:', balance);
-                return balance;
+            // 从数据库查询真实的设备积分状态
+            const { data, error } = await supabase
+                .from('device_fingerprints')
+                .select('trial_credits, credits_used')
+                .eq('fingerprint_hash', fingerprint)
+                .is('deleted_at', null)  // ✅ 修复：使用 .is() 而不是 .eq() 来检查 NULL
+                .is('user_id', null)
+                .single();
+
+            if (error) {
+                // 如果记录不存在（PGRST116错误），说明是新设备
+                if (error.code === 'PGRST116') {
+                    console.log('💳 New device, no record found yet. Showing default balance.');
+                    return {
+                        total: 100,
+                        used: 0,
+                        remaining: 100
+                    };
+                }
+                throw error;
             }
 
-            // 首次使用，返回100积分
+            // 返回数据库中的真实余额
             const balance = {
-                total: 100,
-                used: 0,
-                remaining: 100
+                total: data.trial_credits || 100,
+                used: data.credits_used || 0,
+                remaining: (data.trial_credits || 100) - (data.credits_used || 0)
             };
 
-            console.log('💳 Trial credit balance (available):', balance);
+            console.log('💳 Trial credit balance from database:', balance);
             return balance;
         } catch (error) {
             console.error('💳 Error getting trial credit balance:', error);
-            // Return default values for new devices
+            // Return default values on error
             return {
                 total: 100,
                 used: 0,

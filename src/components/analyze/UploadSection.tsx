@@ -19,6 +19,7 @@ interface UploadSectionProps {
   audioDuration?: AudioDurationResult | null;
   creditEstimate?: CreditConsumptionEstimate | null;
   onPurchaseCredits?: () => void;
+  refreshTrigger?: number; // 用于触发积分刷新
 }
 
 export default function UploadSection({
@@ -33,7 +34,8 @@ export default function UploadSection({
   currentCredits = 0,
   audioDuration,
   creditEstimate,
-  onPurchaseCredits
+  onPurchaseCredits,
+  refreshTrigger
 }: UploadSectionProps) {
 
   // Trial credit hooks for non-authenticated users with error handling
@@ -48,17 +50,19 @@ export default function UploadSection({
 
   const [trialCredits, setTrialCredits] = useState<number>(0);
 
-  // Get trial credits for non-authenticated users
+  // Get trial credits for non-authenticated users (刷新当 refreshTrigger 变化时)
   useEffect(() => {
     if (!user && getTrialCreditBalance) {
+      console.log('🔄 Refreshing trial credits...', refreshTrigger);
       getTrialCreditBalance().then(balance => {
+        console.log('💳 Trial credits updated:', balance.remaining);
         setTrialCredits(balance.remaining);
       }).catch(error => {
         console.error('Failed to get trial credit balance:', error);
         setTrialCredits(100); // Default trial credits
       });
     }
-  }, [user, getTrialCreditBalance]);
+  }, [user, getTrialCreditBalance, refreshTrigger]);
 
   const openFileDialog = () => {
     inputRef.current?.click();
