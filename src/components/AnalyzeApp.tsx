@@ -209,7 +209,7 @@ function AnalyzeAppContent() {
         // For authenticated users, check credit balance
         hasEnoughCredits = credits >= creditsRequired;
         if (!hasEnoughCredits) {
-          setErrorMessage(`积分不足。需要 ${creditsRequired} 积分，当前余额 ${credits} 积分`);
+          setErrorMessage(`Insufficient credits. ${creditsRequired} credits required, current balance: ${credits} credits`);
           setStage('error');
           return;
         }
@@ -217,7 +217,7 @@ function AnalyzeAppContent() {
         // For trial users, check trial credits
         hasEnoughCredits = await checkTrialCredits(creditsRequired);
         if (!hasEnoughCredits) {
-          setErrorMessage(`试用积分不足。需要 ${creditsRequired} 积分，请注册获取更多积分`);
+          setErrorMessage(`Insufficient trial credits. ${creditsRequired} credits required. Please register to get more credits.`);
           setStage('error');
           return;
         }
