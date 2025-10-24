@@ -1,46 +1,9 @@
 ---
-import { Icon } from "astro-icon/components";
+import { HeroSimpleWithProvider } from "../HeroSimple.tsx";
 ---
 
-<div
-  id="hero-section"
-  class="relative h-screen flex items-center justify-center overflow-hidden bg-dark-bg -mt-20">
-  <canvas id="living-nebula-canvas" class="absolute inset-0 w-full h-full"
-  ></canvas>
-
-  <div class="relative text-center z-10 p-6">
-    <div id="hero-content">
-      <h1
-        class="text-5xl md:text-8xl font-bold tracking-tighter !leading-tight text-white/90">
-        Describe Music.
-      </h1>
-      <p class="mt-4 text-xl md:text-2xl text-slate-300/80">
-        AI-Powered Audio Analysis.
-      </p>
-
-      <div
-        class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
-        <a
-          href="/analyze/"
-          class="inline-flex items-center justify-center gap-2 px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-violet-500/25 group">
-          Start Free Analysis Now
-          <Icon
-            name="heroicons:arrow-right-20-solid"
-            class="w-5 h-5 transition-transform group-hover:translate-x-1"
-          />
-        </a>
-      </div>
-    </div>
-  </div>
-
-  <div class="absolute bottom-8 left-1/2 -translate-x-1/2 z-10">
-    <a href="#hook" id="scroll-down-hint" class="animate-bounce">
-      <Icon
-        name="heroicons:arrow-down-20-solid"
-        class="w-6 h-6 text-white/50"
-      />
-    </a>
-  </div>
+<div id="hero-section">
+  <HeroSimpleWithProvider client:only="react" />
 </div>
 
 <script is:inline src="/scripts/visualizer.js"></script>

@@ -43,7 +43,12 @@ let toastState: {
 
 // Toast manager functions
 const addToast = (toast: Omit<Toast, 'id'>): string => {
-    const id = `toast-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    // Only generate IDs on client side to avoid hydration mismatches
+    if (typeof window === 'undefined') {
+        return '';
+    }
+    
+    const id = `toast-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
     const newToast: Toast = {
         ...toast,
         id,

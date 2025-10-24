@@ -18,7 +18,7 @@ export interface Props {
 const canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
 const resolvedImageWithDomain = new URL(
   "/images/logo/social/opengraph-1200x630.jpg",
-  Astro.site,
+  Astro.site
 ).toString();
 
 const { title, description } = Astro.props;
@@ -125,8 +125,10 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
     <Footer />
     <script>
       document.addEventListener("DOMContentLoaded", () => {
-        const animatedElements =
-          document.querySelectorAll(".animate-on-scroll");
+        // Only handle elements that are not inside React components
+        const animatedElements = document.querySelectorAll(
+          ".animate-on-scroll:not([data-astro-cid])"
+        );
         const observer = new IntersectionObserver(
           (entries) => {
             entries.forEach((entry) => {
@@ -138,7 +140,7 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
           },
           {
             threshold: 0.1,
-          },
+          }
         );
 
         animatedElements.forEach((el) => {
