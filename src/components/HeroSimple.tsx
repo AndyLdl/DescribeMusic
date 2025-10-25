@@ -1,8 +1,96 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useCreditToast, CreditToastContainer } from './credit/CreditToast';
-import { useTrialCredit, CreditProvider } from '../contexts/CreditContext';
-import { AuthProvider } from '../contexts/AuthContext';
+import { useTrialCredit, useCredit, CreditProvider } from '../contexts/CreditContext';
+import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import LoginModal from './auth/LoginModal';
 import { cloudFunctions, type CloudAnalysisResult, type ProgressUpdate } from '../utils/cloudFunctions';
+
+// Demo audio samples from HookSection
+interface AudioSample {
+  id: string;
+  title: string;
+  description: string;
+  audioSrc: string;
+  analysis: {
+    genre: string;
+    mood: string;
+    tempo: string;
+    key: string;
+    energy: string;
+    vocals: string;
+    instruments: string[];
+    quality: string;
+    tags: string[];
+    voiceAnalysis?: {
+      gender?: string;
+      emotion?: string;
+      clarity?: string;
+    };
+  };
+  summary: string;
+}
+
+const demoAudioSamples: AudioSample[] = [
+  {
+    id: 'rock',
+    title: '🎸 Rock Anthem',
+    description: 'High-energy hard rock anthem with driving rhythm and powerful instrumentation',
+    audioSrc: '/audio/samples/rock-anthem.wav',
+    analysis: { 
+      genre: 'Hard Rock', 
+      mood: 'Energetic, Anthemic', 
+      tempo: '140 BPM', 
+      key: 'E minor',
+      energy: 'Very High (0.95)',
+      vocals: 'None (Instrumental)',
+      instruments: ['Electric Guitar', 'Bass Guitar', 'Drums'],
+      quality: 'Studio Quality (7/10)',
+      tags: ['hard-rock', 'rock-anthem', 'energetic', 'anthemic', 'powerful', 'driving-rhythm', 'electric-guitar', 'drums', 'bass', 'high-energy', 'live-recording', 'rock-music', 'e-minor', 'loud', 'intense'],
+    },
+    summary: 'A high-energy hard rock anthem with a driving rhythm, powerful vocals, and a classic rock feel, reminiscent of bands like The White Stripes and Foo Fighters.'
+  },
+  {
+    id: 'speech',
+    title: '🎙️ Female Voice Sample',
+    description: 'High-quality female speech with clear pronunciation',
+    audioSrc: '/audio/samples/femal-vocal.mp3',
+    analysis: { 
+      genre: 'Speech/TTS', 
+      mood: 'Calm, Neutral', 
+      tempo: 'Normal Speech (150 WPM)', 
+      key: 'N/A',
+      energy: 'Low (0.0)',
+      vocals: 'Female Voice - Clear Speech',
+      instruments: [],
+      quality: 'High Quality (7/10)',
+      tags: ['speech', 'female-voice', 'tts', 'text-to-speech', 'calm', 'neutral', 'clear-speech', 'short-audio', 'english', 'low-noise'],
+      voiceAnalysis: {
+        gender: 'Female',
+        emotion: 'Neutral, Calm',
+        clarity: 'Excellent (0.9)',
+      }
+    },
+    summary: 'A short, high-quality audio clip features a calm female voice speaking in English with a General American accent.'
+  },
+  {
+    id: 'ambient',
+    title: '🌲 Forest Ambience',
+    description: 'Natural soundscape with birds, wind, and distant water',
+    audioSrc: '/audio/samples/forest-ambience.mp3',
+    analysis: { 
+      genre: 'Ambient', 
+      mood: 'Peaceful', 
+      tempo: '60 BPM', 
+      key: 'C Major',
+      energy: 'Very Low (0.2)',
+      vocals: 'None (Instrumental)',
+      instruments: ['Natural Sounds', 'Birds', 'Wind', 'Water'],
+      quality: 'High Quality (7/10)',
+      tags: ['ambient', 'nature-sounds', 'forest-ambience', 'birds', 'wind', 'water', 'peaceful', 'calm', 'relaxing', 'outdoor', 'high-quality']
+    },
+    summary: 'A high-quality recording of a peaceful forest ambience featuring gentle wind, birdsong, and distant water sounds, ideal for relaxation or meditation.'
+  }
+];
 
 /**
  * Enhanced Hero Component with Real Analysis Logic
@@ -11,6 +99,8 @@ import { cloudFunctions, type CloudAnalysisResult, type ProgressUpdate } from '.
 export default function HeroSimple() {
   const toast = useCreditToast();
   const { checkTrialCredits, consumeTrialCredits, getTrialCreditBalance } = useTrialCredit();
+  const { credits, creditBalance, loading: creditLoading, refreshCredits } = useCredit();
+  const { user, loading: authLoading } = useAuth();
   
   // Upload and analysis state
   const [uploadState, setUploadState] = useState<'idle' | 'uploaded' | 'analyzing' | 'complete'>('idle');
@@ -25,9 +115,57 @@ export default function HeroSimple() {
   const [analysisResult, setAnalysisResult] = useState<CloudAnalysisResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [trialCreditBalance, setTrialCreditBalance] = useState<{ total: number; used: number; remaining: number; } | null>(null);
-  const [currentAudioUrl, setCurrentAudioUrl] = useState<string>('/audio/samples/rock-anthem.wav');
+  const [currentCreditBalance, setCurrentCreditBalance] = useState<{ total: number; used: number; remaining: number; } | null>(null);
+  
+  // Demo carousel state
+  const [currentDemoIndex, setCurrentDemoIndex] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string>(demoAudioSamples[0].audioSrc);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [currentTime, setCurrentTime] = useState(0);
+  
+  // Login modal state
+  const [showLoginModal, setShowLoginModal] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const audioRef = useRef<HTMLAudioElement>(null);
+  const carouselIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const userActivityTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Helper function to calculate rounded up credits
+  const getRoundedCredits = useCallback((duration: number) => {
+    return Math.ceil(duration);
+  }, []);
+
+  // Get the appropriate credit balance based on user login status
+  const getCurrentCreditBalance = useCallback(async () => {
+    if (user && !authLoading) {
+      // User is logged in, use real credits
+      if (creditBalance) {
+        return {
+          total: creditBalance.total,
+          used: creditBalance.total - credits,
+          remaining: credits
+        };
+      }
+      return null;
+    } else {
+      // User not logged in, use trial credits
+      return await getTrialCreditBalance();
+    }
+  }, [user, authLoading, creditBalance, credits, getTrialCreditBalance]);
+
+  // Handle insufficient credits action
+  const handleInsufficientCreditsAction = useCallback(() => {
+    if (!user) {
+      // User not logged in - show login modal
+      setShowLoginModal(true);
+    } else {
+      // User logged in - redirect to purchase credits
+      window.location.href = '/pricing';
+    }
+  }, [user]);
 
   // Initialize visualizer after component mounts
   useEffect(() => {
@@ -42,18 +180,108 @@ export default function HeroSimple() {
     initVisualizer();
   }, []);
 
-  // Load trial credit balance on mount
+  // Load credit balance on mount and when user/auth status changes
   useEffect(() => {
     const loadCreditBalance = async () => {
       try {
-        const balance = await getTrialCreditBalance();
-        setTrialCreditBalance(balance);
+        if (user && !authLoading) {
+          // User is logged in, use real credits
+          if (creditBalance && credits !== undefined) {
+            setCurrentCreditBalance({
+              total: creditBalance.total,
+              used: creditBalance.total - credits,
+              remaining: credits
+            });
+          }
+        } else {
+          // User not logged in, use trial credits
+          const balance = await getTrialCreditBalance();
+          setTrialCreditBalance(balance);
+          setCurrentCreditBalance(balance);
+        }
       } catch (error) {
         console.error('Failed to load credit balance:', error);
       }
     };
     loadCreditBalance();
-  }, [getTrialCreditBalance]);
+  }, [user, authLoading, creditBalance, credits, getTrialCreditBalance]);
+
+  // Demo carousel auto-rotation
+  useEffect(() => {
+    if (isAutoPlaying && uploadState === 'idle' && !isPlaying) {
+      carouselIntervalRef.current = setInterval(() => {
+        setCurrentDemoIndex(prev => (prev + 1) % demoAudioSamples.length);
+      }, 4000); // Change demo every 4 seconds
+    } else {
+      if (carouselIntervalRef.current) {
+        clearInterval(carouselIntervalRef.current);
+        carouselIntervalRef.current = null;
+      }
+    }
+
+    return () => {
+      if (carouselIntervalRef.current) {
+        clearInterval(carouselIntervalRef.current);
+      }
+    };
+  }, [isAutoPlaying, uploadState, isPlaying]);
+
+  // Handle user activity - restart auto-rotation after 20s of inactivity
+  const handleUserActivity = useCallback(() => {
+    // Clear existing timeout
+    if (userActivityTimeoutRef.current) {
+      clearTimeout(userActivityTimeoutRef.current);
+    }
+    
+    // Stop auto-rotation immediately
+    setIsAutoPlaying(false);
+    if (carouselIntervalRef.current) {
+      clearInterval(carouselIntervalRef.current);
+      carouselIntervalRef.current = null;
+    }
+    
+    // Set timeout to restart auto-rotation after 20s
+    userActivityTimeoutRef.current = setTimeout(() => {
+      // Check current state at timeout execution time
+      if (uploadState === 'idle') {
+        setIsAutoPlaying(true);
+      }
+    }, 10000); // 20 seconds
+  }, [uploadState]);
+
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (userActivityTimeoutRef.current) {
+        clearTimeout(userActivityTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Update current audio URL when demo changes
+  useEffect(() => {
+    if (uploadState === 'idle') {
+      setCurrentAudioUrl(demoAudioSamples[currentDemoIndex].audioSrc);
+    }
+  }, [currentDemoIndex, uploadState]);
+
+
+  // Handle demo play/pause
+  const handleDemoPlayPause = async () => {
+    if (!audioRef.current) return;
+
+    try {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        await audioRef.current.play();
+        setIsPlaying(true);
+      }
+    } catch (error) {
+      console.error('Audio play failed:', error);
+    }
+  };
 
   // Detect audio duration
   const detectAudioDuration = useCallback(async (file: File): Promise<number> => {
@@ -141,8 +369,15 @@ export default function HeroSimple() {
       setUploadState('complete');
       
       // Update credit balance (credits already consumed by backend)
-      const balance = await getTrialCreditBalance();
-      setTrialCreditBalance(balance);
+      if (user) {
+        // User is logged in, refresh real credits
+        await refreshCredits();
+      } else {
+        // User not logged in, refresh trial credits
+        const balance = await getTrialCreditBalance();
+        setTrialCreditBalance(balance);
+        setCurrentCreditBalance(balance);
+      }
       
     } catch (error) {
       console.error('Analysis failed:', error);
@@ -195,12 +430,20 @@ export default function HeroSimple() {
     if (!uploadedFile || !audioDuration) return;
     
     try {
-      // Check if user has enough trial credits
-      const hasCredits = await checkTrialCredits(audioDuration);
+      // Check if user has enough credits
+      let hasCredits = false;
+      if (user) {
+        // User is logged in, check real credits
+        hasCredits = credits >= getRoundedCredits(audioDuration);
+      } else {
+        // User not logged in, check trial credits
+        hasCredits = await checkTrialCredits(audioDuration);
+      }
       
       if (!hasCredits) {
-        setErrorMessage(`Audio too long (${audioDuration}s), requires ${audioDuration} credits. Please choose a shorter audio or login for more credits.`);
-        toast.error('Insufficient Credits', `This audio requires ${audioDuration} credits. Please choose a shorter audio.`);
+        const roundedCredits = getRoundedCredits(audioDuration);
+        setErrorMessage(`Audio too long (${audioDuration}s), requires ${roundedCredits} credits. Please choose a shorter audio or login for more credits.`);
+        toast.error('Insufficient Credits', `This audio requires ${roundedCredits} credits. Please choose a shorter audio.`);
         return;
       }
       
@@ -212,7 +455,7 @@ export default function HeroSimple() {
       setErrorMessage('Failed to start analysis. Please try again.');
       toast.error('Analysis Failed', 'Failed to start analysis. Please try again.');
     }
-  }, [uploadedFile, audioDuration, checkTrialCredits, startAnalysis, toast]);
+  }, [uploadedFile, audioDuration, user, credits, checkTrialCredits, getRoundedCredits, startAnalysis, toast]);
 
   // Handle file input change
   const handleFileInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -291,6 +534,22 @@ export default function HeroSimple() {
           from { opacity: 0; transform: translateY(20px); }
           to { opacity: 1; transform: translateY(0); }
         }
+        @keyframes slide-in-from-left {
+          from { opacity: 0; transform: translateX(-20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slide-in-from-right {
+          from { opacity: 0; transform: translateX(20px); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes carousel-slide {
+          from { opacity: 0; transform: translateX(100%) scale(0.95); }
+          to { opacity: 1; transform: translateX(0) scale(1); }
+        }
+        @keyframes carousel-slide-out {
+          from { opacity: 1; transform: translateX(0) scale(1); }
+          to { opacity: 0; transform: translateX(-100%) scale(0.95); }
+        }
         .animate-fade-in {
           animation: fade-in 0.6s ease-out;
         }
@@ -299,6 +558,27 @@ export default function HeroSimple() {
         }
         .animate-slide-in-from-bottom {
           animation: slide-in-from-bottom 0.6s ease-out;
+        }
+        .animate-slide-in-from-left {
+          animation: slide-in-from-left 0.6s ease-out;
+        }
+        .animate-slide-in-from-right {
+          animation: slide-in-from-right 0.6s ease-out;
+        }
+        .animate-carousel-slide {
+          animation: carousel-slide 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .animate-carousel-slide-out {
+          animation: carousel-slide-out 0.5s ease-in;
+        }
+        .demo-card {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .demo-card:hover {
+          transform: translateY(-2px);
+        }
+        .demo-card.active {
+          transform: scale(1.02);
         }
       `}</style>
       <div className="relative min-h-screen flex items-start justify-center overflow-hidden bg-dark-bg -mt-20 pt-16 pb-20">
@@ -426,7 +706,7 @@ export default function HeroSimple() {
                               </p>
                             </div>
                             <p className="text-slate-400 text-sm mb-6">
-                              Duration: {Math.floor(audioDuration / 60)}:{(audioDuration % 60).toString().padStart(2, '0')} • Size: {(uploadedFile.size / 1024 / 1024).toFixed(1)}MB
+                              Duration: {Math.floor(audioDuration / 60)}:{Math.floor(audioDuration % 60).toString().padStart(2, '0')} • Size: {(uploadedFile.size / 1024 / 1024).toFixed(1)}MB
                             </p>
                             
                             {/* Cancel Selection Button */}
@@ -448,8 +728,11 @@ export default function HeroSimple() {
                                   fileInputRef.current.value = '';
                                 }
                               }}
-                              className="w-full py-2 px-4 rounded-lg text-sm font-medium bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors"
+                              className="w-full py-2.5 px-4 rounded-lg text-sm font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 border border-red-500/40 hover:border-red-400/60 transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2"
                             >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
                               Cancel Selection
                             </button>
                           </>
@@ -518,35 +801,61 @@ export default function HeroSimple() {
 
                     {/* Start Analysis Button - Always visible below upload area */}
                     <div className="mt-6">
-                      {/* Start Analysis Button */}
-                      <button
-                        onClick={handleStartAnalysis}
-                        disabled={!uploadedFile || !audioDuration || !trialCreditBalance || trialCreditBalance.remaining < audioDuration || uploadState === 'analyzing'}
-                        className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors ${
-                          !uploadedFile || !audioDuration || !trialCreditBalance || trialCreditBalance.remaining < audioDuration || uploadState === 'analyzing'
-                            ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
-                            : 'bg-violet-500 hover:bg-violet-600 text-white'
-                        }`}
-                      >
-                        {uploadState === 'analyzing'
-                          ? 'AI Analysis in Progress...'
-                          : !uploadedFile 
-                          ? 'Select an audio file to start analysis'
-                          : !audioDuration
-                          ? 'Processing file...'
-                          : !trialCreditBalance
-                          ? 'Loading credits...'
-                          : trialCreditBalance.remaining < audioDuration
-                          ? `Insufficient Credits (Need ${audioDuration - trialCreditBalance.remaining} more)`
-                          : `Start Analysis (${audioDuration} credits)`
-                        }
-                      </button>
+                      {/* Check if user has insufficient credits */}
+                      {uploadedFile && audioDuration > 0 && currentCreditBalance && currentCreditBalance.remaining < getRoundedCredits(audioDuration) ? (
+                        /* Insufficient Credits - Prominent Action Button */
+                        <div className="space-y-3">
+                          <button
+                            onClick={handleInsufficientCreditsAction}
+                            className="w-full py-4 px-6 rounded-lg font-bold text-white transition-all duration-300 transform hover:scale-105 shadow-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 border-2 border-orange-400/50 hover:border-orange-300"
+                          >
+                            <div className="flex items-center justify-center gap-2">
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                              </svg>
+                              {!user ? 'Login to Get More Credits' : 'Purchase More Credits'}
+                            </div>
+                          </button>
+                          <div className="text-center">
+                            <p className="text-sm text-orange-300 font-medium">
+                              Need {getRoundedCredits(audioDuration) - currentCreditBalance.remaining} more credits
+                            </p>
+                            <p className="text-xs text-orange-200/80 mt-1">
+                              {!user ? 'Login to access your credit balance' : 'Purchase credits to continue analysis'}
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Normal Start Analysis Button */
+                        <button
+                          onClick={handleStartAnalysis}
+                          disabled={!uploadedFile || !audioDuration || !currentCreditBalance || uploadState === 'analyzing' || uploadState === 'complete'}
+                          className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors ${
+                            !uploadedFile || !audioDuration || !currentCreditBalance || uploadState === 'analyzing' || uploadState === 'complete'
+                              ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
+                              : 'bg-violet-500 hover:bg-violet-600 text-white'
+                          }`}
+                        >
+                          {uploadState === 'analyzing'
+                            ? 'AI Analysis in Progress...'
+                            : !uploadedFile 
+                            ? 'Select an audio file to start analysis'
+                            : !audioDuration
+                            ? 'Processing file...'
+                            : !currentCreditBalance
+                            ? 'Loading credits...'
+                            : uploadState === 'complete'
+                            ? 'Select an audio file to start analysis'
+                            : `Start Analysis (${getRoundedCredits(audioDuration)} credits)`
+                          }
+                        </button>
+                      )}
                       
-                      {/* Credit Info - Only show when file is selected */}
-                      {uploadedFile && audioDuration > 0 && trialCreditBalance && (
+                      {/* Credit Info - Only show when file is selected and not completed */}
+                      {uploadedFile && audioDuration > 0 && currentCreditBalance && uploadState !== 'complete' && (
                         <div className="mt-3 text-center">
                           <p className="text-xs text-slate-400">
-                            Remaining: {trialCreditBalance.remaining} credits • 1 credit per second
+                            Remaining: {currentCreditBalance.remaining} credits • 1 credit per second
                           </p>
                         </div>
                       )}
@@ -570,11 +879,11 @@ export default function HeroSimple() {
                         <div className="flex items-center gap-2 mb-1">
                           <span className="font-bold text-white text-sm">Free Trial Credits</span>
                           <div className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
-                            {trialCreditBalance ? `${trialCreditBalance.remaining}` : '100'} LEFT
+                            {currentCreditBalance ? `${currentCreditBalance.remaining}` : '100'} LEFT
                           </div>
                         </div>
                         <div className="text-xs text-blue-200 text-left">
-                          {trialCreditBalance ? `${trialCreditBalance.remaining} credits remaining` : '100 credits • 1 second = 1 credit'}
+                          {currentCreditBalance ? `${currentCreditBalance.remaining} credits remaining` : '100 credits • 1 second = 1 credit'}
                         </div>
                       </div>
                     </div>
@@ -597,7 +906,7 @@ export default function HeroSimple() {
 
                 {/* Right Side - Audio Player & Analysis */}
                 <div className="flex flex-col space-y-6">
-                  {/* Audio Player Section - Compact */}
+                  {/* Audio Player Section - Enhanced with Demo Carousel */}
                   <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
                     <div className="mb-3">
                       <div className="flex items-center gap-2 mb-1">
@@ -611,104 +920,130 @@ export default function HeroSimple() {
                         </div>
                       </div>
                       <p className="text-slate-300 text-xs text-left">
-                        {uploadedFile ? 'Preview your uploaded audio' : 'Preview demo audio'}
+                        {uploadedFile ? 'Preview your uploaded audio' : 'Preview demo audio samples'}
                       </p>
                     </div>
+
                     
-                    {/* Audio Player Interface - Compact */}
-                    <div className="bg-white/5 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        {/* File Info */}
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <div className="w-6 h-6 rounded bg-violet-500/20 flex items-center justify-center flex-shrink-0">
-                            <svg className="w-3 h-3 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
-                            </svg>
-                          </div>
-                          <div className="text-left min-w-0 flex-1">
-                            <div className="text-white font-medium text-xs truncate" title={uploadedFile ? uploadedFile.name.replace(/\.[^/.]+$/, "") : "Rock Anthem"}>
-                              {uploadedFile ? uploadedFile.name.replace(/\.[^/.]+$/, "") : "Rock Anthem"}
-                            </div>
-                            <div className="text-slate-400 text-xs">
-                              {uploadedFile 
-                                ? `${Math.floor(audioDuration / 60)}:${(audioDuration % 60).toString().padStart(2, '0')} • ${(uploadedFile.size / 1024 / 1024).toFixed(1)}MB`
-                                : "1:06 • Demo Audio"
-                              }
-                            </div>
-                          </div>
-                        </div>
+                    {/* Audio Player Interface - Carousel */}
+                    <div className="relative overflow-hidden">
+                      <div className="flex transition-transform duration-500 ease-in-out" style={{ transform: `translateX(-${currentDemoIndex * 100}%)` }}>
+                        {demoAudioSamples.map((sample, index) => (
+                          <div key={sample.id} className="w-full flex-shrink-0">
+                            <div className="bg-white/5 rounded-lg p-3">
+                              <div className="flex items-center justify-between">
+                                {/* File Info */}
+                                <div className="flex items-center gap-2 min-w-0 flex-1">
+                                  <div className="w-6 h-6 rounded bg-violet-500/20 flex items-center justify-center flex-shrink-0">
+                                    <svg className="w-3 h-3 text-violet-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                                    </svg>
+                                  </div>
+                                  <div className="text-left min-w-0 flex-1">
+                                    <div className="text-white font-medium text-xs truncate" title={
+                                      uploadedFile 
+                                        ? uploadedFile.name.replace(/\.[^/.]+$/, "") 
+                                        : sample.title
+                                    }>
+                                      {uploadedFile 
+                                        ? uploadedFile.name.replace(/\.[^/.]+$/, "") 
+                                        : sample.title
+                                      }
+                                    </div>
+                                  </div>
+                                </div>
 
-                        {/* Play/Pause Button */}
-                        <button 
-                          id="play-pause-btn"
-                          className="w-8 h-8 rounded-full bg-violet-500/30 flex items-center justify-center hover:bg-violet-500/40 transition-colors"
-                          onClick={async (e) => {
-                            e.preventDefault();
-                            const audio = document.getElementById('audio-player') as HTMLAudioElement;
-                            const button = document.getElementById('play-pause-btn');
-                            
-                            if (audio && button) {
-                              try {
-                                if (audio.paused) {
-                                  await audio.play();
-                                  button.innerHTML = '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/></svg>';
-                                } else {
-                                  audio.pause();
-                                  button.innerHTML = '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-                                }
-                              } catch (error) {
-                                console.error('Audio play failed:', error);
-                                // 如果播放失败，尝试加载音频
-                                audio.load();
-                              }
-                            }
-                          }}
-                        >
-                          <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M8 5v14l11-7z"/>
-                          </svg>
-                        </button>
-                      </div>
+                                {/* Play/Pause Button */}
+                                <button 
+                                  id="play-pause-btn"
+                                  className="w-8 h-8 rounded-full bg-violet-500/30 flex items-center justify-center hover:bg-violet-500/40 transition-colors flex-shrink-0"
+                                  onClick={async (e) => {
+                                    e.preventDefault();
+                                    const audio = audioRef.current;
+                                    
+                                    // Handle user activity - pause auto-rotation
+                                    handleUserActivity();
+                                    
+                                    if (audio) {
+                                      try {
+                                        if (audio.paused) {
+                                          await audio.play();
+                                        } else {
+                                          audio.pause();
+                                        }
+                                      } catch (error) {
+                                        console.error('Audio play failed:', error);
+                                        // 如果播放失败，尝试加载音频
+                                        audio.load();
+                                      }
+                                    }
+                                  }}
+                                >
+                                  {isPlaying ? (
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                                    </svg>
+                                  ) : (
+                                    <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
+                                      <path d="M8 5v14l11-7z"/>
+                                    </svg>
+                                  )}
+                                </button>
+                              </div>
 
-                      {/* Progress Bar */}
-                      <div className="mt-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span id="current-time" className="text-xs text-slate-400">0:00</span>
-                          <span id="duration" className="text-xs text-slate-400">1:06</span>
-                        </div>
-                        <div className="w-full bg-white/10 rounded-full h-1">
-                          <div id="progress-bar" className="bg-violet-500 h-1 rounded-full transition-all duration-300" style={{ width: '0%' }}></div>
-                        </div>
+                              {/* Progress Bar */}
+                              <div className="mt-3">
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="text-xs text-slate-400">{`${Math.floor(currentTime / 60)}:${Math.floor(currentTime % 60).toString().padStart(2, '0')}`}</span>
+                                  <span className="text-xs text-slate-400">{audioRef.current?.duration ? `${Math.floor(audioRef.current.duration / 60)}:${Math.floor(audioRef.current.duration % 60).toString().padStart(2, '0')}` : '1:06'}</span>
+                                </div>
+                                <div className="w-full bg-white/10 rounded-full h-1">
+                                  <div 
+                                    className="bg-violet-500 h-1 rounded-full transition-all duration-300" 
+                                    style={{ 
+                                      width: audioRef.current?.duration ? `${(currentTime / audioRef.current.duration) * 100}%` : '0%' 
+                                    }}
+                                  ></div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
 
                       {/* Hidden Audio Element */}
                       <audio 
+                        ref={audioRef}
                         id="audio-player" 
                         preload="metadata"
                         controls={false}
                         key={currentAudioUrl} // 强制重新渲染当URL改变时
                         onTimeUpdate={(e) => {
                           const audio = e.target as HTMLAudioElement;
-                          const progressBar = document.getElementById('progress-bar');
-                          const currentTime = document.getElementById('current-time');
-                          
-                          if (audio && progressBar && currentTime) {
-                            const progress = (audio.currentTime / audio.duration) * 100;
-                            progressBar.style.width = `${progress}%`;
-                            
-                            const minutes = Math.floor(audio.currentTime / 60);
-                            const seconds = Math.floor(audio.currentTime % 60);
-                            currentTime.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                          if (audio) {
+                            setCurrentTime(audio.currentTime);
                           }
                         }}
                         onLoadedMetadata={(e) => {
                           const audio = e.target as HTMLAudioElement;
-                          const duration = document.getElementById('duration');
-                          
-                          if (audio && duration) {
-                            const minutes = Math.floor(audio.duration / 60);
-                            const seconds = Math.floor(audio.duration % 60);
-                            duration.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                          if (audio && audio.duration) {
+                            setAudioDuration(audio.duration);
+                          }
+                        }}
+                        onPlay={() => {
+                          setIsPlaying(true);
+                          handleUserActivity();
+                        }}
+                        onPause={() => {
+                          setIsPlaying(false);
+                          handleUserActivity();
+                        }}
+                        onEnded={() => {
+                          setIsPlaying(false);
+                          handleUserActivity();
+                          const button = document.getElementById('play-pause-btn');
+                          if (button) {
+                            button.innerHTML = '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
                           }
                         }}
                         onError={(e) => {
@@ -749,9 +1084,14 @@ export default function HeroSimple() {
                             </div>
                             <span className="text-xs text-slate-400">Demo Result</span>
                           </div>
-                          <p className="text-white/90 text-sm leading-relaxed mb-4 text-left">
-                            A high-energy hard rock anthem with driving rhythm and powerful vocals, reminiscent of The White Stripes and Foo Fighters.
-                          </p>
+                          
+                          {/* Current Demo Analysis */}
+                          <div className="mb-4">
+                            <p className="text-white/90 text-sm leading-relaxed mb-4 text-left">
+                              {demoAudioSamples[currentDemoIndex].summary}
+                            </p>
+                          </div>
+                          
                           <div className="text-xs text-slate-400 italic">
                             Upload your audio file to get real AI analysis
                           </div>
@@ -923,6 +1263,13 @@ export default function HeroSimple() {
         </a>
       </div>
     </div>
+
+    {/* Login Modal */}
+    <LoginModal
+      isOpen={showLoginModal}
+      onClose={() => setShowLoginModal(false)}
+      defaultMode="login"
+    />
     </>
   );
 }

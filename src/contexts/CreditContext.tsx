@@ -117,6 +117,8 @@ export function CreditProvider({ children }: CreditProviderProps) {
 
                 setCredits(totalCredits);
                 setCreditBalance(balance);
+                
+                console.log('💳 State updated - credits:', totalCredits, 'balance:', balance);
 
                 // Update subscription info if available
                 if (result.subscription_status && result.subscription_expires_at) {
@@ -335,7 +337,9 @@ export function CreditProvider({ children }: CreditProviderProps) {
             setError(null);
 
             if (user) {
-                await checkCredits();
+                console.log('💳 Refreshing credits for user:', user.email);
+                const newCredits = await checkCredits();
+                console.log('💳 Credits refreshed to:', newCredits);
             } else {
                 // For non-authenticated users, we don't store credits in state
                 // They will be checked on-demand via trial credit functions

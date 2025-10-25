@@ -29,26 +29,7 @@ export default function UserAccountDropdown({ className = '' }: UserAccountDropd
     }
 
     // 使用实际的积分数据
-    let credits = 0;
-    let creditBalance = null;
-    let subscription = null;
-    let creditLoading = false;
-
-    try {
-        const creditContext = useCredit();
-        credits = creditContext.credits;
-        creditBalance = creditContext.creditBalance;
-        subscription = creditContext.subscription;
-        creditLoading = creditContext.loading;
-    } catch (error) {
-        console.warn('Credit context not available in UserAccountDropdown:', error);
-        // 对于未登录用户，使用 state 中的试用积分
-        if (!user) {
-            credits = trialCredits;
-        } else {
-            credits = 200; // 注册用户默认值
-        }
-    }
+    const { credits, creditBalance, subscription, loading: creditLoading } = useCredit();
 
     const handleSignOut = async () => {
         try {
