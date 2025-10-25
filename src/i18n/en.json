@@ -1,8 +1,8 @@
 {
   "site": {
-    "title": "Describe Music | AI-Powered Audio and Voice Analysis",
-    "description": "Instantly analyze any music, audio, or voice file with our advanced AI. Generate detailed descriptions, identify instruments, analyze emotions, and get SEO-friendly tags for your content.",
-    "keywords": "Describe Music, describe audio, describe voice, music analysis, audio recognition, AI music tool, voice analysis, sound recognition, AI audio analysis"
+    "title": "Describe Music with AI | Free Music Description Tool",
+    "description": "Describe music with AI instantly! Free music description tool that analyzes emotions, identifies instruments, and generates detailed music descriptions for your content.",
+    "keywords": "Describe Music, describe music with AI, how to describe music, AI music description, describe music automatically, music description tool, describe music online, describe music free, music analysis, audio recognition, AI music tool, voice analysis, sound recognition, AI audio analysis"
   },
   "nav": {
     "features": "Features",
@@ -15,7 +15,7 @@
   },
   "footer": {
     "copyright": "Copyright © {year} Describe Music. All rights reserved.",
-    "description": "AI-powered audio analysis for music, voice, and sound effects. Transform any audio file into detailed descriptions, insights, and SEO-friendly tags.",
+    "description": "AI-powered music description tool for analyzing music, voice, and sound effects. Describe music with AI to generate detailed music descriptions, insights, and SEO-friendly tags.",
     "product": "Product",
     "audio_analyzer": "Audio Analyzer",
     "pricing": "Pricing",

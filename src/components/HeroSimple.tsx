@@ -612,11 +612,11 @@ export default function HeroSimple() {
               </div>
               <p className="text-lg md:text-xl lg:text-2xl text-slate-200/95 mb-4 font-medium">
                 <span className="bg-gradient-to-r from-slate-200 to-slate-300 bg-clip-text text-transparent">
-                  AI-Powered Audio Analysis.
+                  AI-Powered Music Description & Audio Analysis.
                 </span>
               </p>
               <p className="text-slate-300/90 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
-                Transform any audio into detailed insights. Identify genres, emotions, instruments, and more.
+                Describe music with AI instantly. Transform any audio into detailed insights, identify genres, emotions, instruments, and more with our advanced music description technology.
               </p>
             </div>
 
@@ -624,10 +624,10 @@ export default function HeroSimple() {
             <div className="mb-0">
               <div className="flex flex-wrap justify-center gap-2">
                 {[
-                  "Music Genre Detection",
-                  "Emotional Analysis", 
-                  "Instrument Recognition",
-                  "Structure Analysis"
+                  "Describe Music Genre",
+                  "Describe Music Mood", 
+                  "Describe Music Instruments",
+                  "Describe Music Structure"
                 ].map((feature, index) => (
                   <span key={index} className="px-3 py-1 bg-white/5 rounded-full text-white/80 text-xs">
                     {feature}
