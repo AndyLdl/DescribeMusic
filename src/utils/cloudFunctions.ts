@@ -155,6 +155,7 @@ export interface CloudAnalysisResult {
     tags: string[];
     aiDescription: string;
     processingTime: number;
+    audioUrl?: string; // Firebase Storage URL for audio playback
 }
 
 export interface CloudApiResponse<T = any> {

@@ -179,6 +179,7 @@ export interface AnalysisResult {
     tags: string[];
     aiDescription: string;
     processingTime: number;
+    audioUrl?: string; // Firebase Storage URL for audio playback
 }
 
 export interface AnalysisRequest {

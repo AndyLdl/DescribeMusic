@@ -343,7 +343,7 @@ function AnalyzeAppContent() {
       // 积分扣除现在由云函数处理，更安全
       console.log(`预估积分消耗: ${creditsToConsume}`);
 
-      // Create local URL for audio preview
+      // Create local URL for audio preview in current page
       const audioUrl = URL.createObjectURL(file);
 
       // Generate thumbnail for history
@@ -386,10 +386,17 @@ function AnalyzeAppContent() {
         tags: cloudResult.tags,
         aiDescription: cloudResult.aiDescription,
         processingTime: Math.round(processingTime / 1000), // Convert to seconds
-        audioUrl: audioUrl // Add the local audio URL
+        audioUrl: cloudResult.audioUrl || audioUrl // Use cloud function URL if available, fallback to local
       };
 
-      // Save to history
+      console.log('🎵 Analysis result created:', {
+        id: result.id,
+        hasAudioUrl: !!result.audioUrl,
+        audioUrlSource: cloudResult.audioUrl ? 'cloud' : 'local',
+        audioUrlPreview: result.audioUrl?.substring(0, 100) + '...'
+      });
+
+      // Save to history with complete data
       const historyRecord: HistoryRecord = {
         id: result.id,
         filename: result.filename,
@@ -398,6 +405,7 @@ function AnalyzeAppContent() {
         fileSize: result.fileSize,
         format: result.format,
         thumbnail,
+        audioUrl: result.audioUrl, // Save audioUrl for playback
         contentType: result.contentType,
         basicInfo: result.basicInfo,
         voiceAnalysis: result.voiceAnalysis,
@@ -406,12 +414,22 @@ function AnalyzeAppContent() {
           qualityScore: result.quality.overall,
           emotionalTone: result.basicInfo.mood,
           primaryGenre: result.basicInfo.genre
-        }
+        },
+        // Save complete analysis data
+        emotions: result.emotions,
+        structure: result.structure,
+        quality: result.quality,
+        similarity: result.similarity,
+        tags: result.tags,
+        aiDescription: result.aiDescription,
+        processingTime: result.processingTime
       };
 
       await HistoryStorage.addRecordWithUser(historyRecord);
 
-      setAnalysisResult(result);
+      // Store result in sessionStorage for the new analysis page
+      // Note: audioUrl from cloud function is already included in result
+      sessionStorage.setItem('heroAnalysisResult', JSON.stringify(result));
 
       // Make the current analysis result available globally for export functionality
       (window as any).currentAnalysisResult = result;
@@ -422,7 +440,8 @@ function AnalyzeAppContent() {
       });
       window.dispatchEvent(event);
 
-      setStage('results');
+      // Navigate to the new analysis result page instead of showing results in current page
+      window.location.href = `/analysis/${result.id}`;
       
       // 🔄 触发积分刷新（分析成功后）
       setRefreshTrigger(prev => prev + 1);
@@ -464,102 +483,8 @@ function AnalyzeAppContent() {
 
 
   const handleSelectHistoryRecord = useCallback((record: HistoryRecord) => {
-    // Convert history record to analysis result format
-    const result: AnalysisResult = {
-      id: record.id,
-      filename: record.filename,
-      timestamp: record.timestamp,
-      duration: record.duration,
-      fileSize: record.fileSize,
-      format: record.format,
-      contentType: record.contentType || {
-        primary: 'music',
-        confidence: 0.8,
-        description: 'Music content (legacy record)'
-      },
-      basicInfo: record.basicInfo,
-      voiceAnalysis: record.voiceAnalysis || {
-        hasVoice: false,
-        speakerCount: 0,
-        genderDetection: { primary: 'unknown', confidence: 0.0, multipleGenders: false },
-        speakerEmotion: {
-          primary: 'neutral',
-          confidence: 0.0,
-          emotions: {
-            happy: 0.0, sad: 0.0, angry: 0.0, calm: 0.0,
-            excited: 0.0, nervous: 0.0, confident: 0.0, stressed: 0.0
-          }
-        },
-        speechClarity: { score: 0.0, pronunciation: 0.0, articulation: 0.0, pace: 'normal', volume: 'normal' },
-        vocalCharacteristics: { pitchRange: 'medium', speakingRate: 0, pauseFrequency: 'low', intonationVariation: 0.0 },
-        languageAnalysis: { language: 'unknown', confidence: 0.0, accent: 'unknown' },
-        audioQuality: { backgroundNoise: 0.0, echo: 0.0, compression: 0.0, overall: 0.0 }
-      },
-      soundEffects: record.soundEffects || {
-        detected: [],
-        environment: {
-          location_type: 'indoor',
-          setting: 'commercial',
-          activity_level: 'moderate',
-          acoustic_space: 'medium',
-          time_of_day: 'unknown',
-          weather: 'unknown'
-        }
-      },
-      emotions: {
-        happy: 0.78,
-        sad: 0.12,
-        angry: 0.05,
-        calm: 0.25,
-        excited: 0.82
-      },
-      structure: {
-        intro: { start: 0, end: 8 },
-        verse1: { start: 8, end: 32 },
-        chorus1: { start: 32, end: 56 },
-        verse2: { start: 56, end: 80 },
-        chorus2: { start: 80, end: 104 },
-        bridge: { start: 104, end: 128 },
-        outro: { start: 128, end: 180 }
-      },
-      quality: {
-        overall: record.quickStats.qualityScore,
-        clarity: 9.2,
-        loudness: -8.5,
-        dynamic_range: 7.8,
-        noise_level: 2.1
-      },
-      similarity: {
-        similar_tracks: [
-          { title: "Midnight Drive", artist: "Synthwave Artist", similarity: 0.87 },
-          { title: "Neon Lights", artist: "Retro Collective", similarity: 0.82 },
-          { title: "Digital Dreams", artist: "Electronic Vibes", similarity: 0.79 }
-        ]
-      },
-      tags: generateAITags(record.basicInfo, {
-        happy: 0.78,
-        sad: 0.12,
-        angry: 0.05,
-        calm: 0.25,
-        excited: 0.82
-      }, { overall: record.quickStats.qualityScore }, record.filename),
-      aiDescription: `A ${record.basicInfo.mood.toLowerCase()} ${record.basicInfo.genre.toLowerCase()} track with professional quality.`,
-      processingTime: 0 // Historical data
-    };
-
-    setAnalysisResult(result);
-    setStage('results');
-    setShowMobileSidebar(false);
-
-    // Make the history analysis result available globally for export functionality
-    (window as any).currentAnalysisResult = result;
-    (window as any).backupAnalysisResult = result;
-
-    // Dispatch event to show export buttons
-    const event = new CustomEvent('analysisResultReady', {
-      detail: result
-    });
-    window.dispatchEvent(event);
+    // Navigate to the dynamic analysis page
+    window.location.href = `/analysis/${record.id}`;
   }, []);
 
   const handleNewAnalysis = useCallback(() => {

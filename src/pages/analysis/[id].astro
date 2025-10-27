@@ -1,0 +1,21 @@
+---
+import AnalyzeLayout from "@/layouts/AnalyzeLayout.astro";
+import AnalysisResultViewerWithAuth from "@/components/analysis/AnalysisResultViewerWithAuth.tsx";
+
+// Enable server-side rendering for this dynamic route
+export const prerender = false;
+
+const { id } = Astro.params;
+
+if (!id) {
+  throw new Error("Analysis ID is required");
+}
+
+// Generate dynamic SEO meta information
+const title = `Audio Analysis Result ${id} - AI Music Analysis Tool`;
+const description = `View detailed AI analysis results for audio file ${id}. Get insights on music, voice, emotions, and more with our AI-powered audio analysis tool.`;
+---
+
+<AnalyzeLayout title={title} description={description}>
+  <AnalysisResultViewerWithAuth analysisId={id} client:only="react" />
+</AnalyzeLayout>

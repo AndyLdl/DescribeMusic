@@ -1,13 +1,20 @@
-import { defineConfig } from "astro/config";
+import {
+  defineConfig
+} from "astro/config";
 import mdx from "@astrojs/mdx";
 import sitemap from "@astrojs/sitemap";
 import icon from "astro-icon";
 import tailwind from "@astrojs/tailwind";
 import react from "@astrojs/react";
+import node from "@astrojs/node";
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://describemusic.net",
+  output: "server",
+  adapter: node({
+    mode: "standalone"
+  }),
   integrations: [mdx(), sitemap(), icon({
     include: {
       'heroicons': ['*'],

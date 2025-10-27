@@ -153,11 +153,11 @@ export const generateUploadUrl = functions
                 contentType: contentType || 'audio/mpeg'
             });
 
-            // Generate download URL for later analysis
+            // Generate download URL for later analysis (valid for 7 days - GCS limit)
             const [downloadUrl] = await file.getSignedUrl({
                 version: 'v4',
                 action: 'read',
-                expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
+                expires: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days (GCS maximum)
             });
 
             console.log('Generated upload URL for:', { fileName, uniqueFileName });
@@ -343,6 +343,26 @@ export const analyzeAudioFromUrl = functions
             const analysis = vertexResponse.data.analysis;
             const processingTime = (Date.now() - Date.now()) / 1000;
 
+            // Generate a new signed URL for playback (7 days validity - GCS limit)
+            let audioPlaybackUrl: string | undefined;
+            try {
+                const bucket = admin.storage().bucket('describe-music');
+                const filePath = extractFilePathFromUrl(fileUrl);
+                const file = bucket.file(filePath);
+
+                const [playbackUrl] = await file.getSignedUrl({
+                    version: 'v4',
+                    action: 'read',
+                    expires: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days (GCS maximum)
+                });
+
+                audioPlaybackUrl = playbackUrl;
+                logger.info('Generated playback URL for audio (7 days validity)', { filePath, requestId });
+            } catch (urlError) {
+                logger.warn('Failed to generate playback URL, using original fileUrl', urlError as Error);
+                audioPlaybackUrl = fileUrl; // Fallback to original URL
+            }
+
             // 构建标准的分析结果
             const analysisResult: AnalysisResult = {
                 id: requestId,
@@ -351,6 +371,7 @@ export const analyzeAudioFromUrl = functions
                 duration: frontendDuration,
                 fileSize: `${(audioFile.size / (1024 * 1024)).toFixed(2)} MB`,
                 format: audioFile.format || 'Unknown',
+                audioUrl: audioPlaybackUrl, // Add audio URL for playback
 
                 contentType: analysis.contentType || {
                     primary: 'music',

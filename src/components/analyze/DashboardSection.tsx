@@ -739,6 +739,15 @@ function AudioPlayer({ result }: { result: AnalysisResult }) {
   const [duration, setDuration] = useState(result.duration);
   const audioRef = React.useRef<HTMLAudioElement>(null);
 
+  // Debug log
+  React.useEffect(() => {
+    console.log('🎵 AudioPlayer received:', {
+      hasAudioUrl: !!result.audioUrl,
+      audioUrl: result.audioUrl?.substring(0, 100) + '...',
+      filename: result.filename
+    });
+  }, [result.audioUrl]);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = Math.floor(seconds % 60);
@@ -923,11 +932,17 @@ function AudioPlayer({ result }: { result: AnalysisResult }) {
             <p className="text-slate-400 text-sm mb-4">
               {formatTime(result.duration)} • {result.fileSize} • {result.format}
             </p>
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-slate-700/50 rounded-full text-slate-400 text-sm">
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
-              </svg>
-              Audio preview not available
+            <div className="space-y-3">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500/10 border border-amber-500/20 rounded-full text-amber-400 text-sm">
+                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/>
+                </svg>
+                Audio playback not available for this analysis
+              </div>
+              <p className="text-slate-500 text-xs max-w-md mx-auto">
+                This is a historical record. Audio playback is only available for new analyses. 
+                Please upload and analyze the file again to enable playback.
+              </p>
             </div>
           </div>
         )}

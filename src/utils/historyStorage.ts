@@ -7,6 +7,7 @@ export interface HistoryRecord {
     format: string;
     thumbnail?: string; // Base64 encoded waveform preview
     userId?: string; // Associated user ID (if logged in)
+    audioUrl?: string; // Firebase Storage URL for audio playback (7 days validity)
     contentType?: {
         primary: 'music' | 'speech' | 'sound-effects' | 'ambient' | 'mixed';
         confidence: number;
@@ -90,6 +91,41 @@ export interface HistoryRecord {
         emotionalTone: string;
         primaryGenre: string;
     };
+    // Full analysis data for complete display
+    emotions?: {
+        happy: number;
+        sad: number;
+        angry: number;
+        calm: number;
+        excited: number;
+        melancholic?: number;
+        energetic?: number;
+        peaceful?: number;
+        tense?: number;
+        relaxed?: number;
+    };
+    structure?: {
+        [key: string]: { start: number; end: number } | any;
+    };
+    quality?: {
+        overall: number;
+        clarity: number;
+        loudness: number;
+        dynamic_range: number;
+        noise_level: number;
+        distortion?: number;
+        frequency_balance?: number;
+    };
+    similarity?: {
+        similar_tracks: Array<{
+            title: string;
+            artist: string;
+            similarity: number;
+        }>;
+    };
+    tags?: string[];
+    aiDescription?: string;
+    processingTime?: number;
 }
 
 const STORAGE_KEY = 'describe_music_history';

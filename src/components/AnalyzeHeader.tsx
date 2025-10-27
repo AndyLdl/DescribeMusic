@@ -27,11 +27,32 @@ export default function AnalyzeHeader() {
 
     // Listen for analysis result events to show/hide export buttons
     useEffect(() => {
-        const handleAnalysisReady = () => setShowExportButtons(true);
-        const handleAnalysisCleared = () => setShowExportButtons(false);
+        const handleAnalysisReady = () => {
+            console.log('🎯 AnalyzeHeader: analysisResultReady event received');
+            setShowExportButtons(true);
+        };
+        const handleAnalysisCleared = () => {
+            console.log('🎯 AnalyzeHeader: analysisResultCleared event received');
+            setShowExportButtons(false);
+        };
+
+        // Check if analysis result already exists when component mounts
+        const checkExistingResult = () => {
+            const hasResult = !!(window as any).currentAnalysisResult || !!(window as any).backupAnalysisResult;
+            console.log('🎯 AnalyzeHeader: Checking for existing result on mount:', hasResult);
+            if (hasResult) {
+                console.log('🎯 AnalyzeHeader: Found existing result, showing export buttons');
+                setShowExportButtons(true);
+            }
+        };
 
         window.addEventListener('analysisResultReady', handleAnalysisReady);
         window.addEventListener('analysisResultCleared', handleAnalysisCleared);
+        
+        console.log('🎯 AnalyzeHeader: Event listeners registered');
+        
+        // Check for existing result after a short delay to ensure AnalysisResultViewer has set it
+        setTimeout(checkExistingResult, 100);
 
         return () => {
             window.removeEventListener('analysisResultReady', handleAnalysisReady);

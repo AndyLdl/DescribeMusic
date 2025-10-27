@@ -5,24 +5,24 @@
  * Main entry point for all cloud functions.
  * This file exports all available functions for Firebase deployment.
  */
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function (o, m, k, k2) {
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     var desc = Object.getOwnPropertyDescriptor(m, k);
     if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-        desc = { enumerable: true, get: function () { return m[k]; } };
+      desc = { enumerable: true, get: function() { return m[k]; } };
     }
     Object.defineProperty(o, k2, desc);
-}) : (function (o, m, k, k2) {
+}) : (function(o, m, k, k2) {
     if (k2 === undefined) k2 = k;
     o[k2] = m[k];
 }));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function (o, v) {
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
     Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function (o, v) {
+}) : function(o, v) {
     o["default"] = v;
 });
 var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function (o) {
+    var ownKeys = function(o) {
         ownKeys = Object.getOwnPropertyNames || function (o) {
             var ar = [];
             for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
@@ -86,344 +86,363 @@ exports.healthCheck = functions
     .region('us-central1')
     .https
     .onRequest((req, res) => {
-        const configValidation = (0, config_1.validateConfig)();
-        res.json({
-            status: 'healthy',
-            timestamp: new Date().toISOString(),
-            version: '1.0.0',
-            environment: config_1.default.environment,
-            config: {
-                isValid: configValidation.isValid,
-                errors: configValidation.errors
-            },
-            services: {
-                firebase: admin.apps.length > 0,
-                vertexAI: !!config_1.default.vertexAI.projectId && !!config_1.default.vertexAI.location,
-                gemini: !!config_1.default.googleAI.apiKey // 备用
-            }
-        });
+    const configValidation = (0, config_1.validateConfig)();
+    res.json({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        version: '1.0.0',
+        environment: config_1.default.environment,
+        config: {
+            isValid: configValidation.isValid,
+            errors: configValidation.errors
+        },
+        services: {
+            firebase: admin.apps.length > 0,
+            vertexAI: !!config_1.default.vertexAI.projectId && !!config_1.default.vertexAI.location,
+            gemini: !!config_1.default.googleAI.apiKey // 备用
+        }
     });
+});
 // Version info function
 exports.version = functions
     .region('us-central1')
     .https
     .onRequest((req, res) => {
-        res.json({
-            name: 'describe-music-cloud-functions',
-            version: '1.0.0',
-            description: 'Cloud functions for Describe Music - AI-powered audio analysis platform',
-            timestamp: new Date().toISOString(),
-            environment: config_1.default.environment,
-            features: [
-                'Audio Analysis with Gemini AI',
-                'Multi-format Audio Support',
-                'Comprehensive Music Analysis',
-                'AI-Generated Tags',
-                'Quality Assessment',
-                'Emotional Analysis',
-                'Structural Analysis'
-            ]
-        });
+    res.json({
+        name: 'describe-music-cloud-functions',
+        version: '1.0.0',
+        description: 'Cloud functions for Describe Music - AI-powered audio analysis platform',
+        timestamp: new Date().toISOString(),
+        environment: config_1.default.environment,
+        features: [
+            'Audio Analysis with Gemini AI',
+            'Multi-format Audio Support',
+            'Comprehensive Music Analysis',
+            'AI-Generated Tags',
+            'Quality Assessment',
+            'Emotional Analysis',
+            'Structural Analysis'
+        ]
     });
+});
 // Generate signed URL for direct GCS upload
 exports.generateUploadUrl = functions
     .region('us-central1')
     .https
     .onRequest(async (req, res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Fingerprint, X-User-ID, Accept, Origin, X-Requested-With');
-        if (req.method === 'OPTIONS') {
-            res.status(200).end();
-            return;
-        }
-        if (req.method !== 'POST') {
-            res.status(405).json({ error: 'Method not allowed' });
-            return;
-        }
-        try {
-            const { fileName, contentType } = req.body;
-            if (!fileName) {
-                res.status(400).json({
-                    success: false,
-                    error: { code: 'MISSING_FILENAME', message: 'File name is required' }
-                });
-                return;
-            }
-            // Generate unique file path
-            const timestamp = Date.now();
-            const randomId = Math.random().toString(36).substring(2, 15);
-            const fileExtension = fileName.split('.').pop() || 'mp3';
-            const uniqueFileName = `audio/${timestamp}_${randomId}.${fileExtension}`;
-            // Get storage bucket (use default bucket name for Firebase project)
-            const bucket = admin.storage().bucket('describe-music');
-            const file = bucket.file(uniqueFileName);
-            // Generate signed URL for upload (valid for 15 minutes)
-            const [uploadUrl] = await file.getSignedUrl({
-                version: 'v4',
-                action: 'write',
-                expires: Date.now() + 15 * 60 * 1000, // 15 minutes
-                contentType: contentType || 'audio/mpeg'
-            });
-            // Generate download URL for later analysis
-            const [downloadUrl] = await file.getSignedUrl({
-                version: 'v4',
-                action: 'read',
-                expires: Date.now() + 24 * 60 * 60 * 1000 // 24 hours
-            });
-            console.log('Generated upload URL for:', { fileName, uniqueFileName });
-            res.json({
-                success: true,
-                data: {
-                    uploadUrl,
-                    downloadUrl,
-                    fileName: uniqueFileName,
-                    originalName: fileName,
-                    expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString()
-                },
-                timestamp: new Date().toISOString(),
-                requestId: `upload_${timestamp}`
-            });
-        }
-        catch (error) {
-            console.error('Upload URL generation error:', error);
-            res.status(500).json({
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Fingerprint, X-User-ID, Accept, Origin, X-Requested-With');
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+    if (req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
+    }
+    try {
+        const { fileName, contentType } = req.body;
+        if (!fileName) {
+            res.status(400).json({
                 success: false,
-                error: {
-                    code: 'URL_GENERATION_ERROR',
-                    message: error instanceof Error ? error.message : 'Unknown error'
-                }
+                error: { code: 'MISSING_FILENAME', message: 'File name is required' }
             });
+            return;
         }
-    });
+        // Generate unique file path
+        const timestamp = Date.now();
+        const randomId = Math.random().toString(36).substring(2, 15);
+        const fileExtension = fileName.split('.').pop() || 'mp3';
+        const uniqueFileName = `audio/${timestamp}_${randomId}.${fileExtension}`;
+        // Get storage bucket (use default bucket name for Firebase project)
+        const bucket = admin.storage().bucket('describe-music');
+        const file = bucket.file(uniqueFileName);
+        // Generate signed URL for upload (valid for 15 minutes)
+        const [uploadUrl] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'write',
+            expires: Date.now() + 15 * 60 * 1000, // 15 minutes
+            contentType: contentType || 'audio/mpeg'
+        });
+        // Generate download URL for later analysis (valid for 7 days - GCS limit)
+        const [downloadUrl] = await file.getSignedUrl({
+            version: 'v4',
+            action: 'read',
+            expires: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days (GCS maximum)
+        });
+        console.log('Generated upload URL for:', { fileName, uniqueFileName });
+        res.json({
+            success: true,
+            data: {
+                uploadUrl,
+                downloadUrl,
+                fileName: uniqueFileName,
+                originalName: fileName,
+                expiresAt: new Date(Date.now() + 15 * 60 * 1000).toISOString()
+            },
+            timestamp: new Date().toISOString(),
+            requestId: `upload_${timestamp}`
+        });
+    }
+    catch (error) {
+        console.error('Upload URL generation error:', error);
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'URL_GENERATION_ERROR',
+                message: error instanceof Error ? error.message : 'Unknown error'
+            }
+        });
+    }
+});
 // Secure audio analysis from GCS URL
 exports.analyzeAudioFromUrl = functions
     .region('us-central1')
     .https
     .onRequest(async (req, res) => {
-        const requestId = (0, uuid_1.v4)();
-        // 安全的CORS配置
-        const origin = req.get('Origin');
-        const allowedOrigins = [
-            'https://describemusic.net',
-            'https://www.describemusic.net',
-            'https://describemusic.net/',
-            'https://www.describemusic.net/',
-            'http://localhost:4321',
-            'http://localhost:4322',
-            'http://localhost:4323',
-            'http://localhost:4327',
-            'https://localhost:4321',
-            'https://localhost:4322',
-            'https://localhost:4323',
-            'https://localhost:4327'
-        ];
-        if (allowedOrigins.includes(origin || '')) {
-            res.setHeader('Access-Control-Allow-Origin', origin || '');
-            res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-            res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Fingerprint, X-User-ID, Accept, Origin, X-Requested-With');
-            res.setHeader('Access-Control-Allow-Credentials', 'true');
+    const requestId = (0, uuid_1.v4)();
+    // 安全的CORS配置
+    const origin = req.get('Origin');
+    const allowedOrigins = [
+        'https://describemusic.net',
+        'https://www.describemusic.net',
+        'https://describemusic.net/',
+        'https://www.describemusic.net/',
+        'http://localhost:4321',
+        'http://localhost:4322',
+        'http://localhost:4323',
+        'http://localhost:4327',
+        'https://localhost:4321',
+        'https://localhost:4322',
+        'https://localhost:4323',
+        'https://localhost:4327'
+    ];
+    if (allowedOrigins.includes(origin || '')) {
+        res.setHeader('Access-Control-Allow-Origin', origin || '');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Device-Fingerprint, X-User-ID, Accept, Origin, X-Requested-With');
+        res.setHeader('Access-Control-Allow-Credentials', 'true');
+    }
+    else {
+        logger_1.default.warn('CORS blocked unauthorized origin', { origin, requestId });
+        res.status(403).json({
+            success: false,
+            error: { code: 'CORS_NOT_ALLOWED', message: 'Origin not allowed' },
+            requestId
+        });
+        return;
+    }
+    // CORS验证已完成
+    if (req.method === 'OPTIONS') {
+        res.status(200).end();
+        return;
+    }
+    if (req.method !== 'POST') {
+        res.status(405).json({
+            success: false,
+            error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST method allowed' },
+            requestId
+        });
+        return;
+    }
+    let userInfo = {};
+    try {
+        // 额外的安全检查
+        const userAgent = req.get('User-Agent') || '';
+        const referer = req.get('Referer') || '';
+        // 检查是否来自可信的referer
+        if (referer && !allowedOrigins.some(origin => referer.startsWith(origin))) {
+            logger_1.default.warn('Suspicious referer detected', { referer, origin, requestId });
         }
-        else {
-            logger_1.default.warn('CORS blocked unauthorized origin', { origin, requestId });
+        // 检查User-Agent是否可疑
+        if (userAgent.toLowerCase().includes('bot') || userAgent.toLowerCase().includes('crawler')) {
+            logger_1.default.warn('Bot detected, blocking request', { userAgent, origin, requestId });
             res.status(403).json({
                 success: false,
-                error: { code: 'CORS_NOT_ALLOWED', message: 'Origin not allowed' },
+                error: { code: 'BOT_NOT_ALLOWED', message: 'Automated requests not allowed' },
                 requestId
             });
             return;
         }
-        // CORS验证已完成
-        if (req.method === 'OPTIONS') {
-            res.status(200).end();
-            return;
-        }
-        if (req.method !== 'POST') {
-            res.status(405).json({
-                success: false,
-                error: { code: 'METHOD_NOT_ALLOWED', message: 'Only POST method allowed' },
-                requestId
-            });
-            return;
-        }
-        let userInfo = {};
-        try {
-            // 额外的安全检查
-            const userAgent = req.get('User-Agent') || '';
-            const referer = req.get('Referer') || '';
-            // 检查是否来自可信的referer
-            if (referer && !allowedOrigins.some(origin => referer.startsWith(origin))) {
-                logger_1.default.warn('Suspicious referer detected', { referer, origin, requestId });
-            }
-            // 检查User-Agent是否可疑
-            if (userAgent.toLowerCase().includes('bot') || userAgent.toLowerCase().includes('crawler')) {
-                logger_1.default.warn('Bot detected, blocking request', { userAgent, origin, requestId });
-                res.status(403).json({
-                    success: false,
-                    error: { code: 'BOT_NOT_ALLOWED', message: 'Automated requests not allowed' },
-                    requestId
-                });
-                return;
-            }
-            const { fileUrl, fileName, options } = req.body;
-            // 验证必需参数
-            if (!fileUrl || !fileName) {
-                res.status(400).json({
-                    success: false,
-                    error: {
-                        code: 'MISSING_REQUIRED_FIELDS',
-                        message: 'fileUrl and fileName are required'
-                    },
-                    requestId
-                });
-                return;
-            }
-            console.log('Analyzing audio from GCS URL:', { fileUrl, fileName });
-            // Extract user information for potential refund
-            const authHeader = req.get('Authorization');
-            const deviceFingerprint = req.get('X-Device-Fingerprint');
-            if (authHeader && authHeader.startsWith('Bearer ')) {
-                userInfo.userId = req.get('X-User-ID');
-            }
-            else if (deviceFingerprint) {
-                userInfo.deviceFingerprint = deviceFingerprint;
-            }
-            // Get duration from frontend (more efficient than downloading entire file)
-            const frontendDuration = options.audioDuration || 0;
-            console.log('Received request with options:', {
-                audioDuration: options.audioDuration,
-                frontendDuration,
-                fileName,
-                optionsKeys: Object.keys(options)
-            });
-            // Validate duration is reasonable
-            if (frontendDuration <= 0) {
-                throw new Error(`Audio duration is required and must be greater than 0. Received: ${frontendDuration}`);
-            }
-            if (frontendDuration > 3600) { // Max 1 hour
-                throw new Error('Audio duration exceeds maximum allowed length (1 hour)');
-            }
-            console.log('Using frontend-detected duration:', { frontendDuration, fileName });
-            // Calculate credits needed and store for potential refund
-            userInfo.creditsConsumed = Math.ceil(frontendDuration);
-            // Check and consume usage limits based on frontend-detected duration
-            await checkAndConsumeUsageFromUrl(req, fileName, frontendDuration);
-            // Download file only for analysis (not for duration detection)
-            const audioFile = await downloadForAnalysis(fileUrl, fileName);
-            // 构建分析prompt
-            const prompt = {
-                systemPrompt: prompts_1.PromptTemplates.getSystemPrompt(),
-                userPrompt: prompts_1.PromptTemplates.getUserPrompt(audioFile.originalName, 'Comprehensive audio analysis requested'),
-                audioMetadata: {
-                    filename: audioFile.originalName,
-                    duration: frontendDuration,
-                    format: audioFile.format || 'Unknown',
-                    size: audioFile.size
-                }
-            };
-            // 使用 Vertex AI 服务进行分析
-            const vertexResponse = await vertexAIService_1.vertexAIService.analyzeAudio(prompt, requestId);
-            if (!vertexResponse.success || !vertexResponse.data) {
-                throw new Error('Vertex AI analysis failed: No valid response received');
-            }
-            const analysis = vertexResponse.data.analysis;
-            const processingTime = (Date.now() - Date.now()) / 1000;
-            // 构建标准的分析结果
-            const analysisResult = {
-                id: requestId,
-                filename: audioFile.originalName,
-                timestamp: new Date().toISOString(),
-                duration: frontendDuration,
-                fileSize: `${(audioFile.size / (1024 * 1024)).toFixed(2)} MB`,
-                format: audioFile.format || 'Unknown',
-                contentType: analysis.contentType || {
-                    primary: 'music',
-                    confidence: 0.8,
-                    description: 'AI-analyzed audio content'
-                },
-                basicInfo: analysis.basicInfo || {
-                    genre: 'Unknown', mood: 'Neutral', bpm: 120, key: 'C Major',
-                    energy: 0.5, valence: 0.5, danceability: 0.5, instrumentalness: 0.5,
-                    speechiness: 0.1, acousticness: 0.5, liveness: 0.1, loudness: -10
-                },
-                emotions: analysis.emotions || {
-                    happy: 0.3, sad: 0.2, angry: 0.1, calm: 0.4, excited: 0.2,
-                    melancholic: 0.2, energetic: 0.3, peaceful: 0.3, tense: 0.2, relaxed: 0.4
-                },
-                voiceAnalysis: {
-                    hasVoice: false, speakerCount: 0,
-                    genderDetection: { primary: 'unknown', confidence: 0.0, multipleGenders: false },
-                    speakerEmotion: {
-                        primary: 'neutral', confidence: 0.0,
-                        emotions: { happy: 0.0, sad: 0.0, angry: 0.0, calm: 0.0, excited: 0.0, nervous: 0.0, confident: 0.0, stressed: 0.0 }
-                    },
-                    speechClarity: { score: 0.0, pronunciation: 0.0, articulation: 0.0, pace: 'normal', volume: 'normal' },
-                    vocalCharacteristics: { pitchRange: 'medium', speakingRate: 0, pauseFrequency: 'low', intonationVariation: 0.0 },
-                    languageAnalysis: { language: 'unknown', confidence: 0.0, accent: 'unknown' },
-                    audioQuality: { backgroundNoise: 0.0, echo: 0.0, compression: 0.0, overall: 0.0 }
-                },
-                soundEffects: {
-                    detected: [],
-                    environment: {
-                        location_type: 'indoor', setting: 'commercial', activity_level: 'moderate',
-                        acoustic_space: 'medium', time_of_day: 'unknown', weather: 'unknown'
-                    }
-                },
-                structure: analysis.structure || {
-                    intro: { start: 0, end: 8 }, verse1: { start: 8, end: 32 },
-                    chorus1: { start: 32, end: 56 }, outro: { start: 56, end: 80 }
-                },
-                quality: analysis.quality || {
-                    overall: 7.0, clarity: 7.0, loudness: -10, dynamic_range: 6.0,
-                    noise_level: 2.0, distortion: 1.0, frequency_balance: 7.0
-                },
-                similarity: analysis.similarity || {
-                    similar_tracks: [], similar_sounds: [], style_influences: ['AI-analyzed'], genre_confidence: 0.7
-                },
-                tags: analysis.tags || ['audio', 'music', 'vertex-ai-analyzed'],
-                aiDescription: analysis.aiDescription || 'Audio content analyzed using Vertex AI Gemini.',
-                processingTime: processingTime
-            };
-            res.json({
-                success: true,
-                data: analysisResult,
-                timestamp: new Date().toISOString(),
-                requestId: `req_${Date.now()}`
-            });
-        }
-        catch (error) {
-            console.error('Analysis error:', error);
-            // Refund credits if analysis failed after consumption
-            if (userInfo.creditsConsumed && userInfo.creditsConsumed > 0) {
-                try {
-                    if (userInfo.userId) {
-                        await (0, supabase_1.refundUserCredits)(userInfo.userId, userInfo.creditsConsumed, `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                        logger_1.default.info('Credits refunded for failed analysis', {
-                            userId: userInfo.userId,
-                            creditsRefunded: userInfo.creditsConsumed
-                        });
-                    }
-                    else if (userInfo.deviceFingerprint) {
-                        await (0, supabase_1.refundTrialCredits)(userInfo.deviceFingerprint, userInfo.creditsConsumed, `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-                        logger_1.default.info('Trial credits refunded for failed analysis', {
-                            deviceFingerprint: userInfo.deviceFingerprint,
-                            creditsRefunded: userInfo.creditsConsumed
-                        });
-                    }
-                }
-                catch (refundError) {
-                    logger_1.default.error('Failed to refund credits after analysis failure', refundError);
-                }
-            }
-            res.status(500).json({
+        const { fileUrl, fileName, options } = req.body;
+        // 验证必需参数
+        if (!fileUrl || !fileName) {
+            res.status(400).json({
                 success: false,
                 error: {
-                    code: 'ANALYSIS_ERROR',
-                    message: error instanceof Error ? error.message : 'Unknown error'
-                }
+                    code: 'MISSING_REQUIRED_FIELDS',
+                    message: 'fileUrl and fileName are required'
+                },
+                requestId
             });
+            return;
         }
-    });
+        console.log('Analyzing audio from GCS URL:', { fileUrl, fileName });
+        // Extract user information for potential refund
+        const authHeader = req.get('Authorization');
+        const deviceFingerprint = req.get('X-Device-Fingerprint');
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            userInfo.userId = req.get('X-User-ID');
+        }
+        else if (deviceFingerprint) {
+            userInfo.deviceFingerprint = deviceFingerprint;
+        }
+        // Get duration from frontend (more efficient than downloading entire file)
+        const frontendDuration = options.audioDuration || 0;
+        console.log('Received request with options:', {
+            audioDuration: options.audioDuration,
+            frontendDuration,
+            fileName,
+            optionsKeys: Object.keys(options)
+        });
+        // Validate duration is reasonable
+        if (frontendDuration <= 0) {
+            throw new Error(`Audio duration is required and must be greater than 0. Received: ${frontendDuration}`);
+        }
+        if (frontendDuration > 3600) { // Max 1 hour
+            throw new Error('Audio duration exceeds maximum allowed length (1 hour)');
+        }
+        console.log('Using frontend-detected duration:', { frontendDuration, fileName });
+        // Calculate credits needed and store for potential refund
+        userInfo.creditsConsumed = Math.ceil(frontendDuration);
+        // Check and consume usage limits based on frontend-detected duration
+        await checkAndConsumeUsageFromUrl(req, fileName, frontendDuration);
+        // Download file only for analysis (not for duration detection)
+        const audioFile = await downloadForAnalysis(fileUrl, fileName);
+        // 构建分析prompt
+        const prompt = {
+            systemPrompt: prompts_1.PromptTemplates.getSystemPrompt(),
+            userPrompt: prompts_1.PromptTemplates.getUserPrompt(audioFile.originalName, 'Comprehensive audio analysis requested'),
+            audioMetadata: {
+                filename: audioFile.originalName,
+                duration: frontendDuration,
+                format: audioFile.format || 'Unknown',
+                size: audioFile.size
+            }
+        };
+        // 使用 Vertex AI 服务进行分析
+        const vertexResponse = await vertexAIService_1.vertexAIService.analyzeAudio(prompt, requestId);
+        if (!vertexResponse.success || !vertexResponse.data) {
+            throw new Error('Vertex AI analysis failed: No valid response received');
+        }
+        const analysis = vertexResponse.data.analysis;
+        const processingTime = (Date.now() - Date.now()) / 1000;
+        // Generate a new signed URL for playback (7 days validity - GCS limit)
+        let audioPlaybackUrl;
+        try {
+            const bucket = admin.storage().bucket('describe-music');
+            const filePath = extractFilePathFromUrl(fileUrl);
+            const file = bucket.file(filePath);
+            const [playbackUrl] = await file.getSignedUrl({
+                version: 'v4',
+                action: 'read',
+                expires: Date.now() + 7 * 24 * 60 * 60 * 1000 // 7 days (GCS maximum)
+            });
+            audioPlaybackUrl = playbackUrl;
+            logger_1.default.info('Generated playback URL for audio (7 days validity)', { filePath, requestId });
+        }
+        catch (urlError) {
+            logger_1.default.warn('Failed to generate playback URL, using original fileUrl', urlError);
+            audioPlaybackUrl = fileUrl; // Fallback to original URL
+        }
+        // 构建标准的分析结果
+        const analysisResult = {
+            id: requestId,
+            filename: audioFile.originalName,
+            timestamp: new Date().toISOString(),
+            duration: frontendDuration,
+            fileSize: `${(audioFile.size / (1024 * 1024)).toFixed(2)} MB`,
+            format: audioFile.format || 'Unknown',
+            audioUrl: audioPlaybackUrl, // Add audio URL for playback
+            contentType: analysis.contentType || {
+                primary: 'music',
+                confidence: 0.8,
+                description: 'AI-analyzed audio content'
+            },
+            basicInfo: analysis.basicInfo || {
+                genre: 'Unknown', mood: 'Neutral', bpm: 120, key: 'C Major',
+                energy: 0.5, valence: 0.5, danceability: 0.5, instrumentalness: 0.5,
+                speechiness: 0.1, acousticness: 0.5, liveness: 0.1, loudness: -10
+            },
+            emotions: analysis.emotions || {
+                happy: 0.3, sad: 0.2, angry: 0.1, calm: 0.4, excited: 0.2,
+                melancholic: 0.2, energetic: 0.3, peaceful: 0.3, tense: 0.2, relaxed: 0.4
+            },
+            voiceAnalysis: {
+                hasVoice: false, speakerCount: 0,
+                genderDetection: { primary: 'unknown', confidence: 0.0, multipleGenders: false },
+                speakerEmotion: {
+                    primary: 'neutral', confidence: 0.0,
+                    emotions: { happy: 0.0, sad: 0.0, angry: 0.0, calm: 0.0, excited: 0.0, nervous: 0.0, confident: 0.0, stressed: 0.0 }
+                },
+                speechClarity: { score: 0.0, pronunciation: 0.0, articulation: 0.0, pace: 'normal', volume: 'normal' },
+                vocalCharacteristics: { pitchRange: 'medium', speakingRate: 0, pauseFrequency: 'low', intonationVariation: 0.0 },
+                languageAnalysis: { language: 'unknown', confidence: 0.0, accent: 'unknown' },
+                audioQuality: { backgroundNoise: 0.0, echo: 0.0, compression: 0.0, overall: 0.0 }
+            },
+            soundEffects: {
+                detected: [],
+                environment: {
+                    location_type: 'indoor', setting: 'commercial', activity_level: 'moderate',
+                    acoustic_space: 'medium', time_of_day: 'unknown', weather: 'unknown'
+                }
+            },
+            structure: analysis.structure || {
+                intro: { start: 0, end: 8 }, verse1: { start: 8, end: 32 },
+                chorus1: { start: 32, end: 56 }, outro: { start: 56, end: 80 }
+            },
+            quality: analysis.quality || {
+                overall: 7.0, clarity: 7.0, loudness: -10, dynamic_range: 6.0,
+                noise_level: 2.0, distortion: 1.0, frequency_balance: 7.0
+            },
+            similarity: analysis.similarity || {
+                similar_tracks: [], similar_sounds: [], style_influences: ['AI-analyzed'], genre_confidence: 0.7
+            },
+            tags: analysis.tags || ['audio', 'music', 'vertex-ai-analyzed'],
+            aiDescription: analysis.aiDescription || 'Audio content analyzed using Vertex AI Gemini.',
+            processingTime: processingTime
+        };
+        res.json({
+            success: true,
+            data: analysisResult,
+            timestamp: new Date().toISOString(),
+            requestId: `req_${Date.now()}`
+        });
+    }
+    catch (error) {
+        console.error('Analysis error:', error);
+        // Refund credits if analysis failed after consumption
+        if (userInfo.creditsConsumed && userInfo.creditsConsumed > 0) {
+            try {
+                if (userInfo.userId) {
+                    await (0, supabase_1.refundUserCredits)(userInfo.userId, userInfo.creditsConsumed, `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    logger_1.default.info('Credits refunded for failed analysis', {
+                        userId: userInfo.userId,
+                        creditsRefunded: userInfo.creditsConsumed
+                    });
+                }
+                else if (userInfo.deviceFingerprint) {
+                    await (0, supabase_1.refundTrialCredits)(userInfo.deviceFingerprint, userInfo.creditsConsumed, `Analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+                    logger_1.default.info('Trial credits refunded for failed analysis', {
+                        deviceFingerprint: userInfo.deviceFingerprint,
+                        creditsRefunded: userInfo.creditsConsumed
+                    });
+                }
+            }
+            catch (refundError) {
+                logger_1.default.error('Failed to refund credits after analysis failure', refundError);
+            }
+        }
+        res.status(500).json({
+            success: false,
+            error: {
+                code: 'ANALYSIS_ERROR',
+                message: error instanceof Error ? error.message : 'Unknown error'
+            }
+        });
+    }
+});
 /**
  * Download audio file for analysis only (duration already known from frontend)
  */
