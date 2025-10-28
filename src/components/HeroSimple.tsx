@@ -4,6 +4,7 @@ import { useTrialCredit, useCredit, CreditProvider } from '../contexts/CreditCon
 import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import LoginModal from './auth/LoginModal';
 import { cloudFunctions, type CloudAnalysisResult, type ProgressUpdate } from '../utils/cloudFunctions';
+import { HistoryStorage, type HistoryRecord } from '../utils/historyStorage';
 
 // Demo audio samples from HookSection
 interface AudioSample {
@@ -367,6 +368,37 @@ export default function HeroSimple() {
 
       setAnalysisResult(result);
       setUploadState('complete');
+      
+      // Save to history storage
+      const historyRecord: HistoryRecord = {
+        id: result.id,
+        filename: result.filename,
+        timestamp: result.timestamp,
+        duration: result.duration,
+        fileSize: result.fileSize,
+        format: result.format,
+        audioUrl: result.audioUrl, // Save audioUrl for playback
+        contentType: result.contentType,
+        basicInfo: result.basicInfo,
+        voiceAnalysis: result.voiceAnalysis,
+        soundEffects: result.soundEffects,
+        quickStats: {
+          qualityScore: result.quality.overall,
+          emotionalTone: result.basicInfo.mood,
+          primaryGenre: result.basicInfo.genre
+        },
+        // Save complete analysis data
+        emotions: result.emotions,
+        structure: result.structure,
+        quality: result.quality,
+        similarity: result.similarity,
+        tags: result.tags,
+        aiDescription: result.aiDescription,
+        processingTime: result.processingTime
+      };
+      
+      await HistoryStorage.addRecordWithUser(historyRecord);
+      console.log('✅ Hero区分析结果已保存到历史记录');
       
       // Update credit balance (credits already consumed by backend)
       if (user) {
@@ -1284,9 +1316,10 @@ export default function HeroSimple() {
                           {/* Action Button with animation */}
                           <button 
                             onClick={() => {
-                              // Store result in sessionStorage for full analysis page
-                              sessionStorage.setItem('heroAnalysisResult', JSON.stringify(analysisResult));
-                              window.location.href = `/analyze?id=${analysisResult.id}`;
+                              // Store result in sessionStorage for analysis result page
+                              sessionStorage.setItem(`analysis-result-${analysisResult.id}`, JSON.stringify(analysisResult));
+                              // Navigate to the dynamic analysis result page
+                              window.location.href = `/analysis/${analysisResult.id}`;
                             }}
                             className="w-full bg-violet-500 hover:bg-violet-600 text-white py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-105 transform shadow-lg"
                           >

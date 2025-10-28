@@ -108,7 +108,13 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
       setError('');
 
       // First try to get from sessionStorage (for recent analysis)
-      const sessionResult = sessionStorage.getItem('heroAnalysisResult');
+      // Try new key format first (analysis-result-{id})
+      let sessionResult = sessionStorage.getItem(`analysis-result-${analysisId}`);
+      // Fallback to old key format for backward compatibility
+      if (!sessionResult) {
+        sessionResult = sessionStorage.getItem('heroAnalysisResult');
+      }
+      
       if (sessionResult) {
         const parsedResult = JSON.parse(sessionResult);
         console.log('📍 Analysis result from session:', {
