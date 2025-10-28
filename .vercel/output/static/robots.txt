@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://describemusic.net/sitemap-index.xml

@@ -1,0 +1,10 @@
+---
+import AnalyzeLayout from "@/layouts/AnalyzeLayout.astro";
+import AnalyzeAppWithAuth from "@/components/AnalyzeAppWithAuth.tsx";
+---
+
+<AnalyzeLayout
+  title="AI Audio Analysis Tool - Analyze Music, Voice & Sounds"
+  description="Free AI-powered audio analyzer that provides instant detailed analysis of music, voice recordings, and sound effects. Upload your audio files and get professional insights with instrument detection, emotion analysis, and SEO-friendly descriptions.">
+  <AnalyzeAppWithAuth client:only="react" />
+</AnalyzeLayout>

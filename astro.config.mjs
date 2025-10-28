@@ -6,15 +6,13 @@ import sitemap from "@astrojs/sitemap";
 import icon from "astro-icon";
 import tailwind from "@astrojs/tailwind";
 import react from "@astrojs/react";
-import node from "@astrojs/node";
+import vercel from "@astrojs/vercel";
 
 // https://astro.build/config
 export default defineConfig({
   site: "https://describemusic.net",
   output: "server",
-  adapter: node({
-    mode: "standalone"
-  }),
+  adapter: vercel(),
   integrations: [mdx(), sitemap(), icon({
     include: {
       'heroicons': ['*'],

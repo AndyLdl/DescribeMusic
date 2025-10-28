@@ -1,0 +1,135 @@
+---
+import { getCollection } from "astro:content";
+import Layout from "@/layouts/Layout.astro";
+import Container from "@/components/container.astro";
+
+// Generate a new path for every collection entry
+export async function getStaticPaths() {
+  const blogEntries = await getCollection("blog");
+  return blogEntries.map((entry) => ({
+    params: { slug: entry.slug },
+    props: { entry },
+  }));
+}
+
+// Get the entry directly from the prop on render
+const { entry } = Astro.props;
+const { Content } = await entry.render();
+---
+
+<Layout
+  title={`${entry.data.title} | Describe Music Blog`}
+  description={entry.data.snippet}>
+  <Container>
+    <div class="mx-auto max-w-4xl mt-14">
+      <!-- Header -->
+      <div class="text-center mb-12">
+        <span
+          class="inline-block px-3 py-1 text-xs font-medium tracking-wider uppercase bg-violet-500/20 text-violet-300 rounded-full mb-4">
+          {entry.data.category}
+        </span>
+        <h1
+          class="text-4xl lg:text-6xl font-bold lg:tracking-tight text-white leading-tight">
+          {entry.data.title}
+        </h1>
+        <div
+          class="flex gap-3 mt-6 items-center justify-center flex-wrap text-sm">
+          <span class="text-slate-300 font-medium">
+            {entry.data.author}
+          </span>
+          <span class="text-slate-600">•</span>
+          <time
+            class="text-slate-400"
+            datetime={entry.data.publishDate.toISOString()}>
+            {
+              new Intl.DateTimeFormat("en-US", {
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              }).format(entry.data.publishDate)
+            }
+          </time>
+          <span class="text-slate-600 hidden md:block">•</span>
+          <div class="flex flex-wrap gap-2 justify-center">
+            {
+              entry.data.tags.map((tag) => (
+                <span class="text-xs text-slate-500 bg-slate-700/50 px-2 py-1 rounded">
+                  #{tag}
+                </span>
+              ))
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Featured Image -->
+      {
+        entry.data.image?.src ? (
+          <div class="relative mb-12 rounded-xl overflow-hidden">
+            <img
+              src={entry.data.image.src}
+              alt={entry.data.image.alt}
+              class="w-full h-[400px] object-cover bg-slate-700"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent" />
+          </div>
+        ) : (
+          <div class="relative mb-12 rounded-xl overflow-hidden bg-gradient-to-br from-slate-700 to-slate-800 h-[400px] flex items-center justify-center">
+            <div class="flex flex-col items-center justify-center text-slate-400">
+              <svg
+                class="w-24 h-24 mb-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"
+                />
+              </svg>
+              <span class="text-lg font-medium">{entry.data.category}</span>
+            </div>
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900/30 to-transparent" />
+          </div>
+        )
+      }
+    </div>
+
+    <!-- Content -->
+    <div
+      class="mx-auto prose prose-lg prose-invert mt-6 max-w-3xl prose-headings:text-white prose-p:text-slate-300 prose-strong:text-white prose-a:text-violet-400 prose-a:no-underline hover:prose-a:text-violet-300 prose-code:text-violet-300 prose-code:bg-slate-800 prose-pre:bg-slate-800 prose-pre:border prose-pre:border-slate-700">
+      <Content />
+    </div>
+
+    <!-- Navigation -->
+    <div class="max-w-3xl mx-auto mt-12 pt-8 border-t border-slate-700">
+      <div class="flex flex-col sm:flex-row gap-4 justify-between items-center">
+        <a
+          href="/blog"
+          class="flex items-center gap-2 px-6 py-3 bg-slate-800/50 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl transition-all duration-300 group">
+          <svg
+            class="w-4 h-4 group-hover:-translate-x-1 transition-transform"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M15 19l-7-7 7-7"></path>
+          </svg>
+          Back to Blog
+        </a>
+
+        <div class="flex gap-3">
+          <a
+            href="/analyze"
+            class="px-6 py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-xl hover:from-violet-600 hover:to-blue-600 transition-all duration-300 font-medium">
+            Try Audio Analysis
+          </a>
+        </div>
+      </div>
+    </div>
+  </Container>
+</Layout>

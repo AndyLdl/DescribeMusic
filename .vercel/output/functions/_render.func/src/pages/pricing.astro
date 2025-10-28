@@ -1,0 +1,413 @@
+---
+import Layout from "@/layouts/Layout.astro";
+import Container from "@/components/container.astro";
+import { Icon } from "astro-icon/components";
+import PricingPage from "@/components/pricing/PricingPage.tsx";
+---
+
+<Layout
+  title="Subscription Plans - Describe Music"
+  description="Start with a free trial and choose the monthly subscription plan that suits you. Professional AI audio analysis service with flexible subscriptions that can be canceled anytime.">
+  <!-- Pricing Section with React Component -->
+  <div>
+    <PricingPage client:load />
+  </div>
+
+  <Container>
+    <!-- Features Section -->
+    <div class="py-20">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-white mb-4">
+          Why Choose Our Subscription Service?
+        </h2>
+        <p class="text-xl text-slate-300 max-w-3xl mx-auto">
+          Start with a free trial and use our professional AI audio analysis
+          service on-demand with flexible monthly subscriptions.
+        </p>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+        <div
+          class="text-center p-8 bg-slate-800/30 rounded-xl border border-slate-700">
+          <div
+            class="w-16 h-16 mx-auto mb-6 bg-green-500/20 rounded-xl flex items-center justify-center">
+            <Icon
+              name="heroicons:gift-20-solid"
+              class="w-8 h-8 text-green-400"
+            />
+          </div>
+          <h3 class="text-xl font-semibold text-white mb-4">Start Free</h3>
+          <p class="text-slate-300">
+            Get 180 free credits monthly (3 minutes) to experience our AI audio
+            analysis service without payment.
+          </p>
+        </div>
+
+        <div
+          class="text-center p-8 bg-slate-800/30 rounded-xl border border-slate-700">
+          <div
+            class="w-16 h-16 mx-auto mb-6 bg-blue-500/20 rounded-xl flex items-center justify-center">
+            <Icon
+              name="heroicons:arrow-path-20-solid"
+              class="w-8 h-8 text-blue-400"
+            />
+          </div>
+          <h3 class="text-xl font-semibold text-white mb-4">
+            Flexible Subscription
+          </h3>
+          <p class="text-slate-300">
+            Monthly subscription model with automatic credit allocation each
+            month. Cancel anytime with no long-term contract commitment.
+          </p>
+        </div>
+
+        <div
+          class="text-center p-8 bg-slate-800/30 rounded-xl border border-slate-700">
+          <div
+            class="w-16 h-16 mx-auto mb-6 bg-violet-500/20 rounded-xl flex items-center justify-center">
+            <Icon
+              name="heroicons:shield-check-20-solid"
+              class="w-8 h-8 text-violet-400"
+            />
+          </div>
+          <h3 class="text-xl font-semibold text-white mb-4">
+            Secure & Reliable
+          </h3>
+          <p class="text-slate-300">
+            Processed through Lemonsqueezy secure payment platform, supporting
+            multiple payment methods to ensure your financial security.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Feature Comparison Section -->
+    <div class="py-20">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-white mb-4">Feature Comparison</h2>
+        <p class="text-xl text-slate-300">
+          Detailed overview of feature differences across plans
+        </p>
+      </div>
+
+      <div class="max-w-6xl mx-auto overflow-x-auto">
+        <table
+          class="w-full bg-slate-800/30 rounded-xl border border-slate-700">
+          <thead>
+            <tr class="border-b border-slate-700">
+              <th class="text-left p-6 text-white font-semibold">Features</th>
+              <th class="text-center p-6 text-green-400 font-semibold"
+                >Free Trial</th
+              >
+              <th class="text-center p-6 text-blue-400 font-semibold"
+                >Basic Plan</th
+              >
+              <th class="text-center p-6 text-violet-400 font-semibold"
+                >Professional Plan</th
+              >
+              <th class="text-center p-6 text-orange-400 font-semibold"
+                >Enterprise Plan</th
+              >
+            </tr>
+          </thead>
+          <tbody class="text-sm">
+            <tr class="border-b border-slate-700/50">
+              <td class="p-4 text-slate-300 font-medium">Monthly Credits</td>
+              <td class="p-4 text-center text-slate-300">
+                <div>Not logged in: 100</div>
+                <div>Logged in: 200</div>
+              </td>
+              <td class="p-4 text-center text-slate-300">1200 (20 minutes)</td>
+              <td class="p-4 text-center text-slate-300">3000 (50 minutes)</td>
+              <td class="p-4 text-center text-slate-300">7200 (120 minutes)</td>
+            </tr>
+            <tr class="border-b border-slate-700/50">
+              <td class="p-4 text-slate-300 font-medium">Analysis Features</td>
+              <td class="p-4 text-center text-slate-300">Basic</td>
+              <td class="p-4 text-center text-slate-300">Advanced</td>
+              <td class="p-4 text-center text-slate-300">Advanced</td>
+              <td class="p-4 text-center text-slate-300">Advanced</td>
+            </tr>
+            <tr class="border-b border-slate-700/50">
+              <td class="p-4 text-slate-300 font-medium">Export Features</td>
+              <td class="p-4 text-center">
+                <Icon
+                  name="heroicons:x-mark-20-solid"
+                  class="w-5 h-5 text-red-400 mx-auto"
+                />
+              </td>
+              <td class="p-4 text-center">
+                <Icon
+                  name="heroicons:check-20-solid"
+                  class="w-5 h-5 text-green-400 mx-auto"
+                />
+              </td>
+              <td class="p-4 text-center">
+                <Icon
+                  name="heroicons:check-20-solid"
+                  class="w-5 h-5 text-green-400 mx-auto"
+                />
+              </td>
+              <td class="p-4 text-center">
+                <Icon
+                  name="heroicons:check-20-solid"
+                  class="w-5 h-5 text-green-400 mx-auto"
+                />
+              </td>
+            </tr>
+            <tr class="border-b border-slate-700/50">
+              <td class="p-4 text-slate-300 font-medium"
+                >Supported Audio Formats</td
+              >
+              <td class="p-4 text-center text-slate-300">MP3</td>
+              <td class="p-4 text-center text-slate-300">MP3, WAV</td>
+              <td class="p-4 text-center text-slate-300">All Formats</td>
+              <td class="p-4 text-center text-slate-300">All Formats</td>
+            </tr>
+            <tr class="border-b border-slate-700/50">
+              <td class="p-4 text-slate-300 font-medium">Max File Size</td>
+              <td class="p-4 text-center text-slate-300">10MB</td>
+              <td class="p-4 text-center text-slate-300">50MB</td>
+              <td class="p-4 text-center text-slate-300">200MB</td>
+              <td class="p-4 text-center text-slate-300">200MB</td>
+            </tr>
+            <tr class="border-b border-slate-700/50">
+              <td class="p-4 text-slate-300 font-medium">Export Formats</td>
+              <td class="p-4 text-center text-slate-400">-</td>
+              <td class="p-4 text-center text-slate-300">PDF, TXT</td>
+              <td class="p-4 text-center text-slate-300">PDF, TXT, CSV, JSON</td
+              >
+              <td class="p-4 text-center text-slate-300">PDF, TXT, CSV, JSON</td
+              >
+            </tr>
+            <tr class="border-b border-slate-700/50">
+              <td class="p-4 text-slate-300 font-medium">Batch Processing</td>
+              <td class="p-4 text-center">
+                <Icon
+                  name="heroicons:x-mark-20-solid"
+                  class="w-5 h-5 text-red-400 mx-auto"
+                />
+              </td>
+              <td class="p-4 text-center">
+                <Icon
+                  name="heroicons:x-mark-20-solid"
+                  class="w-5 h-5 text-red-400 mx-auto"
+                />
+              </td>
+              <td class="p-4 text-center text-slate-300">
+                <div class="flex items-center justify-center gap-1">
+                  <Icon
+                    name="heroicons:wrench-screwdriver-20-solid"
+                    class="w-4 h-4 text-yellow-400"
+                  />
+                  <span class="text-xs">In Development</span>
+                </div>
+              </td>
+              <td class="p-4 text-center text-slate-300">
+                <div class="flex items-center justify-center gap-1">
+                  <Icon
+                    name="heroicons:wrench-screwdriver-20-solid"
+                    class="w-4 h-4 text-yellow-400"
+                  />
+                  <span class="text-xs">In Development</span>
+                </div>
+              </td>
+            </tr>
+            <tr class="border-b border-slate-700/50">
+              <td class="p-4 text-slate-300 font-medium">API Access</td>
+              <td class="p-4 text-center">
+                <Icon
+                  name="heroicons:x-mark-20-solid"
+                  class="w-5 h-5 text-red-400 mx-auto"
+                />
+              </td>
+              <td class="p-4 text-center">
+                <Icon
+                  name="heroicons:x-mark-20-solid"
+                  class="w-5 h-5 text-red-400 mx-auto"
+                />
+              </td>
+              <td class="p-4 text-center text-slate-300">
+                <div class="flex items-center justify-center gap-1">
+                  <Icon
+                    name="heroicons:wrench-screwdriver-20-solid"
+                    class="w-4 h-4 text-yellow-400"
+                  />
+                  <span class="text-xs">In Development</span>
+                </div>
+              </td>
+              <td class="p-4 text-center text-slate-300">
+                <div class="flex items-center justify-center gap-1">
+                  <Icon
+                    name="heroicons:wrench-screwdriver-20-solid"
+                    class="w-4 h-4 text-yellow-400"
+                  />
+                  <span class="text-xs">In Development</span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="p-4 text-slate-300 font-medium">Customer Support</td>
+              <td class="p-4 text-center text-slate-300">Community</td>
+              <td class="p-4 text-center text-slate-300">Email</td>
+              <td class="p-4 text-center text-slate-300">Email</td>
+              <td class="p-4 text-center text-slate-300">Email</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FAQ Section -->
+    <div class="py-20">
+      <div class="text-center mb-16">
+        <h2 class="text-4xl font-bold text-white mb-4">
+          Frequently Asked Questions
+        </h2>
+        <p class="text-xl text-slate-300">
+          Common questions and answers about subscription plans and credit
+          system
+        </p>
+      </div>
+
+      <div class="max-w-3xl mx-auto space-y-6">
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4
+            class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon
+              name="heroicons:question-mark-circle-20-solid"
+              class="w-5 h-5 text-violet-400"
+            />
+            How are credits calculated?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            Our credit system charges per second, 1 credit = 1 second of audio
+            analysis. For example, analyzing a 3-minute song requires 180
+            credits.
+          </p>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4
+            class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon
+              name="heroicons:question-mark-circle-20-solid"
+              class="w-5 h-5 text-violet-400"
+            />
+            What are the limitations of the free plan?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            Free users get 100 credits when not logged in, and 200 credits
+            monthly (about 3.3 minutes) when logged in. Only supports MP3 format
+            (max 10MB), basic analysis features, no export functionality, and
+            can only view analysis results online. Upgrade to paid plans for
+            advanced analysis, export features, and support for more audio
+            formats.
+          </p>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4
+            class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon
+              name="heroicons:question-mark-circle-20-solid"
+              class="w-5 h-5 text-violet-400"
+            />
+            What additional features do paid plans include?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            Paid plans include advanced audio analysis, report export
+            functionality (PDF, TXT, CSV, JSON formats), support for more audio
+            formats, larger file upload limits (50MB-200MB), and email customer
+            support. Professional and Enterprise plans will also provide batch
+            processing and API access features (In Development).
+          </p>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4
+            class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon
+              name="heroicons:question-mark-circle-20-solid"
+              class="w-5 h-5 text-violet-400"
+            />
+            How to cancel subscription?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            You can cancel your subscription anytime in the customer portal
+            without penalty fees. After cancellation, you can still use
+            remaining credits until the current billing cycle ends.
+          </p>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4
+            class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon
+              name="heroicons:question-mark-circle-20-solid"
+              class="w-5 h-5 text-violet-400"
+            />
+            Do credits expire?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            Monthly subscription users' credits are valid for the current month,
+            unused credits do not carry over to the next month. Free users'
+            credits reset monthly.
+          </p>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4
+            class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon
+              name="heroicons:question-mark-circle-20-solid"
+              class="w-5 h-5 text-violet-400"
+            />
+            What audio formats are supported?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            Free plan only supports MP3 format. Basic plan supports MP3 and WAV
+            formats. Professional and Enterprise plans support all mainstream
+            audio formats, including MP3, WAV, FLAC, M4A, AAC, OGG, WMA, AIFF,
+            etc.
+          </p>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-6">
+          <h4
+            class="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+            <Icon
+              name="heroicons:question-mark-circle-20-solid"
+              class="w-5 h-5 text-violet-400"
+            />
+            What payment methods are supported?
+          </h4>
+          <p class="text-slate-300 pl-7">
+            We support multiple secure payment methods through Lemonsqueezy,
+            including credit cards, debit cards, PayPal, etc. All payments are
+            encrypted and protected.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA Section -->
+    <div class="py-20 text-center">
+      <div class="max-w-2xl mx-auto">
+        <h2 class="text-3xl font-bold text-white mb-6">
+          Ready to Start Analyzing Your Music?
+        </h2>
+        <p class="text-xl text-slate-300 mb-8">
+          Start with a free trial or choose the monthly subscription plan that
+          suits you, and use our powerful AI audio analysis service.
+        </p>
+        <a
+          href="/analyze"
+          class="inline-flex items-center gap-2 px-8 py-4 bg-gradient-to-r from-violet-500 to-blue-500 text-white font-semibold rounded-xl hover:from-violet-600 hover:to-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-violet-500/25">
+          Start Analyzing Music
+          <Icon name="heroicons:arrow-right-20-solid" class="w-5 h-5" />
+        </a>
+      </div>
+    </div>
+  </Container>
+</Layout>
