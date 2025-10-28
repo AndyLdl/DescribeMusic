@@ -1,6 +1,5 @@
 ---
 import { getCollection } from "astro:content";
-import { Picture } from "astro:assets";
 import Layout from "@/layouts/Layout.astro";
 import Container from "@/components/container.astro";
 import Sectionhead from "@/components/sectionhead.astro";
@@ -37,10 +36,9 @@ publishedBlogEntries.sort(function (a, b) {
                   <div class="grid md:grid-cols-2 gap-0">
                     <div class="relative overflow-hidden bg-gradient-to-br from-slate-700 to-slate-800 min-h-[250px] flex items-center justify-center">
                       {blogPostEntry.data.image?.src ? (
-                        <Picture
+                        <img
                           src={blogPostEntry.data.image.src}
                           alt={blogPostEntry.data.image.alt}
-                          sizes="(max-width: 800px) 100vw, 400px"
                           width={400}
                           height={300}
                           loading={index <= 2 ? "eager" : "lazy"}
