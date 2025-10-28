@@ -621,7 +621,7 @@ export default function HeroSimple() {
             </div>
 
             {/* Key Features - Compact */}
-            <div className="mb-0">
+            <div className="mb-8">
               <div className="flex flex-wrap justify-center gap-2">
                 {[
                   "Describe Music Genre",
@@ -635,10 +635,61 @@ export default function HeroSimple() {
                 ))}
               </div>
             </div>
+
+            {/* Action Buttons - Choose Your Path */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+              {/* Full Analysis Button - Primary */}
+              <a
+                href="/analyze"
+                className="group relative w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform flex items-center justify-center gap-3"
+              >
+                <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Start Full Analysis</span>
+                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+                {/* Glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-500/50 to-blue-500/50 rounded-xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity -z-10"></div>
+              </a>
+
+              {/* Quick Try Button - Secondary */}
+              <button
+                onClick={() => {
+                  const analysisSection = document.querySelector('#quick-analysis-section');
+                  if (analysisSection) {
+                    analysisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }
+                }}
+                className="group w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/15 border-2 border-white/20 hover:border-white/30 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 transform flex items-center justify-center gap-3"
+              >
+                <svg className="w-5 h-5 group-hover:translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+                <span>Quick Try Below</span>
+              </button>
+            </div>
+
+            {/* Benefits hint */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 text-xs text-slate-400 mb-2">
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span>Full: History & Export</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Quick: Instant Results</span>
+              </div>
+            </div>
           </div>
 
           {/* Bottom Section - Analysis Interface (Expanded) */}
-          <div className="w-full max-w-6xl">
+          <div id="quick-analysis-section" className="w-full max-w-6xl scroll-mt-20">
             {/* Analysis Interface - Redesigned */}
             <div className="bg-white/5 rounded-3xl p-10 mg:p-16 border border-white/10">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
