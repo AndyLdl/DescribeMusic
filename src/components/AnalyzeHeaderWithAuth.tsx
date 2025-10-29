@@ -29,11 +29,11 @@ function AnalyzeHeaderContent() {
             {/* Simplified background for tool interface */}
             <div className="absolute inset-0 bg-slate-900/95 backdrop-blur-md"></div>
 
-            <div className="relative max-w-none px-6">
-                <div className="h-16 flex items-center justify-between">
+            <div className="relative max-w-none px-3 sm:px-6">
+                <div className="h-16 flex items-center justify-between gap-2">
                     {/* Enhanced brand logo with gradient (consistent with homepage) */}
-                    <a href="/" className="group relative">
-                        <div className="text-xl font-bold tracking-tight">
+                    <a href="/" className="group relative flex-shrink-0">
+                        <div className="text-base sm:text-xl font-bold tracking-tight">
                             <span className="bg-gradient-to-r from-violet-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
                                 Describe
                             </span>
@@ -47,7 +47,7 @@ function AnalyzeHeaderContent() {
                     </a>
 
                     {/* Right side navigation */}
-                    <nav className="flex items-center gap-4">
+                    <nav className="flex items-center gap-2 sm:gap-4 min-w-0 flex-1 justify-end">
                         {/* Save/Export actions (only show when analysis results are available) */}
                         <div
                             className="hidden items-center gap-2"
@@ -206,7 +206,7 @@ function AnalyzeHeaderContent() {
                         <UserAccountDropdown />
 
                         {/* Mobile menu button */}
-                        <button className="md:hidden p-2 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-all duration-300">
+                        <button className="md:hidden p-2 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-all duration-300 flex-shrink-0">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                             </svg>

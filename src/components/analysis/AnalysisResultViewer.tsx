@@ -424,18 +424,36 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
       <AnalyzeHeader />
 
       {/* Mobile Header */}
-      <div className="md:hidden pt-16 pb-4 px-6">
+      <div className="md:hidden pt-20 pb-2 px-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">Analysis Result</h1>
-          <button
-            onClick={() => setShowMobileSidebar(!showMobileSidebar)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-white/5 text-slate-300 border border-white/10 rounded-full hover:bg-white/10 transition-all duration-300"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            History
-          </button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold text-white truncate">Analysis Result</h1>
+            {analysisResult && (
+              <p className="text-xs text-slate-400 mt-0.5 truncate">
+                {analysisResult.filename}
+              </p>
+            )}
+          </div>
+          <div className="flex items-center gap-2 ml-3 flex-shrink-0">
+            <button
+              onClick={() => window.location.href = '/analyze'}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              <span className="hidden sm:inline">New</span>
+            </button>
+            <button
+              onClick={() => setShowMobileSidebar(!showMobileSidebar)}
+              className="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white/5 text-slate-300 border border-white/10 rounded-full hover:bg-white/10 transition-all duration-300 text-sm"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="hidden sm:inline">History</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -444,30 +462,55 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
 
       {/* Main Content - Split Layout */}
       <div className="relative">
-        {/* Mobile Sidebar Overlay */}
+        {/* Mobile Bottom Sheet */}
         {showMobileSidebar && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-80 max-w-[90vw]">
-              <HistorySidebar
-                selectedRecordId={analysisResult?.id}
-                onSelectRecord={(record) => {
-                  handleSelectHistoryRecord(record);
-                  setShowMobileSidebar(false);
-                }}
-                onNewAnalysis={() => {
-                  handleNewAnalysis();
-                  setShowMobileSidebar(false);
-                }}
-              />
-            </div>
-            <button
+          <div className="fixed inset-0 z-40 md:hidden">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
               onClick={() => setShowMobileSidebar(false)}
-              className="absolute top-4 right-4 p-2 text-white bg-black/50 rounded-full"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            />
+            
+            {/* Bottom Sheet */}
+            <div className="fixed inset-x-0 bottom-0 top-[20%] bg-slate-900/95 backdrop-blur-xl border-t border-white/10 rounded-t-3xl shadow-2xl flex flex-col transition-transform duration-300 ease-out animate-slide-up">
+              {/* Drag Handle */}
+              <div className="flex justify-center pt-3 pb-2">
+                <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+              </div>
+              
+              {/* Header */}
+              <div className="px-4 pb-3 border-b border-white/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">History</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowMobileSidebar(false)}
+                    className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-all duration-300"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              {/* History Content */}
+              <div className="flex-1 overflow-y-auto">
+                <HistorySidebar
+                  selectedRecordId={analysisResult?.id}
+                  onSelectRecord={(record) => {
+                    handleSelectHistoryRecord(record);
+                    setShowMobileSidebar(false);
+                  }}
+                  onNewAnalysis={() => {
+                    handleNewAnalysis();
+                    setShowMobileSidebar(false);
+                  }}
+                  isMobile={true}
+                />
+              </div>
+            </div>
           </div>
         )}
 

@@ -111,7 +111,6 @@ export default function LoadingSection({ filename, onCancel, progress: realProgr
       {/* Background Decorations */}
       <div className="absolute inset-0 opacity-20">
         <div className="absolute top-20 right-20 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" style={{animationDelay: '1s'}}></div>
         
         {/* Floating musical notes */}
         <div className="absolute top-16 left-1/4 text-violet-400/20 text-4xl animate-bounce" style={{animationDelay: '0s', animationDuration: '2s'}}>♪</div>

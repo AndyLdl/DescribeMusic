@@ -535,12 +535,17 @@ function AnalyzeAppContent() {
       <AnalyzeHeader />
 
       {/* Mobile Header - Compact */}
-      <div className="md:hidden pt-16 pb-2 px-4">
+      <div className="md:hidden pt-20 pb-2 px-4">
         <div className="flex items-center justify-between">
-          <h1 className="text-xl font-bold text-white">Analysis</h1>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg font-bold text-white truncate">Analysis</h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Upload and analyze your audio files
+            </p>
+          </div>
           <button
             onClick={() => setShowMobileSidebar(!showMobileSidebar)}
-            className="inline-flex items-center justify-center gap-1 px-3 py-1.5 bg-white/5 text-slate-300 border border-white/10 rounded-full hover:bg-white/10 transition-all duration-300 text-sm"
+            className="ml-3 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white/5 text-slate-300 border border-white/10 rounded-full hover:bg-white/10 transition-all duration-300 text-sm flex-shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -555,31 +560,56 @@ function AnalyzeAppContent() {
 
       {/* Main Content - Split Layout */}
       <div className="relative">
-        {/* Mobile Sidebar Overlay */}
+        {/* Mobile Bottom Sheet */}
         {showMobileSidebar && (
-          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-80 max-w-[90vw]">
-              <HistorySidebar
-                selectedRecordId={analysisResult?.id}
-                onSelectRecord={(record) => {
-                  handleSelectHistoryRecord(record);
-                  setShowMobileSidebar(false);
-                }}
-                onNewAnalysis={() => {
-                  handleNewAnalysis();
-                  setShowMobileSidebar(false);
-                }}
-                currentStage={stage}
-              />
-            </div>
-            <button
+          <div className="fixed inset-0 z-40 md:hidden">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
               onClick={() => setShowMobileSidebar(false)}
-              className="absolute top-4 right-4 p-2 text-white bg-black/50 rounded-full"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
+            />
+            
+            {/* Bottom Sheet */}
+            <div className="fixed inset-x-0 bottom-0 top-[20%] bg-slate-900/95 backdrop-blur-xl border-t border-white/10 rounded-t-3xl shadow-2xl flex flex-col transition-transform duration-300 ease-out animate-slide-up">
+              {/* Drag Handle */}
+              <div className="flex justify-center pt-3 pb-2">
+                <div className="w-12 h-1.5 bg-white/20 rounded-full" />
+              </div>
+              
+              {/* Header */}
+              <div className="px-4 pb-3 border-b border-white/10">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">History</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowMobileSidebar(false)}
+                    className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-all duration-300"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              
+              {/* History Content */}
+              <div className="flex-1 overflow-y-auto">
+                <HistorySidebar
+                  selectedRecordId={analysisResult?.id}
+                  onSelectRecord={(record) => {
+                    handleSelectHistoryRecord(record);
+                    setShowMobileSidebar(false);
+                  }}
+                  onNewAnalysis={() => {
+                    handleNewAnalysis();
+                    setShowMobileSidebar(false);
+                  }}
+                  currentStage={stage}
+                  isMobile={true}
+                />
+              </div>
+            </div>
           </div>
         )}
 

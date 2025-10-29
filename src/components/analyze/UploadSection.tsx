@@ -170,7 +170,6 @@ export default function UploadSection({
         {/* Background Decorations */}
         <div className="absolute inset-0 opacity-20">
           <div className="absolute top-20 right-20 w-80 h-80 bg-violet-500/10 rounded-full blur-3xl"></div>
-          <div className="absolute bottom-20 left-20 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl"></div>
 
           {/* Floating musical notes */}
           <div className="absolute top-16 left-1/4 text-violet-400/20 text-6xl animate-bounce" style={{ animationDelay: '0s', animationDuration: '3s' }}>♪</div>

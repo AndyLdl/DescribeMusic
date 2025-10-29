@@ -14,11 +14,11 @@ import Link from "./ui/link.astro";
     class="absolute top-0 left-0 w-full h-full bg-gradient-to-b from-white/[0.02] to-transparent">
   </div>
 
-  <div class="relative max-w-7xl mx-auto px-6">
-    <div class="h-20 flex items-center justify-between">
+  <div class="relative max-w-7xl mx-auto px-3 sm:px-6">
+    <div class="h-16 sm:h-20 flex items-center justify-between gap-2">
       <!-- Enhanced brand logo with gradient -->
-      <a href="/" class="group relative">
-        <div class="text-2xl font-bold tracking-tight">
+      <a href="/" class="group relative flex-shrink-0">
+        <div class="text-lg sm:text-xl md:text-2xl font-bold tracking-tight">
           <span
             class="bg-gradient-to-r from-violet-400 via-purple-400 to-blue-400 bg-clip-text text-transparent">
             Describe
@@ -136,11 +136,14 @@ import Link from "./ui/link.astro";
       </nav>
 
       <!-- Mobile menu button -->
-      <div class="md:hidden">
+      <div class="md:hidden flex items-center gap-2 min-w-0 flex-1 justify-end">
         <button
           id="mobile-menu-button"
-          class="relative p-2 text-white/80 hover:text-white transition-colors duration-300 group">
-          <Icon name="heroicons:bars-3-20-solid" class="w-6 h-6" />
+          class="relative p-2 text-white/80 hover:text-white transition-colors duration-300 group flex-shrink-0">
+          <Icon
+            name="heroicons:bars-3-20-solid"
+            class="w-5 h-5 sm:w-6 sm:h-6"
+          />
           <!-- Subtle background on hover -->
           <div
             class="absolute inset-0 bg-white/5 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -252,9 +255,11 @@ import Link from "./ui/link.astro";
 
       // Close menu when clicking outside
       document.addEventListener("click", function (event) {
+        const target = event.target as Node | null;
         if (
-          !mobileMenuButton.contains(event.target) &&
-          !mobileMenu.contains(event.target)
+          target &&
+          !mobileMenuButton.contains(target) &&
+          !mobileMenu.contains(target)
         ) {
           mobileMenu.classList.add("opacity-0", "invisible", "-translate-y-2");
         }

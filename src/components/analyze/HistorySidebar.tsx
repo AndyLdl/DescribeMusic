@@ -7,9 +7,10 @@ interface HistorySidebarProps {
   onSelectRecord: (record: HistoryRecord) => void;
   onNewAnalysis: () => void;
   currentStage?: 'upload' | 'analyzing' | 'results' | 'error';
+  isMobile?: boolean;
 }
 
-export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNewAnalysis, currentStage }: HistorySidebarProps) {
+export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNewAnalysis, currentStage, isMobile = false }: HistorySidebarProps) {
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -92,50 +93,55 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
     <>
       {/* Sidebar */}
       <div
-        className={`relative bg-slate-900/50 backdrop-blur-xl border-r border-white/10 flex flex-col transition-all duration-300 ${isCollapsed ? 'w-16' : 'w-80'
-          }`}
+        className={`relative flex flex-col transition-all duration-300 ${
+          isMobile 
+            ? 'bg-transparent' 
+            : `bg-slate-900/50 backdrop-blur-xl border-r border-white/10 ${isCollapsed ? 'w-16' : 'w-80'}`
+        }`}
         data-sidebar="history"
         data-state={isCollapsed ? "collapsed" : "open"}>
-        {/* Header */}
-        <div className="p-4 border-b border-white/10">
-          <div className="flex items-center justify-between">
-            {!isCollapsed && (
-              <div>
-                <h3 className="text-lg font-semibold text-white">History</h3>
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <span>{history.length} analysis</span>
-                  {user && (
-                    <span className="px-2 py-1 bg-violet-500/20 text-violet-300 rounded-full">
-                      Synced
-                    </span>
-                  )}
-                  {!user && history.length > 0 && (
-                    <span className="px-2 py-1 bg-orange-500/20 text-orange-300 rounded-full">
-                      Local
-                    </span>
-                  )}
+        {/* Header - 只在桌面端显示 */}
+        {!isMobile && (
+          <div className="p-4 border-b border-white/10">
+            <div className="flex items-center justify-between">
+              {!isCollapsed && (
+                <div>
+                  <h3 className="text-lg font-semibold text-white">History</h3>
+                  <div className="flex items-center gap-2 text-xs text-slate-400">
+                    <span>{history.length} analysis</span>
+                    {user && (
+                      <span className="px-2 py-1 bg-violet-500/20 text-violet-300 rounded-full">
+                        Synced
+                      </span>
+                    )}
+                    {!user && history.length > 0 && (
+                      <span className="px-2 py-1 bg-orange-500/20 text-orange-300 rounded-full">
+                        Local
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-            <button
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-all duration-300"
-            >
-              <svg className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
+              )}
+              <button
+                onClick={() => setIsCollapsed(!isCollapsed)}
+                className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-all duration-300"
+              >
+                <svg className={`w-4 h-4 transition-transform duration-300 ${isCollapsed ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Actions */}
-        {!isCollapsed && (
-          <div className="p-4 space-y-2">
+        {(!isCollapsed || isMobile) && (
+          <div className={`${isMobile ? 'px-4 pt-4 pb-3' : 'p-4'} space-y-2`}>
             {/* 只在非upload阶段显示New Analysis按钮 */}
             {currentStage !== 'upload' && (
               <button
                 onClick={onNewAnalysis}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-lg hover:from-violet-600 hover:to-blue-600 transition-all duration-300"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-lg hover:from-violet-600 hover:to-blue-600 transition-all duration-300"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -147,7 +153,7 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
             {history.length > 0 && (
               <button
                 onClick={() => setShowClearConfirm(true)}
-                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-red-300 border border-red-400/30 rounded-lg hover:bg-red-500/20 transition-all duration-300"
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-sm font-medium text-red-300 border border-red-400/30 rounded-lg hover:bg-red-500/20 transition-all duration-300"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -161,14 +167,14 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
         {/* History List */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className={`p-4 text-center ${isCollapsed ? 'hidden' : ''}`}>
+            <div className={`p-4 text-center ${isCollapsed && !isMobile ? 'hidden' : ''}`}>
               <div className="flex items-center justify-center gap-2 text-slate-400 text-sm">
                 <div className="w-4 h-4 border-2 border-violet-400 border-t-transparent rounded-full animate-spin"></div>
                 Loading history...
               </div>
             </div>
           ) : history.length === 0 ? (
-            <div className={`p-4 text-center ${isCollapsed ? 'hidden' : ''}`}>
+            <div className={`p-4 text-center ${isCollapsed && !isMobile ? 'hidden' : ''}`}>
               <div className="text-slate-400 text-sm">
                 {user ? 'No analysis history yet' : 'No local history yet'}
               </div>
@@ -179,24 +185,24 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
               )}
             </div>
           ) : (
-            <div className="space-y-1 p-2">
+            <div className={`space-y-1 ${isMobile ? 'px-4 pb-4' : 'p-2'}`}>
               {history.map((record) => (
                 <div
                   key={record.id}
                   className={`
-                    group cursor-pointer p-3 rounded-lg transition-all duration-300 relative
+                    group cursor-pointer ${isMobile ? 'p-4' : 'p-3'} rounded-lg transition-all duration-300 relative
                     ${selectedRecordId === record.id
                       ? 'bg-violet-500/20 border border-violet-400/30'
                       : 'hover:bg-white/5 border border-transparent hover:border-white/10'
                     }
-                    ${isCollapsed ? 'mx-1' : ''}
+                    ${isCollapsed && !isMobile ? 'mx-1' : ''}
                   `}
                   data-history-item={selectedRecordId === record.id ? "selected" : "unselected"}
                 >
                   {/* Main click area for selecting record */}
                   <div onClick={() => onSelectRecord(record)} className="cursor-pointer">
-                  {isCollapsed ? (
-                    // Collapsed view - just icon and indicator
+                  {isCollapsed && !isMobile ? (
+                    // Collapsed view - just icon and indicator (desktop only)
                     <div className="flex flex-col items-center">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getGenreColor(record.basicInfo.genre)}`}>
                         <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">

@@ -28,16 +28,16 @@ export default function HeroLeftContent() {
   return (
     <div className="flex flex-col justify-center h-full px-6 lg:px-8">
       {/* Main Title with Gradient */}
-      <div className="mb-10">
-        <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold tracking-tighter !leading-tight mb-6">
+      <div className="mb-8 sm:mb-10">
+        <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-6xl xl:text-7xl font-bold tracking-tighter !leading-tight mb-4 sm:mb-6">
           <span className="bg-gradient-to-r from-white via-violet-200 to-blue-200 bg-clip-text text-transparent">
             Describe Music.
           </span>
         </h1>
-        <p className="text-lg md:text-xl lg:text-2xl text-slate-300/90 mb-4">
+        <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-slate-300/90 mb-3 sm:mb-4">
           AI-Powered Audio Analysis.
         </p>
-        <p className="text-slate-400/80 text-sm md:text-base leading-relaxed max-w-lg">
+        <p className="text-slate-400/80 text-xs sm:text-sm md:text-base leading-relaxed max-w-lg px-2 sm:px-0">
           Transform any audio into detailed insights. Identify genres, emotions, instruments, and more with our advanced AI technology.
         </p>
       </div>

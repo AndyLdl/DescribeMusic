@@ -93,43 +93,34 @@ export default function UserAccountDropdown({ className = '' }: UserAccountDropd
     }, []);
 
     if (user) {
-        // 检查是否是移动端样式
-        const isMobile = className?.includes('mobile-user-dropdown');
-
         // 已登录用户的下拉菜单
         return (
-            <div className={`relative user-dropdown-container ${className}`}>
+            <div className={`relative user-dropdown-container flex-shrink-0 ${className}`}>
                 <button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className={`flex items-center gap-2 text-sm text-white/90 hover:text-white transition-all duration-300 ${isMobile
-                        ? 'px-2 py-1.5 bg-slate-800/30 hover:bg-slate-700/50 rounded-md'
-                        : 'gap-3 px-3 py-2 bg-slate-800/50 hover:bg-slate-700/50 rounded-md'
-                        }`}
+                    className="flex items-center gap-1.5 sm:gap-2 md:gap-3 px-2 py-1.5 sm:px-3 sm:py-2 text-sm text-white/90 hover:text-white transition-all duration-300 bg-slate-800/50 hover:bg-slate-700/50 rounded-md"
                 >
-                    <div className="w-8 h-8 bg-gradient-to-r from-violet-400 to-blue-400 rounded-full flex items-center justify-center text-white text-sm font-semibold">
+                    <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-to-r from-violet-400 to-blue-400 rounded-full flex items-center justify-center text-white text-xs sm:text-sm font-semibold flex-shrink-0">
                         {user.email?.charAt(0).toUpperCase()}
                     </div>
-                    {!isMobile && (
-                        <div className="text-left">
-                            <div className="text-white text-sm font-medium">
-                                {creditLoading ? 'Loading...' : `${credits} Credits`}
-                            </div>
+                    {/* 移动端只显示数字，桌面端显示完整文本 */}
+                    <div className="hidden md:block text-left min-w-0">
+                        <div className="text-white text-sm font-medium truncate">
+                            {creditLoading ? 'Loading...' : `${credits} Credits`}
                         </div>
-                    )}
-                    {isMobile && (
-                        <div className="text-white text-xs font-medium">
-                            {creditLoading ? '...' : credits}
-                        </div>
-                    )}
-                    <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    </div>
+                    {/* 移动端显示紧凑的积分数字 */}
+                    <div className="md:hidden text-white text-xs font-semibold whitespace-nowrap">
+                        {creditLoading ? '...' : credits}
+                    </div>
+                    <svg className="w-3 h-3 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
 
                 {/* User Dropdown Menu */}
                 {showUserMenu && (
-                    <div className={`absolute mt-2 w-72 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-xl z-50 ${isMobile ? 'right-0' : 'right-0'
-                        }`}>
+                    <div className={`absolute mt-2 w-72 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-xl z-50 right-0`}>
                         <div className="p-4 border-b border-slate-700">
                             <div className="text-white text-sm font-medium">{user.email}</div>
                             <div className="text-slate-400 text-xs mt-1">

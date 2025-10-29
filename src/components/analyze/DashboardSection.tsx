@@ -165,32 +165,37 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
       <AudioPlayer result={result} />
 
       {/* AI Music Description */}
-      <div className="glass-pane p-6">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 bg-gradient-to-r from-violet-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-            </svg>
+      <div className="glass-pane p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+          {/* Icon - 在移动端居中显示 */}
+          <div className="flex justify-center sm:justify-start">
+            <div className="w-12 h-12 sm:w-10 sm:h-10 bg-gradient-to-r from-violet-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+              </svg>
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+          
+          {/* Content */}
+          <div className="flex-1 text-center sm:text-left">
+            <h3 className="text-lg sm:text-lg font-semibold text-white mb-2 flex items-center justify-center sm:justify-start gap-2">
               AI Description
               <span className="px-2 py-0.5 bg-violet-500/20 text-violet-300 text-xs rounded-full">
                 Auto-generated
               </span>
             </h3>
-            <p className="text-slate-300 text-base leading-relaxed">
+            <p className="text-slate-300 text-sm sm:text-base leading-relaxed mb-4">
               {result.aiDescription || generateMusicDescription(result)}
             </p>
             
-            {/* Copy description button */}
+            {/* Copy description button - 移动端全宽 */}
             <button 
               onClick={() => {
                 navigator.clipboard.writeText(result.aiDescription || generateMusicDescription(result));
                 setDescriptionCopied(true);
                 setTimeout(() => setDescriptionCopied(false), 2000);
               }}
-              className={`mt-3 inline-flex items-center gap-2 px-3 py-1.5 text-sm border rounded-md transition-all duration-300 ${
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-3 sm:py-1.5 text-sm border rounded-md transition-all duration-300 ${
                 descriptionCopied 
                   ? 'text-green-300 border-green-500/30 bg-green-500/10' 
                   : 'text-slate-400 hover:text-white border-slate-700 hover:border-slate-600'
@@ -213,13 +218,13 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
 
       {/* Tab Navigation */}
       <div className="glass-pane p-2">
-        <nav className="flex space-x-1">
+        <nav className="flex space-x-1 overflow-x-auto scrollbar-hide pb-1">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as TabType)}
               className={`
-                flex items-center gap-2 px-6 py-3 rounded-full text-sm font-medium transition-all duration-300
+                flex items-center gap-1.5 sm:gap-2 px-3 sm:px-6 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm font-medium transition-all duration-300 whitespace-nowrap flex-shrink-0 min-h-[44px] sm:min-h-0
                 ${activeTab === tab.id
                   ? 'bg-gradient-to-r from-violet-500 to-blue-500 text-white'
                   : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -228,37 +233,37 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
             >
               {/* Professional SVG Icons */}
               {tab.icon === 'chart' && (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
               )}
               {tab.icon === 'microphone' && (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
               )}
               {tab.icon === 'soundwave' && (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.636 15.364a5 5 0 000-7.072m-2.828 9.9a9 9 0 010-12.728M12 12v.01" />
                 </svg>
               )}
               {tab.icon === 'emotion' && (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               )}
               {tab.icon === 'structure' && (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
               )}
               {tab.icon === 'lightning' && (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               )}
               {tab.icon === 'search' && (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               )}
@@ -332,36 +337,42 @@ function OverviewTab({ result }: { result: AnalysisResult }) {
       </div>
 
       {/* AI-Powered Tags */}
-      <div className="glass-pane p-6">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-              <path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-            </svg>
+      <div className="glass-pane p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+          {/* Icon - 在移动端居中显示 */}
+          <div className="flex justify-center sm:justify-start">
+            <div className="w-12 h-12 sm:w-10 sm:h-10 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-6 h-6 sm:w-5 sm:h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path fillRule="evenodd" d="M17.707 9.293a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-7-7A.997.997 0 012 10V5a3 3 0 013-3h5c.256 0 .512.098.707.293l7 7zM5 6a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="text-lg font-semibold text-white mb-2 flex items-center gap-2">
+          
+          {/* Content */}
+          <div className="flex-1 text-center sm:text-left">
+            <h3 className="text-base sm:text-lg font-semibold text-white mb-2 flex items-center justify-center sm:justify-start gap-2">
               AI-Powered Tags
               <span className="px-2 py-0.5 bg-green-500/20 text-green-300 text-xs rounded-full">
                 SEO Ready
               </span>
             </h3>
-            <p className="text-slate-400 text-sm mb-4">
+            <p className="text-slate-400 text-xs sm:text-sm mb-4">
               Automatically generated tags for better searchability and categorization
             </p>
-            <div className="flex flex-wrap gap-2">
+            
+            {/* Tags - 移动端优化布局 */}
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 justify-center sm:justify-start mb-4">
               {(result.tags || []).map((tag, index) => (
                 <span 
                   key={index}
-                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500/10 text-green-400 text-sm rounded-full border border-green-500/20 hover:bg-green-500/15 transition-colors duration-200"
+                  className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-green-500/10 text-green-400 text-xs sm:text-sm rounded-full border border-green-500/20 hover:bg-green-500/15 transition-colors duration-200"
                 >
-
                   {tag}
                 </span>
               ))}
             </div>
             
-            {/* Copy tags button */}
+            {/* Copy tags button - 移动端全宽 */}
             <button 
               onClick={() => {
                 const tagsText = (result.tags || []).join(', ');
@@ -369,7 +380,7 @@ function OverviewTab({ result }: { result: AnalysisResult }) {
                 setTagsCopied(true);
                 setTimeout(() => setTagsCopied(false), 2000);
               }}
-              className={`mt-4 inline-flex items-center gap-2 px-3 py-1.5 text-sm border rounded-md transition-all duration-300 ${
+              className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-3 sm:py-1.5 text-sm border rounded-md transition-all duration-300 ${
                 tagsCopied
                   ? 'text-green-300 border-green-500/30 bg-green-500/10'
                   : 'text-slate-400 hover:text-white border-slate-700 hover:border-slate-600'
@@ -406,66 +417,66 @@ function SoundEffectsTab({ result }: { result: AnalysisResult }) {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Content Type Detection */}
-      <div className="glass-pane p-8">
-        <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center">
-            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="glass-pane p-4 sm:p-8">
+        <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-green-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+            <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.636 15.364a5 5 0 000-7.072m-2.828 9.9a9 9 0 010-12.728M12 12v.01" />
             </svg>
           </div>
-          Content Type Detection
+          <span className="truncate">Content Type Detection</span>
         </h3>
         
         {contentType ? (
           <div className="space-y-4">
-            <div className="p-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/20">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-lg font-semibold text-white capitalize">
+            <div className="p-4 sm:p-6 bg-gradient-to-r from-green-500/10 to-blue-500/10 rounded-xl border border-green-500/20">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2">
+                <span className="text-base sm:text-lg font-semibold text-white capitalize">
                   {contentType.primary.replace('-', ' ')}
                 </span>
-                <span className="px-3 py-1 bg-green-500/20 text-green-300 text-sm rounded-full">
+                <span className="px-3 py-1 bg-green-500/20 text-green-300 text-xs sm:text-sm rounded-full self-start sm:self-auto">
                   {Math.round(contentType.confidence * 100)}% confidence
                 </span>
               </div>
-              <p className="text-slate-300">{contentType.description}</p>
+              <p className="text-slate-300 text-sm sm:text-base">{contentType.description}</p>
             </div>
           </div>
         ) : (
-          <div className="p-6 bg-slate-700/30 rounded-xl">
-            <p className="text-slate-400">Content type detection not available for this analysis.</p>
+          <div className="p-4 sm:p-6 bg-slate-700/30 rounded-xl">
+            <p className="text-slate-400 text-sm sm:text-base">Content type detection not available for this analysis.</p>
           </div>
         )}
       </div>
 
       {/* Detected Sounds */}
       {soundEffects?.detected && soundEffects.detected.length > 0 && (
-        <div className="glass-pane p-8">
-          <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="glass-pane p-4 sm:p-8">
+          <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
               </svg>
             </div>
-            Detected Sounds
+            <span className="truncate">Detected Sounds</span>
           </h3>
           
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {soundEffects.detected.map((sound, index) => (
-              <div key={index} className="p-4 bg-white/5 rounded-lg border border-white/10">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-3">
+              <div key={index} className="p-3 sm:p-4 bg-white/5 rounded-lg border border-white/10">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2">
+                  <div className="flex items-center gap-2 sm:gap-3">
                     <span className={`px-2 py-1 text-xs rounded-full ${getCategoryColor(sound.category)}`}>
                       {sound.category}
                     </span>
-                    <span className="font-semibold text-white">{sound.type}</span>
+                    <span className="font-semibold text-white text-sm sm:text-base truncate">{sound.type}</span>
                   </div>
-                  <span className="text-slate-300 text-sm">
+                  <span className="text-slate-300 text-xs sm:text-sm self-start sm:self-auto">
                     {Math.round(sound.confidence * 100)}% confidence
                   </span>
                 </div>
-                <p className="text-slate-300 text-sm mb-2">{sound.description}</p>
+                <p className="text-slate-300 text-xs sm:text-sm mb-2">{sound.description}</p>
                 <div className="text-xs text-slate-400">
                   {formatTime(sound.timestamp.start)} - {formatTime(sound.timestamp.end)}
                 </div>
@@ -477,43 +488,43 @@ function SoundEffectsTab({ result }: { result: AnalysisResult }) {
 
       {/* Environment Analysis */}
       {soundEffects?.environment && (
-        <div className="glass-pane p-8">
-          <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="glass-pane p-4 sm:p-8">
+          <h3 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            Environment Analysis
+            <span className="truncate">Environment Analysis</span>
           </h3>
           
-          <div className="grid md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-300">Location Type</span>
-                <span className="font-semibold text-white capitalize">{soundEffects.environment.location_type.replace('_', ' ')}</span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                <span className="text-slate-300 text-sm sm:text-base">Location Type</span>
+                <span className="font-semibold text-white capitalize text-sm sm:text-base">{soundEffects.environment.location_type.replace('_', ' ')}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-300">Setting</span>
-                <span className="font-semibold text-white capitalize">{soundEffects.environment.setting}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                <span className="text-slate-300 text-sm sm:text-base">Setting</span>
+                <span className="font-semibold text-white capitalize text-sm sm:text-base">{soundEffects.environment.setting}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-300">Activity Level</span>
-                <span className="font-semibold text-white capitalize">{soundEffects.environment.activity_level}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                <span className="text-slate-300 text-sm sm:text-base">Activity Level</span>
+                <span className="font-semibold text-white capitalize text-sm sm:text-base">{soundEffects.environment.activity_level}</span>
               </div>
             </div>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-slate-300">Acoustic Space</span>
-                <span className="font-semibold text-white capitalize">{soundEffects.environment.acoustic_space}</span>
+            <div className="space-y-3 sm:space-y-4">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                <span className="text-slate-300 text-sm sm:text-base">Acoustic Space</span>
+                <span className="font-semibold text-white capitalize text-sm sm:text-base">{soundEffects.environment.acoustic_space}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-300">Time of Day</span>
-                <span className="font-semibold text-white capitalize">{soundEffects.environment.time_of_day}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                <span className="text-slate-300 text-sm sm:text-base">Time of Day</span>
+                <span className="font-semibold text-white capitalize text-sm sm:text-base">{soundEffects.environment.time_of_day}</span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-slate-300">Weather</span>
-                <span className="font-semibold text-white capitalize">{soundEffects.environment.weather}</span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
+                <span className="text-slate-300 text-sm sm:text-base">Weather</span>
+                <span className="font-semibold text-white capitalize text-sm sm:text-base">{soundEffects.environment.weather}</span>
               </div>
             </div>
           </div>
@@ -522,15 +533,15 @@ function SoundEffectsTab({ result }: { result: AnalysisResult }) {
 
       {/* No Sound Effects Detected */}
       {(!soundEffects?.detected || soundEffects.detected.length === 0) && (
-        <div className="glass-pane p-8">
-          <div className="text-center py-8">
-            <div className="w-16 h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="glass-pane p-4 sm:p-8">
+          <div className="text-center py-6 sm:py-8">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-slate-700/50 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+              <svg className="w-6 h-6 sm:w-8 sm:h-8 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
-            <h4 className="text-lg font-semibold text-white mb-2">No Specific Sound Effects Detected</h4>
-            <p className="text-slate-300">This appears to be primarily musical content. Sound effect detection is most effective with environmental audio, speech, or mixed content.</p>
+            <h4 className="text-base sm:text-lg font-semibold text-white mb-2">No Specific Sound Effects Detected</h4>
+            <p className="text-slate-300 text-sm sm:text-base px-2">This appears to be primarily musical content. Sound effect detection is most effective with environmental audio, speech, or mixed content.</p>
           </div>
         </div>
       )}

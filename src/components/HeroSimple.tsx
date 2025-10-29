@@ -633,7 +633,7 @@ export default function HeroSimple() {
             {/* Main Title - Compact */}
             <div className="mb-6">
               <div className="relative">
-                <h1 className="text-3xl md:text-5xl lg:text-6xl font-bold tracking-tighter !leading-tight mb-3 whitespace-nowrap">
+                <h1 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold tracking-tighter !leading-tight mb-3">
                   <span className="bg-gradient-to-r from-white via-violet-300 to-cyan-300 bg-clip-text text-transparent drop-shadow-2xl">
                     Describe Music.
                   </span>
@@ -642,12 +642,12 @@ export default function HeroSimple() {
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-500/30 to-cyan-500/30 blur-2xl -z-10"></div>
                 <div className="absolute inset-0 bg-gradient-to-r from-violet-400/20 to-cyan-400/20 blur-xl -z-10"></div>
               </div>
-              <p className="text-lg md:text-xl lg:text-2xl text-slate-200/95 mb-4 font-medium">
+              <p className="text-base sm:text-lg md:text-xl lg:text-2xl text-slate-200/95 mb-3 sm:mb-4 font-medium">
                 <span className="bg-gradient-to-r from-slate-200 to-slate-300 bg-clip-text text-transparent">
                   AI-Powered Music Description & Audio Analysis.
                 </span>
               </p>
-              <p className="text-slate-300/90 text-sm md:text-base leading-relaxed max-w-2xl mx-auto">
+              <p className="text-slate-300/90 text-xs sm:text-sm md:text-base leading-relaxed max-w-2xl mx-auto px-2">
                 Describe music with AI instantly. Transform any audio into detailed insights, identify genres, emotions, instruments, and more with our advanced music description technology.
               </p>
             </div>
@@ -669,21 +669,21 @@ export default function HeroSimple() {
             </div>
 
             {/* Action Buttons - Choose Your Path */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-8">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-6 sm:mb-8">
               {/* Full Analysis Button - Primary */}
               <a
                 href="/analyze"
-                className="group relative w-full sm:w-auto px-8 py-4 bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 rounded-xl font-bold text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform flex items-center justify-center gap-3"
+                className="group relative w-full sm:w-auto px-4 sm:px-6 md:px-8 py-3 sm:py-4 bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 rounded-lg sm:rounded-xl font-bold text-sm sm:text-base text-white shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 transform flex items-center justify-center gap-2 sm:gap-3"
               >
-                <svg className="w-5 h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:rotate-12 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
                 <span>Start Full Analysis</span>
-                <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-3 h-3 sm:w-4 sm:h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                 </svg>
                 {/* Glow effect */}
-                <div className="absolute inset-0 bg-gradient-to-r from-violet-500/50 to-blue-500/50 rounded-xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity -z-10"></div>
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-500/50 to-blue-500/50 rounded-lg sm:rounded-xl blur-xl opacity-50 group-hover:opacity-75 transition-opacity -z-10"></div>
               </a>
 
               {/* Quick Try Button - Secondary */}
@@ -694,9 +694,9 @@ export default function HeroSimple() {
                     analysisSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                   }
                 }}
-                className="group w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/15 border-2 border-white/20 hover:border-white/30 rounded-xl font-semibold text-white transition-all duration-300 hover:scale-105 transform flex items-center justify-center gap-3"
+                className="group w-full sm:w-auto px-4 sm:px-6 md:px-8 py-3 sm:py-4 bg-white/10 hover:bg-white/15 border-2 border-white/20 hover:border-white/30 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base text-white transition-all duration-300 hover:scale-105 transform flex items-center justify-center gap-2 sm:gap-3"
               >
-                <svg className="w-5 h-5 group-hover:translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 group-hover:translate-y-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                 </svg>
                 <span>Quick Try Below</span>
@@ -723,16 +723,16 @@ export default function HeroSimple() {
           {/* Bottom Section - Analysis Interface (Expanded) */}
           <div id="quick-analysis-section" className="w-full max-w-6xl scroll-mt-20">
             {/* Analysis Interface - Redesigned */}
-            <div className="bg-white/5 rounded-3xl p-10 mg:p-16 border border-white/10">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
+            <div className="bg-white/5 rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-10 lg:p-16 border border-white/10">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 lg:gap-16">
                 {/* Left Side - Upload Area - Optimized */}
-                <div className="flex flex-col space-y-6">
+                <div className="flex flex-col space-y-4 sm:space-y-6">
                   {/* Upload Zone - Compact & Enhanced */}
                   <div className="relative">
                     {/* Upload Interface */}
                     {(uploadState === 'idle' || uploadState === 'uploaded' || uploadState === 'complete') && (
                       <div 
-                        className="bg-white/5 rounded-2xl p-8 text-center border-2 border-dashed border-white/20 hover:border-violet-400/50 hover:bg-violet-500/5 transition-all duration-300 cursor-pointer group"
+                        className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 text-center border-2 border-dashed border-white/20 hover:border-violet-400/50 hover:bg-violet-500/5 transition-all duration-300 cursor-pointer group"
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
                         onDrop={handleDrop}
@@ -747,9 +747,9 @@ export default function HeroSimple() {
                           className="hidden"
                         />
                         
-                        <div className="mb-6">
-                          <div className="w-16 h-16 mx-auto bg-violet-500/20 rounded-xl flex items-center justify-center group-hover:bg-violet-500/30 transition-colors">
-                            <svg className="w-8 h-8 text-violet-300 group-hover:text-violet-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="mb-4 sm:mb-6">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto bg-violet-500/20 rounded-lg sm:rounded-xl flex items-center justify-center group-hover:bg-violet-500/30 transition-colors">
+                            <svg className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-violet-300 group-hover:text-violet-200 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                             </svg>
                           </div>
@@ -757,20 +757,20 @@ export default function HeroSimple() {
 
                         {uploadState === 'idle' && (
                           <>
-                            <h3 className="text-xl font-bold text-white mb-3">
+                            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-2 sm:mb-3">
                               Drop your audio file here
                             </h3>
-                            <p className="text-slate-300 text-base mb-6">
+                            <p className="text-slate-300 text-sm sm:text-base mb-4 sm:mb-6">
                               or click to select file
                             </p>
                             
                             {/* File Size Limit */}
-                            <p className="text-xs text-slate-400 mb-4">Max file size: 50MB</p>
+                            <p className="text-xs text-slate-400 mb-3 sm:mb-4">Max file size: 50MB</p>
                             
                             {/* Supported Formats - Enhanced */}
-                            <div className="flex flex-wrap justify-center gap-2">
+                            <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
                               {["MP3", "WAV", "FLAC", "AAC"].map((format, index) => (
-                                <span key={index} className="px-3 py-1.5 bg-violet-500/20 text-violet-300 rounded-lg text-xs font-medium border border-violet-500/30">
+                                <span key={index} className="px-2 sm:px-3 py-1 sm:py-1.5 bg-violet-500/20 text-violet-300 rounded-md sm:rounded-lg text-xs font-medium border border-violet-500/30">
                                   {format}
                                 </span>
                               ))}
@@ -780,15 +780,15 @@ export default function HeroSimple() {
 
                         {uploadState === 'uploaded' && uploadedFile && (
                           <>
-                            <h3 className="text-xl font-bold text-white mb-3">
+                            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-2 sm:mb-3">
                               File Ready for Analysis
                             </h3>
-                            <div className="text-slate-300 text-base mb-4 max-w-full">
+                            <div className="text-slate-300 text-sm sm:text-base mb-3 sm:mb-4 max-w-full">
                               <p className="break-words overflow-hidden text-ellipsis whitespace-nowrap" title={uploadedFile.name}>
                                 {uploadedFile.name}
                               </p>
                             </div>
-                            <p className="text-slate-400 text-sm mb-6">
+                            <p className="text-slate-400 text-xs sm:text-sm mb-4 sm:mb-6">
                               Duration: {Math.floor(audioDuration / 60)}:{Math.floor(audioDuration % 60).toString().padStart(2, '0')} • Size: {(uploadedFile.size / 1024 / 1024).toFixed(1)}MB
                             </p>
                             
@@ -811,7 +811,7 @@ export default function HeroSimple() {
                                   fileInputRef.current.value = '';
                                 }
                               }}
-                              className="w-full py-2.5 px-4 rounded-lg text-sm font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 border border-red-500/40 hover:border-red-400/60 transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2"
+                              className="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 border border-red-500/40 hover:border-red-400/60 transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -823,20 +823,20 @@ export default function HeroSimple() {
 
                         {uploadState === 'complete' && (
                           <>
-                            <h3 className="text-xl font-bold text-white mb-3">
+                            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-2 sm:mb-3">
                               Drop your audio file here
                             </h3>
-                            <p className="text-slate-300 text-base mb-6">
+                            <p className="text-slate-300 text-sm sm:text-base mb-4 sm:mb-6">
                               or click to select file
                             </p>
                             
                             {/* File Size Limit */}
-                            <p className="text-xs text-slate-400 mb-4">Max file size: 50MB</p>
+                            <p className="text-xs text-slate-400 mb-3 sm:mb-4">Max file size: 50MB</p>
                             
                             {/* Supported Formats - Enhanced */}
-                            <div className="flex flex-wrap justify-center gap-2">
+                            <div className="flex flex-wrap justify-center gap-1.5 sm:gap-2">
                               {["MP3", "WAV", "FLAC", "AAC"].map((format, index) => (
-                                <span key={index} className="px-3 py-1.5 bg-violet-500/20 text-violet-300 rounded-lg text-xs font-medium border border-violet-500/30">
+                                <span key={index} className="px-2 sm:px-3 py-1 sm:py-1.5 bg-violet-500/20 text-violet-300 rounded-md sm:rounded-lg text-xs font-medium border border-violet-500/30">
                                   {format}
                                 </span>
                               ))}
@@ -848,17 +848,17 @@ export default function HeroSimple() {
 
                     {/* Upload Progress Overlay */}
                     {uploadState === 'analyzing' && (
-                      <div className="bg-white/5 rounded-2xl p-8 text-center border border-white/10">
-                        <div className="mb-6">
-                          <div className="w-16 h-16 mx-auto bg-violet-500/20 rounded-xl flex items-center justify-center">
-                            <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
+                      <div className="bg-white/5 rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-8 text-center border border-white/10">
+                        <div className="mb-4 sm:mb-6">
+                          <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 mx-auto bg-violet-500/20 rounded-lg sm:rounded-xl flex items-center justify-center">
+                            <div className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
                           </div>
                         </div>
 
-                        <h3 className="text-xl font-bold text-white mb-3">
+                        <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-2 sm:mb-3">
                           AI Analysis in Progress
                         </h3>
-                        <p className="text-slate-300 text-base mb-6">
+                        <p className="text-slate-300 text-sm sm:text-base mb-4 sm:mb-6">
                           {currentProgress?.message || currentMessage}
                         </p>
                         
@@ -883,24 +883,24 @@ export default function HeroSimple() {
                     )}
 
                     {/* Start Analysis Button - Always visible below upload area */}
-                    <div className="mt-6">
+                    <div className="mt-4 sm:mt-6">
                       {/* Check if user has insufficient credits */}
                       {uploadedFile && audioDuration > 0 && currentCreditBalance && currentCreditBalance.remaining < getRoundedCredits(audioDuration) ? (
                         /* Insufficient Credits - Prominent Action Button */
-                        <div className="space-y-3">
+                        <div className="space-y-2 sm:space-y-3">
                           <button
                             onClick={handleInsufficientCreditsAction}
-                            className="w-full py-4 px-6 rounded-lg font-bold text-white transition-all duration-300 transform hover:scale-105 shadow-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 border-2 border-orange-400/50 hover:border-orange-300"
+                            className="w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-bold text-sm sm:text-base text-white transition-all duration-300 transform hover:scale-105 shadow-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 border-2 border-orange-400/50 hover:border-orange-300"
                           >
                             <div className="flex items-center justify-center gap-2">
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                               </svg>
                               {!user ? 'Login to Get More Credits' : 'Purchase More Credits'}
                             </div>
                           </button>
                           <div className="text-center">
-                            <p className="text-sm text-orange-300 font-medium">
+                            <p className="text-xs sm:text-sm text-orange-300 font-medium">
                               Need {getRoundedCredits(audioDuration) - currentCreditBalance.remaining} more credits
                             </p>
                             <p className="text-xs text-orange-200/80 mt-1">
@@ -913,7 +913,7 @@ export default function HeroSimple() {
                         <button
                           onClick={handleStartAnalysis}
                           disabled={!uploadedFile || !audioDuration || !currentCreditBalance || uploadState === 'analyzing' || uploadState === 'complete'}
-                          className={`w-full py-3 px-6 rounded-lg font-semibold transition-colors ${
+                          className={`w-full py-2.5 sm:py-3 px-4 sm:px-6 rounded-lg font-semibold text-xs sm:text-sm transition-colors ${
                             !uploadedFile || !audioDuration || !currentCreditBalance || uploadState === 'analyzing' || uploadState === 'complete'
                               ? 'bg-gray-500/20 text-gray-400 cursor-not-allowed'
                               : 'bg-violet-500 hover:bg-violet-600 text-white'
@@ -946,27 +946,27 @@ export default function HeroSimple() {
                   </div>
 
                   {/* Credit Display - Enhanced */}
-                  <div className="bg-gradient-to-br from-blue-500/15 to-violet-500/15 rounded-xl p-5 border border-blue-500/30 relative overflow-hidden">
+                  <div className="bg-gradient-to-br from-blue-500/15 to-violet-500/15 rounded-lg sm:rounded-xl p-4 sm:p-5 border border-blue-500/30 relative overflow-hidden">
                     {/* Decorative Elements */}
-                    <div className="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-full -translate-y-8 translate-x-8"></div>
-                    <div className="absolute bottom-0 left-0 w-12 h-12 bg-violet-500/10 rounded-full translate-y-6 -translate-x-6"></div>
+                    <div className="absolute top-0 right-0 w-12 h-12 sm:w-16 sm:h-16 bg-blue-500/10 rounded-full -translate-y-6 sm:-translate-y-8 translate-x-6 sm:translate-x-8"></div>
+                    <div className="absolute bottom-0 left-0 w-10 h-10 sm:w-12 sm:h-12 bg-violet-500/10 rounded-full translate-y-5 sm:translate-y-6 -translate-x-5 sm:-translate-x-6"></div>
                     
                     {/* Header Section */}
-                    <div className="flex items-start gap-3 mb-4 relative z-10">
-                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500/30 to-violet-500/30 flex items-center justify-center shadow-lg">
-                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div className="flex items-start gap-2 sm:gap-3 mb-3 sm:mb-4 relative z-10">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-blue-500/30 to-violet-500/30 flex items-center justify-center shadow-lg flex-shrink-0">
+                        <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                         </svg>
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-white text-sm">Free Trial Credits</span>
-                          <div className="px-2 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30">
+                          <span className="font-bold text-white text-xs sm:text-sm">Free Trial Credits</span>
+                          <div className="px-1.5 sm:px-2 py-0.5 bg-blue-500/20 text-blue-300 text-xs rounded-full border border-blue-500/30 whitespace-nowrap">
                             {currentCreditBalance ? `${currentCreditBalance.remaining}` : '100'} LEFT
                           </div>
                         </div>
                         <div className="text-xs text-blue-200 text-left">
-                          {currentCreditBalance ? `${currentCreditBalance.remaining} credits remaining` : '100 credits • 1 second = 1 credit'}
+                          1 second = 1 credit
                         </div>
                       </div>
                     </div>
@@ -988,13 +988,13 @@ export default function HeroSimple() {
                 </div>
 
                 {/* Right Side - Audio Player & Analysis */}
-                <div className="flex flex-col space-y-6">
+                <div className="flex flex-col space-y-4 sm:space-y-6">
                   {/* Audio Player Section - Enhanced with Demo Carousel */}
-                  <div className="bg-white/5 rounded-2xl p-4 border border-white/10">
-                    <div className="mb-3">
+                  <div className="bg-white/5 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-white/10">
+                    <div className="mb-2 sm:mb-3">
                       <div className="flex items-center gap-2 mb-1">
-                        <h3 className="text-base font-bold text-white text-left">Audio Player</h3>
-                        <div className={`px-2 py-0.5 text-xs rounded-full border ${
+                        <h3 className="text-sm sm:text-base font-bold text-white text-left">Audio Player</h3>
+                        <div className={`px-1.5 sm:px-2 py-0.5 text-xs rounded-full border ${
                           uploadedFile 
                             ? 'bg-green-500/20 text-green-300 border-green-500/30'
                             : 'bg-amber-500/20 text-amber-300 border-amber-500/30'
