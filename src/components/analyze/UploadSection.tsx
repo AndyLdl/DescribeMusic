@@ -75,45 +75,95 @@ export default function UploadSection({
   // 获取当前积分（认证用户或试用用户）
   const effectiveCredits = user ? currentCredits : trialCredits;
 
+  // 格式化秒数为可读格式
+  const formatSeconds = (seconds: number): string => {
+    if (seconds < 60) {
+      return `${seconds} sec`;
+    } else if (seconds < 3600) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return secs > 0 ? `${mins}m ${secs}s` : `${mins}m`;
+    } else {
+      const hours = Math.floor(seconds / 3600);
+      const mins = Math.floor((seconds % 3600) / 60);
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }
+  };
 
+  // 计算可分析的秒数（1秒 = 1积分）
+  const availableSeconds = effectiveCredits;
 
   return (
-    <div className="space-y-12">
-      {/* Credit Indicator */}
-      <CreditIndicator
-        currentCredits={effectiveCredits}
-        audioDuration={audioDuration}
-        creditEstimate={creditEstimate}
-        onPurchaseCredits={onPurchaseCredits}
-        className={!user ? 'border-blue-500/20 bg-blue-500/5' : ''}
-      />
+    <div className="space-y-4 md:space-y-6">
+      {/* Compact Credit Info - Streamlined */}
+      <div className="glass-pane p-3">
+        <div className="flex items-center justify-between gap-4">
+          {/* Credit Info */}
+          <div className="flex items-center gap-4">
+            {/* Balance */}
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+              </svg>
+              <div>
+                <div className="text-xs text-slate-400">Balance</div>
+                <div className="text-lg font-bold text-green-400">{effectiveCredits}</div>
+              </div>
+            </div>
 
-      {/* Trial User Notice */}
-      {!user && (
-        <div className="glass-pane p-4 border-blue-500/20 bg-blue-500/5">
-          <div className="flex items-start gap-3">
-            <svg className="w-5 h-5 text-blue-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            <div className="h-8 w-px bg-white/10"></div>
+
+            {/* Available */}
             <div>
-              <p className="text-blue-400 text-sm font-medium">Trial Mode</p>
-              <p className="text-blue-300 text-xs mt-1">
-                You are using trial credits. Register to get 200 credits monthly and purchase more credits.
-              </p>
-              {onOpenLogin && (
+              <div className="text-xs text-slate-400">Available</div>
+              <div className="text-lg font-bold text-blue-400">
+                {availableSeconds > 0 ? formatSeconds(availableSeconds) : '0s'}
+              </div>
+            </div>
+
+            {/* Cost (when file uploaded) */}
+            {audioDuration && creditEstimate && (
+              <>
+                <div className="h-8 w-px bg-white/10"></div>
+                <div>
+                  <div className="text-xs text-slate-400">Cost</div>
+                  <div className={`text-lg font-bold ${creditEstimate.canAfford ? 'text-orange-400' : 'text-red-400'}`}>
+                    {creditEstimate.creditsRequired}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Right: Actions */}
+          <div className="flex items-center gap-2">
+            {!user ? (
+              onOpenLogin && (
                 <button
                   onClick={onOpenLogin}
-                  className="mt-2 text-xs text-blue-400 hover:text-blue-300 underline"
+                  className="px-3 py-1.5 text-xs font-medium text-blue-400 bg-blue-500/10 border border-blue-500/20 rounded-lg hover:bg-blue-500/20 transition-all duration-200 flex items-center gap-1.5"
+                  title="Register to get 200 credits monthly"
                 >
-                  Register Now →
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                  <span>Register for 200 credits</span>
                 </button>
-              )}
-            </div>
+              )
+            ) : (
+              <span className="text-xs text-slate-500">1 sec = 1 credit</span>
+            )}
+            {audioDuration && creditEstimate && !creditEstimate.canAfford && onPurchaseCredits && (
+              <button
+                onClick={onPurchaseCredits}
+                className="px-3 py-1.5 text-xs font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-lg hover:from-violet-600 hover:to-blue-600 transition-all duration-200"
+              >
+                Buy Credits
+              </button>
+            )}
           </div>
         </div>
-      )}
-
-
+      </div>
 
       {/* Upload Area */}
       <div className="relative">
@@ -128,10 +178,10 @@ export default function UploadSection({
           <div className="absolute bottom-32 left-1/3 text-purple-400/20 text-5xl animate-bounce" style={{ animationDelay: '2s', animationDuration: '3.5s' }}>♬</div>
         </div>
 
-        {/* Main Upload Zone */}
+        {/* Main Upload Zone - Compact for Mobile */}
         <div
           className={`
-            relative z-10 glass-pane p-16 text-center transition-all duration-300 
+            relative z-10 glass-pane p-8 md:p-12 text-center transition-all duration-300 
             ${!canUpload
               ? 'cursor-not-allowed opacity-50'
               : 'cursor-pointer'
@@ -157,42 +207,42 @@ export default function UploadSection({
             onChange={(e) => onFileSelect(e.target.files)}
           />
 
-          {/* Upload Icon */}
-          <div className="mb-8">
-            <div className="w-24 h-24 mx-auto bg-gradient-to-r from-violet-500 to-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          {/* Upload Icon - Responsive Size */}
+          <div className="mb-6 md:mb-8">
+            <div className="w-16 h-16 md:w-24 md:h-24 mx-auto bg-gradient-to-r from-violet-500 to-blue-500 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+              <svg className="w-8 h-8 md:w-12 md:h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
             </div>
           </div>
 
-          <h3 className="text-3xl font-bold text-white mb-4">
+          <h3 className="text-2xl md:text-3xl font-bold text-white mb-3 md:mb-4">
             {!canUpload && needsAuth
               ? 'Login required to continue'
               : !canUpload
                 ? 'Usage limit reached'
-                : 'Drop your audio file here'
+                : 'Upload audio to start analysis'
             }
           </h3>
-          <p className="text-slate-300/80 text-lg mb-8 max-w-2xl mx-auto">
+          <p className="text-slate-300/80 text-base md:text-lg mb-6 md:mb-8 max-w-2xl mx-auto">
             {!canUpload && needsAuth
               ? 'Sign up to get 200 credits for audio analysis'
               : !canUpload
                 ? usageStatus?.message || 'Please wait for next month reset or upgrade your account'
-                : 'Or click to browse files. We support MP3, WAV, OGG, MP4, M4A formats up to 50MB.'
+                : 'Drop your audio file here or click to browse files'
             }
           </p>
 
-          {/* Upload Button */}
+          {/* Upload Button - Responsive Size */}
           {canUpload ? (
             <button
-              className="inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
+              className="inline-flex items-center justify-center gap-2 md:gap-3 px-6 py-3 md:px-8 md:py-4 text-base md:text-lg font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
               onClick={(e) => {
                 e.stopPropagation();
                 openFileDialog();
               }}
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               Choose Audio File
@@ -203,9 +253,9 @@ export default function UploadSection({
                 e.stopPropagation();
                 onOpenLogin();
               }}
-              className="inline-flex items-center justify-center gap-3 px-8 py-4 text-lg font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
+              className="inline-flex items-center justify-center gap-2 md:gap-3 px-6 py-3 md:px-8 md:py-4 text-base md:text-lg font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-full hover:from-violet-600 hover:to-blue-600 transition-all duration-300 transform hover:scale-105"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
               </svg>
               Sign Up Now
@@ -223,6 +273,15 @@ export default function UploadSection({
           )}
 
           {/* Format Info */}
+          {canUpload && (
+            <div className="mt-6 text-center">
+              <p className="text-slate-400 text-sm">
+                Supports MP3, WAV, OGG, MP4, M4A formats up to 50MB
+              </p>
+            </div>
+          )}
+
+          {/* Format Tags */}
           <div className="mt-12 flex flex-wrap justify-center gap-3">
             {['MP3', 'WAV', 'OGG', 'MP4', 'M4A'].map((format) => (
               <span

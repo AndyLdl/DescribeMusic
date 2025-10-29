@@ -6,9 +6,10 @@ interface HistorySidebarProps {
   selectedRecordId?: string;
   onSelectRecord: (record: HistoryRecord) => void;
   onNewAnalysis: () => void;
+  currentStage?: 'upload' | 'analyzing' | 'results' | 'error';
 }
 
-export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNewAnalysis }: HistorySidebarProps) {
+export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNewAnalysis, currentStage }: HistorySidebarProps) {
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -130,15 +131,18 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
         {/* Actions */}
         {!isCollapsed && (
           <div className="p-4 space-y-2">
-            <button
-              onClick={onNewAnalysis}
-              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-lg hover:from-violet-600 hover:to-blue-600 transition-all duration-300"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-              </svg>
-              New Analysis
-            </button>
+            {/* 只在非upload阶段显示New Analysis按钮 */}
+            {currentStage !== 'upload' && (
+              <button
+                onClick={onNewAnalysis}
+                className="w-full inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-violet-500 to-blue-500 rounded-lg hover:from-violet-600 hover:to-blue-600 transition-all duration-300"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                New Analysis
+              </button>
+            )}
 
             {history.length > 0 && (
               <button
