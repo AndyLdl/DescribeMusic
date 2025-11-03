@@ -65,6 +65,13 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
 
     <!-- PWA Icons -->
     <link rel="manifest" href="/manifest.json" />
+    <!-- RSS Feed -->
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Describe Music Blog RSS Feed"
+      href="/rss.xml"
+    />
     <meta name="generator" content={Astro.generator} />
     <meta name="keywords" content={siteKeywords} />
     {
