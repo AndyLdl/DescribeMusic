@@ -74,14 +74,10 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
     />
     <meta name="generator" content={Astro.generator} />
     <meta name="keywords" content={siteKeywords} />
-    {
-      Astro.url.pathname.startsWith("/blog") && (
-        <meta
-          name="blogarama-site-verification"
-          content="blogarama-748bd1e6-c148-4b5e-83c5-9decb525ce21"
-        />
-      )
-    }
+    <meta
+      name="blogarama-site-verification"
+      content="blogarama-748bd1e6-c148-4b5e-83c5-9decb525ce21"
+    />
 
     <SEO
       title={makeTitle}
