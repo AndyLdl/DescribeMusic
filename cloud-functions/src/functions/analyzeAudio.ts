@@ -1026,15 +1026,22 @@ export async function performAnalysis(
             sampleRate: audioMetadata.sampleRate
         }, requestId);
 
-        // Create analysis prompt with real metadata
-        const prompt = PromptTemplates.createAnalysisPrompt(
+        // Create analysis prompt with real metadata and audio buffer
+        const basePrompt = PromptTemplates.createAnalysisPrompt(
             audioFile.originalName,
             audioMetadata.duration,
             audioMetadata.format,
             audioFile.size
         );
 
-        // Call Vertex AI Gemini API
+        // Add audio buffer for actual analysis
+        const prompt = {
+            ...basePrompt,
+            audioBuffer: audioFile.buffer, // 传递音频文件buffer给 Vertex AI
+            audioMimeType: audioFile.mimeType // 传递音频 MIME 类型
+        };
+
+        // Call Vertex AI Gemini API (现在会包含实际音频文件)
         const geminiResponse = await vertexAIService.analyzeAudio(prompt, requestId);
 
         if (!geminiResponse.success || !geminiResponse.data) {
@@ -1087,8 +1094,35 @@ export async function performAnalysis(
             }, requestId);
         }
 
-        // Generate AI description if not provided
-        if (!analysisData.aiDescription) {
+        // Generate description using getDescriptionPrompt (not included in main analysis to save tokens)
+        // 传入音频文件以获得更准确的描述
+        try {
+            logger.info('Generating description using getDescriptionPrompt', { requestId });
+            const descriptionPrompt = PromptTemplates.getDescriptionPrompt(audioFile.originalName);
+            const descriptionResult = await vertexAIService.generateDescription(
+                descriptionPrompt,
+                requestId,
+                audioFile.buffer,    // 传递音频文件以获得更准确的描述
+                audioFile.mimeType   // 传递音频MIME类型
+            );
+            if (descriptionResult.success && descriptionResult.description && descriptionResult.description.length > 50) {
+                analysisData.aiDescription = descriptionResult.description;
+                logger.info('Description generated successfully', {
+                    requestId,
+                    descriptionLength: analysisData.aiDescription.length
+                });
+            } else {
+                logger.warn('Description generation returned short or empty result, using fallback', {
+                    requestId,
+                    hasResult: descriptionResult.success,
+                    resultLength: descriptionResult.description?.length || 0
+                });
+                // Fallback to simple generation if dedicated prompt fails or returns short result
+                analysisData.aiDescription = generateAIDescription(analysisData);
+            }
+        } catch (descError) {
+            logger.error('Failed to generate description, using fallback', descError as Error);
+            // Fallback to simple generation if dedicated prompt fails
             analysisData.aiDescription = generateAIDescription(analysisData);
         }
 

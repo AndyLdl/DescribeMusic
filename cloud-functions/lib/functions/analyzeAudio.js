@@ -891,6 +891,7 @@ function estimateAudioDuration(fileSize, format) {
  * Perform audio analysis using Gemini AI
  */
 async function performAnalysis(audioFile, options = {}, requestId) {
+    var _a;
     const analysisStartTime = Date.now();
     logger_1.default.analysisStart(audioFile.originalName, requestId);
     try {
@@ -902,9 +903,15 @@ async function performAnalysis(audioFile, options = {}, requestId) {
             bitrate: audioMetadata.bitrate,
             sampleRate: audioMetadata.sampleRate
         }, requestId);
-        // Create analysis prompt with real metadata
-        const prompt = prompts_1.PromptTemplates.createAnalysisPrompt(audioFile.originalName, audioMetadata.duration, audioMetadata.format, audioFile.size);
-        // Call Vertex AI Gemini API
+        // Create analysis prompt with real metadata and audio buffer
+        const basePrompt = prompts_1.PromptTemplates.createAnalysisPrompt(audioFile.originalName, audioMetadata.duration, audioMetadata.format, audioFile.size);
+        // Add audio buffer for actual analysis
+        const prompt = {
+            ...basePrompt,
+            audioBuffer: audioFile.buffer, // 传递音频文件buffer给 Vertex AI
+            audioMimeType: audioFile.mimeType // 传递音频 MIME 类型
+        };
+        // Call Vertex AI Gemini API (现在会包含实际音频文件)
         const geminiResponse = await vertexAIService_1.vertexAIService.analyzeAudio(prompt, requestId);
         if (!geminiResponse.success || !geminiResponse.data) {
             throw new errors_1.AppError(types_1.ErrorCode.ANALYSIS_FAILED, 'Analysis failed: No data returned from AI service');
@@ -949,8 +956,34 @@ async function performAnalysis(audioFile, options = {}, requestId) {
                 cleanedTags: analysisData.tags
             }, requestId);
         }
-        // Generate AI description if not provided
-        if (!analysisData.aiDescription) {
+        // Generate description using getDescriptionPrompt (not included in main analysis to save tokens)
+        // 传入音频文件以获得更准确的描述
+        try {
+            logger_1.default.info('Generating description using getDescriptionPrompt', { requestId });
+            const descriptionPrompt = prompts_1.PromptTemplates.getDescriptionPrompt(audioFile.originalName);
+            const descriptionResult = await vertexAIService_1.vertexAIService.generateDescription(descriptionPrompt, requestId, audioFile.buffer, // 传递音频文件以获得更准确的描述
+            audioFile.mimeType // 传递音频MIME类型
+            );
+            if (descriptionResult.success && descriptionResult.description && descriptionResult.description.length > 50) {
+                analysisData.aiDescription = descriptionResult.description;
+                logger_1.default.info('Description generated successfully', {
+                    requestId,
+                    descriptionLength: analysisData.aiDescription.length
+                });
+            }
+            else {
+                logger_1.default.warn('Description generation returned short or empty result, using fallback', {
+                    requestId,
+                    hasResult: descriptionResult.success,
+                    resultLength: ((_a = descriptionResult.description) === null || _a === void 0 ? void 0 : _a.length) || 0
+                });
+                // Fallback to simple generation if dedicated prompt fails or returns short result
+                analysisData.aiDescription = generateAIDescription(analysisData);
+            }
+        }
+        catch (descError) {
+            logger_1.default.error('Failed to generate description, using fallback', descError);
+            // Fallback to simple generation if dedicated prompt fails
             analysisData.aiDescription = generateAIDescription(analysisData);
         }
         // Create final result with real audio metadata

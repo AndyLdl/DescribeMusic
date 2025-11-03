@@ -15,6 +15,9 @@ export interface AudioAnalysisPrompt {
         format: string;
         size: number;
     };
+    audioFileUri?: string; // GCS URI (gs://bucket/path) - preferred for all files
+    audioBuffer?: Buffer; // Audio file buffer (fallback for inlineData, files <= 20MB)
+    audioMimeType?: string; // MIME type of the audio file
 }
 
 export interface GeminiResponse {

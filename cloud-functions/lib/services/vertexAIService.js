@@ -101,8 +101,8 @@ class VertexAIService {
             if (userId) {
                 security_1.CostMonitor.recordCost(userId, estimatedCost, 'vertex-ai-gemini');
             }
-            // 带重试的API调用
-            const { text, actualCost } = await this.callVertexAIWithRetry(fullPrompt, requestId);
+            // 带重试的API调用，支持音频文件（优先使用 file_uri）
+            const { text, actualCost } = await this.callVertexAIWithRetry(fullPrompt, requestId, sanitizedPrompt.audioBuffer, sanitizedPrompt.audioMimeType, sanitizedPrompt.audioFileUri);
             const duration = Date.now() - startTime;
             logger_1.default.geminiResponse(text.length, duration, requestId);
             // 记录实际成本
@@ -136,6 +136,65 @@ class VertexAIService {
         }
     }
     /**
+     * Generate audio description using dedicated prompt
+     */
+    async generateDescription(descriptionPrompt, requestId, audioBuffer, audioMimeType, userId, audioFileUri // GCS URI for large files
+    ) {
+        const startTime = Date.now();
+        try {
+            logger_1.default.info('Generating description with dedicated prompt', {
+                requestId,
+                hasAudio: !!audioBuffer,
+                audioSize: (audioBuffer === null || audioBuffer === void 0 ? void 0 : audioBuffer.length) || 0
+            });
+            // 成本预检查
+            const estimatedCost = this.estimateVertexAICost(descriptionPrompt);
+            if (userId) {
+                security_1.CostMonitor.recordCost(userId, estimatedCost, 'vertex-ai-description');
+            }
+            // 带重试的API调用（如果有音频文件，也一起传递以获得更准确的描述）
+            const { text, actualCost } = await this.callVertexAIWithRetry(descriptionPrompt, requestId, audioBuffer, // 传递音频文件buffer（如果提供）
+            audioMimeType, // 传递音频MIME类型
+            audioFileUri // 优先使用 GCS URI
+            );
+            const duration = Date.now() - startTime;
+            logger_1.default.info('Description generated', {
+                descriptionLength: text.length,
+                duration,
+                cost: actualCost,
+                requestId
+            });
+            // 记录实际成本
+            if (userId && actualCost > estimatedCost) {
+                security_1.CostMonitor.recordCost(userId, actualCost - estimatedCost, 'vertex-ai-description-adjustment');
+            }
+            // 清理响应文本
+            let cleanedDescription = text.trim();
+            cleanedDescription = cleanedDescription.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+            cleanedDescription = cleanedDescription.replace(/```\s*/g, '');
+            cleanedDescription = this.sanitizeResponseText(cleanedDescription);
+            // 移除可能的引号
+            if (cleanedDescription.startsWith('"') && cleanedDescription.endsWith('"')) {
+                cleanedDescription = cleanedDescription.slice(1, -1);
+            }
+            return {
+                description: cleanedDescription,
+                success: true
+            };
+        }
+        catch (error) {
+            const duration = Date.now() - startTime;
+            logger_1.default.error(`Description generation failed after ${duration}ms`, error, {
+                requestId,
+                promptLength: descriptionPrompt.length,
+            });
+            return {
+                description: '',
+                success: false
+            };
+        }
+    }
+    /**
      * 清理和验证输入prompt
      */
     sanitizePrompt(prompt) {
@@ -160,7 +219,11 @@ class VertexAIService {
             audioMetadata: {
                 ...prompt.audioMetadata,
                 filename: sanitizedFilename
-            }
+            },
+            // Preserve audio buffer, MIME type, and file URI if provided
+            audioFileUri: prompt.audioFileUri,
+            audioBuffer: prompt.audioBuffer,
+            audioMimeType: prompt.audioMimeType
         };
     }
     /**
@@ -176,16 +239,109 @@ Size: ${(prompt.audioMetadata.size / (1024 * 1024)).toFixed(1)}MB
 
 ${prompt.userPrompt}
 
-Return JSON with: basicInfo, emotions, structure, quality, similarity, tags, aiDescription.`;
+Return JSON with: basicInfo, emotions, structure, quality, similarity, tags.`;
     }
     /**
      * 带重试机制的Vertex AI调用
+     * 支持两种方式：
+     * 1. inlineData (base64) - 适用于文件 <= 20MB
+     * 2. file_uri (GCS URI) - 适用于文件 > 20MB
      */
-    async callVertexAIWithRetry(fullPrompt, requestId) {
+    async callVertexAIWithRetry(fullPrompt, requestId, audioBuffer, audioMimeType, audioFileUri // GCS URI for files > 20MB
+    ) {
         let lastError;
         for (let attempt = 1; attempt <= this.MAX_RETRIES; attempt++) {
             try {
-                const result = await this.model.generateContent(fullPrompt);
+                let result;
+                // Priority: Use file_uri (GCS) if available, then inlineData, then text-only
+                if (audioFileUri) {
+                    // Use file_uri - best for all file sizes, especially > 20MB
+                    logger_1.default.info('Using file_uri (GCS) for audio file', {
+                        requestId,
+                        fileUri: audioFileUri
+                    });
+                    // Determine MIME type from file extension or use provided one
+                    const mimeType = audioMimeType || 'audio/mpeg';
+                    // Use fileData with fileUri for GCS files (supports files > 20MB)
+                    // Format: fileData.fileUri should be gs://bucket/path
+                    const request = {
+                        contents: [
+                            {
+                                role: 'user',
+                                parts: [
+                                    {
+                                        fileData: {
+                                            fileUri: audioFileUri,
+                                            mimeType: mimeType
+                                        }
+                                    },
+                                    {
+                                        text: fullPrompt
+                                    }
+                                ]
+                            }
+                        ]
+                    };
+                    logger_1.default.info('Sending request with fileData', {
+                        requestId,
+                        fileUri: audioFileUri,
+                        mimeType: mimeType
+                    });
+                    result = await this.model.generateContent(request);
+                }
+                else if (audioBuffer && audioMimeType) {
+                    // Fallback to inlineData for files <= 20MB (if file_uri not available)
+                    const audioSizeMB = (audioBuffer.length / (1024 * 1024)).toFixed(2);
+                    const maxInlineSize = 20 * 1024 * 1024; // 20MB limit for inlineData
+                    logger_1.default.info('Using inlineData for audio file (fallback)', {
+                        requestId,
+                        audioSize: audioBuffer.length,
+                        audioSizeMB,
+                        mimeType: audioMimeType
+                    });
+                    // Check if file exceeds inlineData limit
+                    if (audioBuffer.length > maxInlineSize) {
+                        throw new errors_1.GeminiError(`Audio file too large for inlineData: ${audioSizeMB}MB exceeds 20MB limit. ` +
+                            `Please provide file_uri (GCS gs:// URI) for files larger than 20MB.`, {
+                            audioSize: audioBuffer.length,
+                            maxInlineSize: maxInlineSize,
+                            requestId,
+                            suggestion: 'Use file_uri with GCS path for files larger than 20MB'
+                        });
+                    }
+                    // Convert buffer to base64 for inlineData
+                    const base64Audio = audioBuffer.toString('base64');
+                    const base64SizeMB = (base64Audio.length / (1024 * 1024)).toFixed(2);
+                    logger_1.default.info('Audio file converted to base64', {
+                        requestId,
+                        originalSizeMB: audioSizeMB,
+                        base64SizeMB,
+                        sizeIncrease: ((base64Audio.length - audioBuffer.length) / audioBuffer.length * 100).toFixed(1) + '%'
+                    });
+                    const request = {
+                        contents: [
+                            {
+                                role: 'user',
+                                parts: [
+                                    {
+                                        inlineData: {
+                                            data: base64Audio,
+                                            mimeType: audioMimeType
+                                        }
+                                    },
+                                    {
+                                        text: fullPrompt
+                                    }
+                                ]
+                            }
+                        ]
+                    };
+                    result = await this.model.generateContent(request);
+                }
+                else {
+                    // Text-only request
+                    result = await this.model.generateContent(fullPrompt);
+                }
                 const response = result.response;
                 // Vertex AI 响应结构不同，需要获取文本内容
                 let text;

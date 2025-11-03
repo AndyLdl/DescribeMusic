@@ -259,11 +259,12 @@ Return your analysis in the following JSON structure:
     "style_influences": ["string"],
     "genre_confidence": number
   },
-  "tags": ["string"],
-  "aiDescription": "A comprehensive, engaging description of the audio content that thoroughly captures its essence and key characteristics. Provide sufficient detail to give listeners a clear understanding of what to expect, while maintaining accessibility for general audiences."
+  "tags": ["string"]
 }
 
-For music content, populate the musical fields. For sound effects/ambient content, focus on the soundEffects section. For mixed content, analyze all applicable sections. 
+For music content, populate the musical fields. For sound effects/ambient content, focus on the soundEffects section. For mixed content, analyze all applicable sections.
+
+NOTE: Do not include "aiDescription" field in the response. The description will be generated separately with a dedicated prompt for better quality.
 
 Respond with valid JSON only, no additional text or formatting.`;
         return prompt;

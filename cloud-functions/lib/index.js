@@ -201,6 +201,7 @@ exports.analyzeAudioFromUrl = functions
     .region('us-central1')
     .https
     .onRequest(async (req, res) => {
+    var _a, _b, _c;
     const requestId = (0, uuid_1.v4)();
     // 安全的CORS配置
     const origin = req.get('Origin');
@@ -308,26 +309,64 @@ exports.analyzeAudioFromUrl = functions
         userInfo.creditsConsumed = Math.ceil(frontendDuration);
         // Check and consume usage limits based on frontend-detected duration
         await checkAndConsumeUsageFromUrl(req, fileName, frontendDuration);
-        // Download file only for analysis (not for duration detection)
-        const audioFile = await downloadForAnalysis(fileUrl, fileName);
-        // 构建分析prompt
+        // Extract file path and construct GCS URI (no need to download for analysis)
+        const filePath = extractFilePathFromUrl(fileUrl);
+        const gcsUri = `gs://describe-music/${filePath}`;
+        // Get file metadata (without downloading the entire file)
+        const bucket = admin.storage().bucket('describe-music');
+        const file = bucket.file(filePath);
+        const [metadata] = await file.getMetadata();
+        const fileSize = metadata.size || 0;
+        // 构建分析prompt，使用 GCS URI（不需要下载文件）
         const prompt = {
             systemPrompt: prompts_1.PromptTemplates.getSystemPrompt(),
-            userPrompt: prompts_1.PromptTemplates.getUserPrompt(audioFile.originalName, 'Comprehensive audio analysis requested'),
+            userPrompt: prompts_1.PromptTemplates.getUserPrompt(fileName, 'Comprehensive audio analysis requested'),
             audioMetadata: {
-                filename: audioFile.originalName,
+                filename: fileName,
                 duration: frontendDuration,
-                format: audioFile.format || 'Unknown',
-                size: audioFile.size
-            }
+                format: ((_a = fileName.split('.').pop()) === null || _a === void 0 ? void 0 : _a.toUpperCase()) || 'Unknown',
+                size: fileSize
+            },
+            audioFileUri: gcsUri, // 使用 GCS URI，支持任意大小的文件
+            audioMimeType: metadata.contentType || 'audio/mpeg' // 从元数据获取 MIME 类型
         };
-        // 使用 Vertex AI 服务进行分析
+        // 使用 Vertex AI 服务进行分析（现在会包含实际音频文件）
         const vertexResponse = await vertexAIService_1.vertexAIService.analyzeAudio(prompt, requestId);
         if (!vertexResponse.success || !vertexResponse.data) {
             throw new Error('Vertex AI analysis failed: No valid response received');
         }
         const analysis = vertexResponse.data.analysis;
         const processingTime = (Date.now() - Date.now()) / 1000;
+        // Generate description using getDescriptionPrompt (not included in main analysis to save tokens)
+        // 传入 GCS URI 以获得更准确的描述（不需要下载文件）
+        let finalDescription = 'Audio content analyzed using Vertex AI Gemini.';
+        try {
+            logger_1.default.info('Generating description using getDescriptionPrompt', { requestId });
+            const descriptionPrompt = prompts_1.PromptTemplates.getDescriptionPrompt(fileName);
+            const descriptionResult = await vertexAIService_1.vertexAIService.generateDescription(descriptionPrompt, requestId, undefined, // 不使用 buffer
+            metadata.contentType || 'audio/mpeg', undefined, // userId
+            gcsUri // 使用 GCS URI
+            );
+            if (descriptionResult.success && descriptionResult.description && descriptionResult.description.length > 50) {
+                finalDescription = descriptionResult.description;
+                logger_1.default.info('Description generated successfully', {
+                    requestId,
+                    descriptionLength: finalDescription.length,
+                    descriptionResult: finalDescription
+                });
+            }
+            else {
+                logger_1.default.warn('Description generation returned short or empty result', {
+                    requestId,
+                    hasResult: descriptionResult.success,
+                    resultLength: ((_b = descriptionResult.description) === null || _b === void 0 ? void 0 : _b.length) || 0
+                });
+            }
+        }
+        catch (descError) {
+            logger_1.default.error('Failed to generate description', descError);
+            // Keep default fallback description
+        }
         // Generate a new signed URL for playback (7 days validity - GCS limit)
         let audioPlaybackUrl;
         try {
@@ -347,13 +386,14 @@ exports.analyzeAudioFromUrl = functions
             audioPlaybackUrl = fileUrl; // Fallback to original URL
         }
         // 构建标准的分析结果
+        const fileFormat = ((_c = fileName.split('.').pop()) === null || _c === void 0 ? void 0 : _c.toUpperCase()) || 'Unknown';
         const analysisResult = {
             id: requestId,
-            filename: audioFile.originalName,
+            filename: fileName,
             timestamp: new Date().toISOString(),
             duration: frontendDuration,
-            fileSize: `${(audioFile.size / (1024 * 1024)).toFixed(2)} MB`,
-            format: audioFile.format || 'Unknown',
+            fileSize: `${(fileSize / (1024 * 1024)).toFixed(2)} MB`,
+            format: fileFormat,
             audioUrl: audioPlaybackUrl, // Add audio URL for playback
             contentType: analysis.contentType || {
                 primary: 'music',
@@ -369,7 +409,7 @@ exports.analyzeAudioFromUrl = functions
                 happy: 0.3, sad: 0.2, angry: 0.1, calm: 0.4, excited: 0.2,
                 melancholic: 0.2, energetic: 0.3, peaceful: 0.3, tense: 0.2, relaxed: 0.4
             },
-            voiceAnalysis: {
+            voiceAnalysis: analysis.voiceAnalysis || {
                 hasVoice: false, speakerCount: 0,
                 genderDetection: { primary: 'unknown', confidence: 0.0, multipleGenders: false },
                 speakerEmotion: {
@@ -381,7 +421,7 @@ exports.analyzeAudioFromUrl = functions
                 languageAnalysis: { language: 'unknown', confidence: 0.0, accent: 'unknown' },
                 audioQuality: { backgroundNoise: 0.0, echo: 0.0, compression: 0.0, overall: 0.0 }
             },
-            soundEffects: {
+            soundEffects: analysis.soundEffects || {
                 detected: [],
                 environment: {
                     location_type: 'indoor', setting: 'commercial', activity_level: 'moderate',
@@ -400,7 +440,7 @@ exports.analyzeAudioFromUrl = functions
                 similar_tracks: [], similar_sounds: [], style_influences: ['AI-analyzed'], genre_confidence: 0.7
             },
             tags: analysis.tags || ['audio', 'music', 'vertex-ai-analyzed'],
-            aiDescription: analysis.aiDescription || 'Audio content analyzed using Vertex AI Gemini.',
+            aiDescription: finalDescription || analysis.aiDescription || 'Audio content analyzed using Vertex AI Gemini.',
             processingTime: processingTime
         };
         res.json({

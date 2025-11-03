@@ -99,7 +99,13 @@ const VoiceAnalysisTab: React.FC<VoiceAnalysisTabProps> = ({ result }) => {
   };
 
   const formatConfidence = (confidence: number) => `${Math.round(confidence * 100)}%`;
-  const formatScore = (score: number) => `${Math.round(score * 100)}%`;
+  const formatScore = (score: number) => `${Math.round(score * 100)}%`; // For 0-1 range scores
+  // Format quality scores (0-10 scale) to display as "X/10"
+  const formatQualityScore = (score: number) => {
+    // If score is already 0-10, display as is; if it's 0-1, convert to 0-10
+    const normalizedScore = score > 1 ? score : score * 10;
+    return `${Math.round(normalizedScore * 10) / 10}/10`;
+  };
 
   return (
     <div className="space-y-6">
@@ -314,28 +320,28 @@ const VoiceAnalysisTab: React.FC<VoiceAnalysisTabProps> = ({ result }) => {
             <div>
               <div className="text-sm text-slate-400 mb-1">Overall Quality</div>
               <div className="text-lg font-semibold text-white">
-                {formatScore(voiceAnalysis.audioQuality.overall)}
+                {formatQualityScore(voiceAnalysis.audioQuality.overall)}
               </div>
             </div>
             
             <div>
               <div className="text-sm text-slate-400 mb-1">Background Noise</div>
               <div className="text-lg font-semibold text-white">
-                {formatScore(voiceAnalysis.audioQuality.backgroundNoise)}
+                {formatQualityScore(voiceAnalysis.audioQuality.backgroundNoise)}
               </div>
             </div>
             
             <div>
               <div className="text-sm text-slate-400 mb-1">Echo Level</div>
               <div className="text-lg font-semibold text-white">
-                {formatScore(voiceAnalysis.audioQuality.echo)}
+                {formatQualityScore(voiceAnalysis.audioQuality.echo)}
               </div>
             </div>
             
             <div>
               <div className="text-sm text-slate-400 mb-1">Compression</div>
               <div className="text-lg font-semibold text-white">
-                {formatScore(voiceAnalysis.audioQuality.compression)}
+                {formatQualityScore(voiceAnalysis.audioQuality.compression)}
               </div>
             </div>
           </div>

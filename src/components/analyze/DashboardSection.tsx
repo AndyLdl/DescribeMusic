@@ -613,21 +613,64 @@ function StructureTab({ result }: { result: AnalysisResult }) {
 
 // Quality Tab Component
 function QualityTab({ result }: { result: AnalysisResult }) {
+  // Helper to normalize 0-10 score (handles both 0-10 and 0-1 formats)
+  const normalizeScore = (score: number) => score > 1 ? score : score * 10;
+  const formatQualityValue = (score: number) => {
+    const normalized = normalizeScore(score);
+    return `${Math.round(normalized * 10) / 10}/10`;
+  };
+
   return (
     <div className="space-y-6">
       <div className="glass-pane p-8">
         <h3 className="text-2xl font-bold text-white mb-6">Audio Quality</h3>
         <div className="space-y-4">
-          <MetricBar label="Overall Score" value={result.quality.overall / 10} color="violet" />
-          <MetricBar label="Clarity" value={result.quality.clarity / 10} color="blue" />
+          {/* Quality scores are 0-10 scale per prompt, convert to 0-1 for MetricBar */}
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-slate-300">Overall Score</span>
+              <span className="font-semibold text-white">{formatQualityValue(result.quality.overall)}</span>
+            </div>
+            <MetricBar label="" value={normalizeScore(result.quality.overall) / 10} color="violet" />
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-slate-300">Clarity</span>
+              <span className="font-semibold text-white">{formatQualityValue(result.quality.clarity)}</span>
+            </div>
+            <MetricBar label="" value={normalizeScore(result.quality.clarity) / 10} color="blue" />
+          </div>
           <div className="flex justify-between items-center">
             <span className="text-slate-300">Loudness</span>
             <span className="font-semibold text-white">{result.quality.loudness} dB</span>
           </div>
-          <MetricBar label="Dynamic Range" value={result.quality.dynamic_range / 10} color="purple" />
-          <div className="flex justify-between items-center">
-            <span className="text-slate-300">Noise Level</span>
-            <span className="font-semibold text-white">{result.quality.noise_level}%</span>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-slate-300">Dynamic Range</span>
+              <span className="font-semibold text-white">{formatQualityValue(result.quality.dynamic_range)}</span>
+            </div>
+            <MetricBar label="" value={normalizeScore(result.quality.dynamic_range) / 10} color="purple" />
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-slate-300">Noise Level</span>
+              <span className="font-semibold text-white">{formatQualityValue(result.quality.noise_level)}</span>
+            </div>
+            <MetricBar label="" value={normalizeScore(result.quality.noise_level) / 10} color="red" />
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-slate-300">Distortion</span>
+              <span className="font-semibold text-white">{formatQualityValue(result.quality.distortion)}</span>
+            </div>
+            <MetricBar label="" value={normalizeScore(result.quality.distortion) / 10} color="red" />
+          </div>
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <span className="text-slate-300">Frequency Balance</span>
+              <span className="font-semibold text-white">{formatQualityValue(result.quality.frequency_balance)}</span>
+            </div>
+            <MetricBar label="" value={normalizeScore(result.quality.frequency_balance) / 10} color="purple" />
           </div>
         </div>
       </div>
@@ -707,7 +750,7 @@ function QuickStatsCard({ result }: { result: AnalysisResult }) {
           <div className="text-xs text-slate-400">Energy</div>
         </div>
         <div className="text-center">
-          <div className="text-2xl font-bold text-purple-400">{Math.round(result.quality.overall * 10)}/10</div>
+          <div className="text-2xl font-bold text-purple-400">{Math.round(result.quality.overall * 10) / 10}/10</div>
           <div className="text-xs text-slate-400">Quality</div>
         </div>
         <div className="text-center">
@@ -724,19 +767,25 @@ function MetricBar({ label, value, color }: { label: string; value: number; colo
   const colorClasses = {
     violet: 'from-violet-500 to-violet-400',
     blue: 'from-blue-500 to-blue-400',
-    purple: 'from-purple-500 to-purple-400'
+    purple: 'from-purple-500 to-purple-400',
+    red: 'from-red-500 to-red-400'
   };
+
+  // value should be 0-1 for display purposes
+  const percentage = Math.min(100, Math.max(0, value * 100));
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-2">
-        <span className="text-slate-300">{label}</span>
-        <span className="font-semibold text-white">{Math.round(value * 100)}%</span>
-      </div>
+      {label && (
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-slate-300">{label}</span>
+          <span className="font-semibold text-white">{Math.round(percentage)}%</span>
+        </div>
+      )}
       <div className="w-full bg-white/10 rounded-full h-2">
         <div 
           className={`bg-gradient-to-r ${colorClasses[color as keyof typeof colorClasses]} h-2 rounded-full transition-all duration-500`}
-          style={{ width: `${value * 100}%` }}
+          style={{ width: `${percentage}%` }}
         />
       </div>
     </div>
