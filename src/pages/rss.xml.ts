@@ -1,6 +1,20 @@
 import type { APIRoute } from 'astro';
 import { getCollection } from 'astro:content';
 
+// XML 转义函数，用于转义 XML 特殊字符
+function escapeXml(unsafe: string): string {
+    return unsafe.replace(/[<>&'"]/g, (c) => {
+        switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case '\'': return '&apos;';
+            case '"': return '&quot;';
+            default: return c;
+        }
+    });
+}
+
 export const GET: APIRoute = async ({ site }) => {
     // 获取所有已发布的博客文章
     const blogPosts = await getCollection('blog', ({ data }) => {
@@ -28,26 +42,26 @@ export const GET: APIRoute = async ({ site }) => {
         return `
     <item>
       <title><![CDATA[${post.data.title}]]></title>
-      <link>${postUrl}</link>
-      <guid isPermaLink="true">${postUrl}</guid>
+      <link>${escapeXml(postUrl)}</link>
+      <guid isPermaLink="true">${escapeXml(postUrl)}</guid>
       <description><![CDATA[${post.data.snippet}]]></description>
       <pubDate>${pubDate}</pubDate>
-      <author>${post.data.author}</author>
-      ${imageUrl ? `<enclosure url="${imageUrl}" type="image/jpeg" />` : ''}
-      <category>${post.data.category}</category>
-      ${post.data.tags.map((tag: string) => `<category>${tag}</category>`).join('\n      ')}
+      <author><![CDATA[${post.data.author}]]></author>
+      ${imageUrl ? `<enclosure url="${escapeXml(imageUrl)}" type="image/jpeg" />` : ''}
+      <category><![CDATA[${post.data.category}]]></category>
+      ${post.data.tags.map((tag: string) => `<category><![CDATA[${tag}]]></category>`).join('\n      ')}
     </item>`;
     }).join('\n');
 
     const rss = `<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:wfw="http://wellformedweb.org/CommentAPI/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:sy="http://purl.org/rss/1.0/modules/syndication/" xmlns:slash="http://purl.org/rss/1.0/modules/slash/">
   <channel>
-    <title>Describe Music Blog - AI Audio Analysis Insights & Tutorials</title>
-    <link>${blogUrl}</link>
-    <description>Expert insights on AI audio analysis, developer guides, and industry trends to help you master audio technology.</description>
+    <title><![CDATA[Describe Music Blog - AI Audio Analysis Insights & Tutorials]]></title>
+    <link>${escapeXml(blogUrl)}</link>
+    <description><![CDATA[Expert insights on AI audio analysis, developer guides, and industry trends to help you master audio technology.]]></description>
     <language>en-US</language>
     <lastBuildDate>${new Date().toUTCString()}</lastBuildDate>
-    <atom:link href="${siteUrl}/rss.xml" rel="self" type="application/rss+xml"/>
+    <atom:link href="${escapeXml(`${siteUrl}/rss.xml`)}" rel="self" type="application/rss+xml"/>
     <generator>Astro</generator>
     ${rssItems}
   </channel>
