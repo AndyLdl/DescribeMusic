@@ -577,6 +577,7 @@ async function handleSubscriptionCreated(payload: WebhookPayload, requestId: str
 
     const credits = getCreditsForVariant(subscriptionData.variant_id);
     const planName = getPlanNameForVariant(subscriptionData.variant_id);
+    const priceUsd = getPriceForVariant(subscriptionData.variant_id);
 
     try {
         // Create or update subscription record
@@ -598,14 +599,14 @@ async function handleSubscriptionCreated(payload: WebhookPayload, requestId: str
             throw new Error(`Failed to create subscription: ${subscriptionError.message}`);
         }
 
-        // Record payment for subscription
+        // Record payment for subscription with actual price
         const { data: paymentRecord, error: paymentError } = await supabase
             .from('payment_records')
             .insert({
                 user_id: userId,
                 lemonsqueezy_order_id: subscriptionData.order_id.toString(),
                 lemonsqueezy_subscription_id: payload.data.id,
-                amount_usd: 0, // Will be updated when we get order details
+                amount_usd: priceUsd, // Use actual subscription price based on variant
                 credits_purchased: credits,
                 status: 'completed',
                 payment_method: `Subscription: ${planName}`,
@@ -1018,4 +1019,20 @@ function getPlanNameForVariant(variantId: number): string {
     };
 
     return variantPlanMap[variantId.toString()] || 'Unknown Plan';
+}
+
+/**
+ * Get price (in USD) for a variant ID
+ */
+function getPriceForVariant(variantId: number): number {
+    const variantPriceMap: Record<string, number> = {
+        // Basic plan - $9.9
+        [config.lemonsqueezy.basicVariantId || '']: 9.9,
+        // Pro plan - $19.9
+        [config.lemonsqueezy.proVariantId || '']: 19.9,
+        // Premium plan - $39.9
+        [config.lemonsqueezy.premiumVariantId || '']: 39.9
+    };
+
+    return variantPriceMap[variantId.toString()] || 0;
 }

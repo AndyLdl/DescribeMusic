@@ -191,10 +191,10 @@ Return your analysis in the following JSON structure:
       "accent": "string"
     },
     "audioQuality": {
-      "backgroundNoise": number,
-      "echo": number,
-      "compression": number,
-      "overall": number
+      "backgroundNoise": number,  // 0-10 scale (lower is better)
+      "echo": number,             // 0-10 scale (lower is better)
+      "compression": number,      // 0-10 scale (lower is better)
+      "overall": number           // 0-10 scale (overall audio quality for speech)
     }
   },
   "soundEffects": {
@@ -241,13 +241,13 @@ Return your analysis in the following JSON structure:
     ]
   },
   "quality": {
-    "overall": number,
-    "clarity": number,
-    "loudness": number,
-    "dynamic_range": number,
-    "noise_level": number,
-    "distortion": number,
-    "frequency_balance": number
+    "overall": number,          // 0-10 scale (overall production quality)
+    "clarity": number,          // 0-10 scale (audio clarity)
+    "loudness": number,         // RMS loudness in dB
+    "dynamic_range": number,    // 0-10 scale (difference between loud and quiet parts)
+    "noise_level": number,      // 0-10 scale (lower is better)
+    "distortion": number,       // 0-10 scale (lower is better)
+    "frequency_balance": number // 0-10 scale (balance across frequency spectrum)
   },
   "similarity": {
     "similar_tracks": [

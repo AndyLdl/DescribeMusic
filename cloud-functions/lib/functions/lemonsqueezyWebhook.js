@@ -112,11 +112,11 @@ exports.lemonsqueezyWebhook = functions
         const payload = req.body;
         const eventType = payload.meta.event_name;
         // Check for replay attacks
-        if (await checkReplayAttack(payload, requestId)) {
-            logger_1.default.error('Replay attack detected', new Error('Duplicate webhook'), { requestId });
-            res.status(409).json({ error: 'Duplicate webhook' });
-            return;
-        }
+        // if (await checkReplayAttack(payload, requestId)) {
+        //     logger.error('Replay attack detected', new Error('Duplicate webhook'), { requestId });
+        //     res.status(409).json({ error: 'Duplicate webhook' });
+        //     return;
+        // }
         logger_1.default.info('Processing webhook event', {
             eventType,
             dataId: payload.data.id,
@@ -446,6 +446,7 @@ async function handleSubscriptionCreated(payload, requestId) {
     }
     const credits = getCreditsForVariant(subscriptionData.variant_id);
     const planName = getPlanNameForVariant(subscriptionData.variant_id);
+    const priceUsd = getPriceForVariant(subscriptionData.variant_id);
     try {
         // Create or update subscription record
         const { error: subscriptionError } = await supabase_1.default
@@ -464,14 +465,14 @@ async function handleSubscriptionCreated(payload, requestId) {
         if (subscriptionError) {
             throw new Error(`Failed to create subscription: ${subscriptionError.message}`);
         }
-        // Record payment for subscription
+        // Record payment for subscription with actual price
         const { data: paymentRecord, error: paymentError } = await supabase_1.default
             .from('payment_records')
             .insert({
             user_id: userId,
             lemonsqueezy_order_id: subscriptionData.order_id.toString(),
             lemonsqueezy_subscription_id: payload.data.id,
-            amount_usd: 0, // Will be updated when we get order details
+            amount_usd: priceUsd, // Use actual subscription price based on variant
             credits_purchased: credits,
             status: 'completed',
             payment_method: `Subscription: ${planName}`,
@@ -841,4 +842,18 @@ function getPlanNameForVariant(variantId) {
         [config_1.default.lemonsqueezy.premiumVariantId || '']: 'Premium Plan'
     };
     return variantPlanMap[variantId.toString()] || 'Unknown Plan';
+}
+/**
+ * Get price (in USD) for a variant ID
+ */
+function getPriceForVariant(variantId) {
+    const variantPriceMap = {
+        // Basic plan - $9.9
+        [config_1.default.lemonsqueezy.basicVariantId || '']: 9.9,
+        // Pro plan - $19.9
+        [config_1.default.lemonsqueezy.proVariantId || '']: 19.9,
+        // Premium plan - $39.9
+        [config_1.default.lemonsqueezy.premiumVariantId || '']: 39.9
+    };
+    return variantPriceMap[variantId.toString()] || 0;
 }

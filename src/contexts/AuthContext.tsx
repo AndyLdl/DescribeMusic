@@ -245,9 +245,60 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const signOut = useCallback(async (): Promise<void> => {
         try {
             setLoading(true);
+            console.log('🔐 Starting signOut process...');
 
-            // 先清除本地状态，避免会话错误
-            console.log('🔐 Clearing local state before signOut');
+            // Step 1: 获取当前会话并尝试刷新（如果即将过期）
+            try {
+                const { data: { session: currentSession } } = await supabase.auth.getSession();
+                
+                if (currentSession) {
+                    const now = Math.floor(Date.now() / 1000);
+                    const expiresAt = currentSession.expires_at || 0;
+                    
+                    // 如果 token 已过期或即将过期（60秒内），先刷新
+                    if (expiresAt <= now + 60) {
+                        console.log('🔐 Token expired or expiring soon, refreshing before logout...');
+                        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+                        
+                        if (refreshError) {
+                            console.warn('🔐 Failed to refresh token before logout:', refreshError.message);
+                            // 刷新失败，直接清除本地数据
+                            throw new Error('Token refresh failed, will clear locally');
+                        } else {
+                            console.log('🔐 Token refreshed successfully, proceeding with logout');
+                        }
+                    }
+                }
+            } catch (refreshError: any) {
+                console.warn('🔐 Cannot refresh token, will force local logout:', refreshError.message);
+            }
+
+            // Step 2: 尝试使用 global scope 登出（这会清除服务端所有设备的会话）
+            let logoutSuccess = false;
+            try {
+                console.log('🔐 Attempting global logout...');
+                const { error } = await supabase.auth.signOut({ scope: 'global' });
+                
+                if (error) {
+                    console.warn('🔐 Global logout failed:', error.message);
+                    // 如果 global 失败，尝试 local
+                    const { error: localError } = await supabase.auth.signOut({ scope: 'local' });
+                    if (localError) {
+                        console.warn('🔐 Local logout also failed:', localError.message);
+                    } else {
+                        logoutSuccess = true;
+                        console.log('🔐 Local logout succeeded');
+                    }
+                } else {
+                    logoutSuccess = true;
+                    console.log('🔐 Global logout succeeded');
+                }
+            } catch (signOutError: any) {
+                console.warn('🔐 SignOut exception:', signOutError.message);
+            }
+
+            // Step 3: 强制清除本地状态和存储
+            console.log('🔐 Clearing local state and storage...');
             setSession(null);
             setUser(null);
             setUsageStatus({
@@ -259,20 +310,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 message: 'Trial mode'
             });
 
-            // 尝试服务端登出，但不依赖其成功
+            // 清除所有 Supabase 相关的 localStorage 数据
             try {
-                const { error } = await supabase.auth.signOut();
-                if (error && error.message !== 'Auth session missing!') {
-                    console.warn('🔐 SignOut warning:', error.message);
+                const keysToRemove: string[] = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.startsWith('supabase.') || key.includes('supabase'))) {
+                        keysToRemove.push(key);
+                    }
                 }
-            } catch (signOutError: any) {
-                // 忽略会话缺失错误，这在生产环境中很常见
-                if (signOutError.message !== 'Auth session missing!') {
-                    console.warn('🔐 SignOut error (non-critical):', signOutError.message);
-                }
+                console.log('🔐 Removing', keysToRemove.length, 'localStorage keys');
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+            } catch (storageError) {
+                console.warn('🔐 Error clearing localStorage:', storageError);
             }
 
-            console.log('🔐 Logout completed, state cleared');
+            console.log('🔐 Logout completed successfully');
         } catch (error) {
             console.error('🔐 Critical error in signOut:', error);
             // 即使出错也要清除本地状态
