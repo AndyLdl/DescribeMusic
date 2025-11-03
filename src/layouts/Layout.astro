@@ -67,9 +67,14 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
     <link rel="manifest" href="/manifest.json" />
     <meta name="generator" content={Astro.generator} />
     <meta name="keywords" content={siteKeywords} />
-    {Astro.url.pathname.startsWith("/blog") && (
-      <meta name="blogarama-site-verification" content="blogarama-c5f0​​0a2e-9085-47fd-9c21-a9ede4c93398" />
-    )}
+    {
+      Astro.url.pathname.startsWith("/blog") && (
+        <meta
+          name="blogarama-site-verification"
+          content="blogarama-c5f00a2e-9085-47fd-9c21-a9ede4c93398"
+        />
+      )
+    }
 
     <SEO
       title={makeTitle}
