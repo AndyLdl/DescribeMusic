@@ -5,6 +5,8 @@ import { AuthProvider, useAuth } from '../contexts/AuthContext';
 import LoginModal from './auth/LoginModal';
 import { cloudFunctions, type CloudAnalysisResult, type ProgressUpdate } from '../utils/cloudFunctions';
 import { HistoryStorage, type HistoryRecord } from '../utils/historyStorage';
+import { saveAnalysisResult } from '../services/analysisResultService';
+import { supabase } from '../lib/supabase';
 
 // Demo audio samples from HookSection
 interface AudioSample {
@@ -399,6 +401,16 @@ export default function HeroSimple() {
       
       await HistoryStorage.addRecordWithUser(historyRecord);
       console.log('✅ Hero区分析结果已保存到历史记录');
+      
+      // Save to database for sharing functionality
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        await saveAnalysisResult(result, user?.id);
+        console.log('✅ Hero区分析结果已保存到数据库');
+      } catch (error) {
+        console.error('Failed to save analysis result to database:', error);
+        // Don't block the flow if database save fails
+      }
       
       // Update credit balance (credits already consumed by backend)
       if (user) {
@@ -1318,8 +1330,8 @@ export default function HeroSimple() {
                             onClick={() => {
                               // Store result in sessionStorage for analysis result page
                               sessionStorage.setItem(`analysis-result-${analysisResult.id}`, JSON.stringify(analysisResult));
-                              // Navigate to the dynamic analysis result page
-                              window.location.href = `/analysis/${analysisResult.id}`;
+                              // Navigate to the dynamic analysis result page (ensure trailing slash)
+                              window.location.href = `/analysis/${analysisResult.id}/`;
                             }}
                             className="w-full bg-violet-500 hover:bg-violet-600 text-white py-3 px-4 rounded-lg text-sm font-semibold transition-all duration-300 hover:scale-105 transform shadow-lg"
                           >

@@ -238,7 +238,7 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              window.open(`/analysis/${record.id}`, '_blank');
+                              window.open(`/analysis/${record.id}/`, '_blank');
                             }}
                             className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-violet-400 transition-all duration-300 flex-shrink-0"
                             title="Open in new tab"

@@ -15,7 +15,9 @@ export interface Props {
 
 const { title, description } = Astro.props;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site).toString();
+// Ensure canonical URL ends with trailing slash
+const pathname = Astro.url.pathname.endsWith('/') ? Astro.url.pathname : `${Astro.url.pathname}/`;
+const canonicalURL = new URL(pathname, Astro.site).toString();
 const resolvedImageWithDomain = new URL(
   "/images/logo/social/opengraph-1200x630.jpg",
   Astro.site,
@@ -118,6 +120,7 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
     <main class="page-content" style="padding-top: 0 !important;">
       <slot />
     </main>
+    <!-- Footer: Owner view shows full footer, SharedAnalysisView renders its own minimal footer -->
     <Footer />
 
     <!-- Load analyze export functions -->

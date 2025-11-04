@@ -11,11 +11,60 @@ if (!id) {
   throw new Error("Analysis ID is required");
 }
 
+// Redirect to trailing slash URL if not already present (for SEO consistency)
+if (!Astro.url.pathname.endsWith('/')) {
+  return Astro.redirect(`${Astro.url.pathname}/`, 301);
+}
+
 // Generate dynamic SEO meta information
-const title = `Audio Analysis Result ${id} - AI Music Analysis Tool`;
-const description = `View detailed AI analysis results for audio file ${id}. Get insights on music, voice, emotions, and more with our AI-powered audio analysis tool.`;
+// The actual title and description will be updated dynamically in the client component
+const title = `Shared Audio Analysis - Describe Music`;
+const description = `View detailed AI analysis results for audio. Get insights on music, voice, emotions, and more with our AI-powered audio analysis tool.`;
 ---
 
 <AnalyzeLayout title={title} description={description}>
   <AnalysisResultViewerWithAuth analysisId={id} client:only="react" />
+  
+  {/* Client-side SEO update script */}
+  <script define:vars={{ analysisId: id }}>
+    // Update meta tags dynamically when analysis result loads
+    document.addEventListener('DOMContentLoaded', () => {
+      // Wait for analysis result to load and update meta tags
+      const observer = new MutationObserver(() => {
+        const analysisResult = window.currentAnalysisResult || window.backupAnalysisResult;
+        if (analysisResult) {
+          // Update title
+          const titleTag = document.querySelector('title');
+          if (titleTag && analysisResult.filename) {
+            const cleanFilename = analysisResult.filename.replace(/\.[^/.]+$/, '');
+            titleTag.textContent = `${cleanFilename} - Audio Analysis | Describe Music`;
+          }
+          
+          // Update meta description
+          const metaDescription = document.querySelector('meta[name="description"]');
+          if (metaDescription && analysisResult.aiDescription) {
+            const shortDesc = analysisResult.aiDescription.substring(0, 160);
+            metaDescription.setAttribute('content', shortDesc);
+          }
+          
+          // Update Open Graph tags
+          const ogTitle = document.querySelector('meta[property="og:title"]');
+          if (ogTitle && analysisResult.filename) {
+            const cleanFilename = analysisResult.filename.replace(/\.[^/.]+$/, '');
+            ogTitle.setAttribute('content', `${cleanFilename} - Audio Analysis | Describe Music`);
+          }
+          
+          const ogDescription = document.querySelector('meta[property="og:description"]');
+          if (ogDescription && analysisResult.aiDescription) {
+            const shortDesc = analysisResult.aiDescription.substring(0, 160);
+            ogDescription.setAttribute('content', shortDesc);
+          }
+          
+          observer.disconnect();
+        }
+      });
+      
+      observer.observe(document.body, { childList: true, subtree: true });
+    });
+  </script>
 </AnalyzeLayout>

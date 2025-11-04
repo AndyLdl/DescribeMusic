@@ -5,7 +5,10 @@ import DashboardSection from './analyze/DashboardSection';
 import HistorySidebar from './analyze/HistorySidebar';
 
 import AnalyzeHeader from './AnalyzeHeader';
+import { CreditToastContainer } from './credit/CreditToast';
 import { HistoryStorage, type HistoryRecord } from '../utils/historyStorage';
+import { saveAnalysisResult } from '../services/analysisResultService';
+import { supabase } from '../lib/supabase';
 import { cloudFunctions, validateAudioFile, type CloudAnalysisResult, type ProgressUpdate } from '../utils/cloudFunctions';
 import { useAuth, useUsageStatus } from '../contexts/AuthContext';
 import { CreditProvider, useCredit, useTrialCredit } from '../contexts/CreditContext';
@@ -427,6 +430,15 @@ function AnalyzeAppContent() {
 
       await HistoryStorage.addRecordWithUser(historyRecord);
 
+      // Save to database for sharing functionality
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        await saveAnalysisResult(result, user?.id);
+      } catch (error) {
+        console.error('Failed to save analysis result to database:', error);
+        // Don't block the flow if database save fails
+      }
+
       // Store result in sessionStorage for the new analysis page
       // Note: audioUrl from cloud function is already included in result
       sessionStorage.setItem('heroAnalysisResult', JSON.stringify(result));
@@ -440,8 +452,8 @@ function AnalyzeAppContent() {
       });
       window.dispatchEvent(event);
 
-      // Navigate to the new analysis result page instead of showing results in current page
-      window.location.href = `/analysis/${result.id}`;
+      // Navigate to the new analysis result page instead of showing results in current page (ensure trailing slash)
+      window.location.href = `/analysis/${result.id}/`;
       
       // 🔄 触发积分刷新（分析成功后）
       setRefreshTrigger(prev => prev + 1);
@@ -483,8 +495,8 @@ function AnalyzeAppContent() {
 
 
   const handleSelectHistoryRecord = useCallback((record: HistoryRecord) => {
-    // Navigate to the dynamic analysis page
-    window.location.href = `/analysis/${record.id}`;
+    // Navigate to the dynamic analysis page (ensure trailing slash)
+    window.location.href = `/analysis/${record.id}/`;
   }, []);
 
   const handleNewAnalysis = useCallback(() => {
@@ -531,6 +543,7 @@ function AnalyzeAppContent() {
 
   return (
     <div className="min-h-screen bg-dark-bg">
+      <CreditToastContainer />
       {/* React Header Component */}
       <AnalyzeHeader />
 

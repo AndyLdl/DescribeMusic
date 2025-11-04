@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { HistoryStorage, type HistoryRecord } from '../../utils/historyStorage';
+import { getAnalysisResult } from '../../services/analysisResultService';
+import { useAuth } from '../../contexts/AuthContext';
 import DashboardSection from '../analyze/DashboardSection';
 import AnalyzeHeader from '../AnalyzeHeader';
 import HistorySidebar from '../analyze/HistorySidebar';
+import SharedAnalysisView from './SharedAnalysisView';
+import { CreditToastContainer } from '../credit/CreditToast';
 
 interface AnalysisResultViewerProps {
   analysisId: string;
@@ -96,10 +100,13 @@ interface AnalysisResult {
 }
 
 export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewerProps) {
+  const { user } = useAuth();
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [showMobileSidebar, setShowMobileSidebar] = useState(false);
+  const [creatorInfo, setCreatorInfo] = useState<{ id: string | null; email: string | null; createdAt: string } | null>(null);
+  const [isOwner, setIsOwner] = useState<boolean>(false);
 
   // Load analysis result from history
   const loadAnalysisResult = useCallback(async () => {
@@ -125,6 +132,10 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
         if (parsedResult.id === analysisId) {
           // audioUrl is already included from cloud function response
           setAnalysisResult(parsedResult);
+          
+          // If loaded from sessionStorage, user is the owner
+          setIsOwner(true);
+          setCreatorInfo(null); // No creator info needed for local data
           
           // Make result available for export functionality
           (window as any).currentAnalysisResult = parsedResult;
@@ -239,6 +250,10 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
 
         setAnalysisResult(result);
         
+        // If loaded from history, user is the owner
+        setIsOwner(true);
+        setCreatorInfo(null); // No creator info needed for local data
+        
         // Make result available for export functionality
         (window as any).currentAnalysisResult = result;
         (window as any).backupAnalysisResult = result;
@@ -255,7 +270,76 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
         return;
       }
 
-      // If not found in history, show error
+      // If not found locally, try to fetch from database (for shared links)
+      console.log('📍 Analysis result not found locally, trying to fetch from database...');
+      const dbResult = await getAnalysisResult(analysisId);
+      
+      if (dbResult.success && dbResult.data) {
+        console.log('✅ Analysis result fetched from database:', {
+          id: dbResult.data.id,
+          hasAudioUrl: !!dbResult.data.audioUrl,
+          audioUrl: dbResult.data.audioUrl?.substring(0, 100) + '...',
+          creatorId: dbResult.creatorInfo?.id
+        });
+
+        // Save creator info and check ownership
+        if (dbResult.creatorInfo) {
+          setCreatorInfo(dbResult.creatorInfo);
+          // Check if current user is the owner
+          const ownerCheck = user && dbResult.creatorInfo.id && user.id === dbResult.creatorInfo.id;
+          setIsOwner(!!ownerCheck);
+        } else {
+          // No creator info means anonymous, so current user is not owner
+          setCreatorInfo({ id: null, email: null, createdAt: dbResult.creatorInfo?.createdAt || new Date().toISOString() });
+          setIsOwner(false);
+        }
+
+        // Convert database result to AnalysisResult format
+        const result: AnalysisResult = {
+          id: dbResult.data.id,
+          filename: dbResult.data.filename,
+          timestamp: dbResult.data.timestamp,
+          duration: dbResult.data.duration,
+          fileSize: dbResult.data.fileSize,
+          format: dbResult.data.format,
+          audioUrl: dbResult.data.audioUrl, // Include audioUrl from database
+          contentType: dbResult.data.contentType,
+          basicInfo: dbResult.data.basicInfo,
+          voiceAnalysis: dbResult.data.voiceAnalysis,
+          soundEffects: dbResult.data.soundEffects,
+          emotions: dbResult.data.emotions,
+          structure: dbResult.data.structure,
+          quality: dbResult.data.quality,
+          similarity: dbResult.data.similarity,
+          tags: dbResult.data.tags,
+          aiDescription: dbResult.data.aiDescription,
+          processingTime: dbResult.data.processingTime
+        };
+
+        setAnalysisResult(result);
+        
+        // Check ownership again after state updates
+        const isCurrentlyOwner = user && dbResult.creatorInfo?.id && user.id === dbResult.creatorInfo.id;
+        
+        // Only make result available for export if owner
+        if (isCurrentlyOwner) {
+          (window as any).currentAnalysisResult = result;
+          (window as any).backupAnalysisResult = result;
+          
+          // Dispatch event to show export buttons
+          console.log('🎯 AnalysisResultViewer: Dispatching analysisResultReady event (from database)');
+          const event = new CustomEvent('analysisResultReady', {
+            detail: result
+          });
+          window.dispatchEvent(event);
+          console.log('🎯 AnalysisResultViewer: Event dispatched');
+        }
+        
+        setLoading(false);
+        return;
+      }
+
+      // If not found in history or database, show error
       setError('Analysis result not found. It may have been deleted or the link is invalid.');
       setLoading(false);
     } catch (error) {
@@ -339,13 +423,21 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
 
   // Handle history record selection
   const handleSelectHistoryRecord = useCallback((record: HistoryRecord) => {
-    // Navigate to the analysis page for this record
-    window.location.href = `/analysis/${record.id}`;
+    // Navigate to the analysis page for this record (ensure trailing slash)
+    window.location.href = `/analysis/${record.id}/`;
   }, []);
 
   const handleNewAnalysis = useCallback(() => {
     window.location.href = '/analyze';
   }, []);
+
+  // Update ownership when user changes
+  useEffect(() => {
+    if (creatorInfo && creatorInfo.id) {
+      const ownerCheck = user && user.id === creatorInfo.id;
+      setIsOwner(!!ownerCheck);
+    }
+  }, [user, creatorInfo]);
 
   // Load analysis result on mount
   useEffect(() => {
@@ -418,8 +510,23 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
     return null;
   }
 
+  // If fetched from database and not owner, show shared view
+  if (creatorInfo && !isOwner) {
+    return (
+      <SharedAnalysisView 
+        analysisResult={analysisResult}
+        creatorId={creatorInfo.id}
+        createdAt={creatorInfo.createdAt}
+      />
+    );
+  }
+
+  // Owner view - show full interface
   return (
     <div className="min-h-screen bg-dark-bg">
+      {/* Toast Container */}
+      <CreditToastContainer />
+      
       {/* React Header Component */}
       <AnalyzeHeader />
 

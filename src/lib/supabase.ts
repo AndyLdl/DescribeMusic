@@ -132,6 +132,29 @@ export interface Database {
                     result_summary?: Record<string, any>;
                 };
             };
+            analysis_results: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    result_data: Record<string, any>;
+                    created_at: string;
+                    expires_at: string | null;
+                    is_public: boolean;
+                };
+                Insert: {
+                    id: string;
+                    user_id?: string | null;
+                    result_data: Record<string, any>;
+                    expires_at?: string | null;
+                    is_public?: boolean;
+                };
+                Update: {
+                    user_id?: string | null;
+                    result_data?: Record<string, any>;
+                    expires_at?: string | null;
+                    is_public?: boolean;
+                };
+            };
         };
         Views: {
             user_usage_stats: {

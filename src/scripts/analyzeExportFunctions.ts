@@ -270,8 +270,12 @@ function copyAnalysisData() {
 // Share functions
 function copyShareLink() {
     const data = getCurrentAnalysisData();
-    const cleanFilename = getCleanFilename(data.filename);
-    const shareUrl = `${window.location.origin}/results/${cleanFilename}-${Date.now()}`;
+    if (!data || !data.id) {
+        showNotification("No analysis result available to share");
+        return;
+    }
+    // Use the correct route with analysis ID (ensure trailing slash)
+    const shareUrl = `${window.location.origin}/analysis/${data.id}/`;
     navigator.clipboard.writeText(shareUrl).then(() => {
         showNotification("Share link copied to clipboard!");
     });
@@ -298,7 +302,9 @@ function shareToLinkedIn() {
     const data = getCurrentAnalysisData();
     const cleanFilename = getCleanFilename(data.filename);
     const summary = `Just completed an AI-powered audio analysis of "${cleanFilename}" using Describe Music. Key insights: ${data.basicInfo.genre} genre, ${data.basicInfo.bpm} BPM, ${data.basicInfo.mood} mood.`;
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(summary)}`;
+    // Ensure URL ends with trailing slash
+    const shareUrl = window.location.href.endsWith('/') ? window.location.href : `${window.location.href}/`;
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&summary=${encodeURIComponent(summary)}`;
     window.open(url, "_blank");
 }
 

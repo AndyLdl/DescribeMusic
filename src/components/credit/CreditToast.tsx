@@ -257,6 +257,13 @@ export function CreditToastContainer() {
     );
 }
 
+// Expose addToast to window for use in non-React contexts (e.g., Astro scripts)
+if (typeof window !== 'undefined') {
+    (window as any).addCreditToast = addToast;
+    (window as any).removeCreditToast = removeToast;
+    (window as any).clearCreditToasts = clearToasts;
+}
+
 // Hook for using toasts
 export function useCreditToast() {
     return {

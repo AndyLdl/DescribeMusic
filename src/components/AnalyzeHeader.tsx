@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCredit } from '../contexts/CreditContext';
+import { useCreditToast } from './credit/CreditToast';
 import UserAccountDropdown from './UserAccountDropdown';
 
 
 export default function AnalyzeHeader() {
     const { user, signOut, usageStatus } = useAuth();
+    const toast = useCreditToast();
 
     // Safely use credit context with error handling
     let credits = 0;
@@ -158,19 +160,25 @@ Quality: ${data.quality?.overall || 0}/10`;
 
         try {
             await navigator.clipboard.writeText(summary);
-            alert('Analysis data copied to clipboard!');
+            toast.success('Copied!', 'Analysis data copied to clipboard');
         } catch (error) {
             console.error('Failed to copy to clipboard:', error);
+            toast.error('Error', 'Failed to copy to clipboard');
         }
         setShowExportMenu(false);
     };
 
     const copyShareLink = async () => {
         try {
-            await navigator.clipboard.writeText(window.location.href);
-            alert('Share link copied to clipboard!');
+            // Ensure URL ends with trailing slash
+            const shareUrl = window.location.href.endsWith('/') 
+                ? window.location.href 
+                : `${window.location.href}/`;
+            await navigator.clipboard.writeText(shareUrl);
+            toast.success('Link Copied!', 'Share link copied to clipboard');
         } catch (error) {
             console.error('Failed to copy to clipboard:', error);
+            toast.error('Error', 'Failed to copy to clipboard');
         }
         setShowShareMenu(false);
     };

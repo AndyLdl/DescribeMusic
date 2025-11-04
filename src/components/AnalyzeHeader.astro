@@ -516,10 +516,17 @@ import { Icon } from "astro-icon/components";
   // Share functions
   function copyShareLink() {
     const data = getCurrentAnalysisData();
-    const cleanFilename = getCleanFilename(data.filename);
-    const shareUrl = `${window.location.origin}/results/${cleanFilename}-${Date.now()}`;
+    if (!data || !data.id) {
+      showNotification("No analysis result available to share");
+      closeAllDropdowns();
+      return;
+    }
+    // Use the correct route with analysis ID (ensure trailing slash)
+    const shareUrl = `${window.location.origin}/analysis/${data.id}/`;
     navigator.clipboard.writeText(shareUrl).then(() => {
-      showNotification("Share link copied to clipboard!");
+      showNotification("Share link copied to clipboard", 'success');
+    }).catch(() => {
+      showNotification("Failed to copy to clipboard", 'error');
     });
     closeAllDropdowns();
   }
@@ -547,7 +554,9 @@ import { Icon } from "astro-icon/components";
     const data = getCurrentAnalysisData();
     const cleanFilename = getCleanFilename(data.filename);
     const summary = `Just completed an AI-powered audio analysis of "${cleanFilename}" using Describe Music. Key insights: ${data.basicInfo.genre} genre, ${data.basicInfo.bpm} BPM, ${data.basicInfo.mood} mood.`;
-    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}&summary=${encodeURIComponent(summary)}`;
+    // Ensure URL ends with trailing slash
+    const shareUrl = window.location.href.endsWith('/') ? window.location.href : `${window.location.href}/`;
+    const url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}&summary=${encodeURIComponent(summary)}`;
     window.open(url, "_blank");
     closeAllDropdowns();
   }
@@ -1302,18 +1311,28 @@ ${displayTags.map((tag) => `#${tag}`).join(", ")}`;
     return emailBody;
   }
 
-  function showNotification(message) {
-    // Simple notification - could be enhanced with a proper toast system
-    const notification = document.createElement("div");
-    notification.className =
-      "fixed top-20 right-4 bg-green-500/90 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300";
-    notification.textContent = message;
-    document.body.appendChild(notification);
+  function showNotification(message, type = 'success') {
+    // Use toast system if available, otherwise fallback to simple notification
+    if (window.addCreditToast) {
+      window.addCreditToast({
+        type: type === 'error' ? 'error' : 'success',
+        title: type === 'error' ? 'Error' : type === 'success' ? 'Success' : 'Info',
+        message: message,
+        duration: type === 'error' ? 8000 : 5000
+      });
+    } else {
+      // Fallback to simple notification
+      const notification = document.createElement("div");
+      notification.className =
+        "fixed top-20 right-4 bg-green-500/90 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300";
+      notification.textContent = message;
+      document.body.appendChild(notification);
 
-    setTimeout(() => {
-      notification.style.opacity = "0";
-      setTimeout(() => document.body.removeChild(notification), 300);
-    }, 3000);
+      setTimeout(() => {
+        notification.style.opacity = "0";
+        setTimeout(() => document.body.removeChild(notification), 300);
+      }, 3000);
+    }
   }
 
   // Make all export and share functions globally accessible
