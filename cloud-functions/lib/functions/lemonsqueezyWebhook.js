@@ -54,6 +54,7 @@ var WebhookEventType;
     WebhookEventType["ORDER_CREATED"] = "order_created";
     WebhookEventType["SUBSCRIPTION_CREATED"] = "subscription_created";
     WebhookEventType["SUBSCRIPTION_UPDATED"] = "subscription_updated";
+    WebhookEventType["SUBSCRIPTION_PAYMENT_SUCCESS"] = "subscription_payment_success";
     WebhookEventType["SUBSCRIPTION_CANCELLED"] = "subscription_cancelled";
     WebhookEventType["SUBSCRIPTION_RESUMED"] = "subscription_resumed";
     WebhookEventType["SUBSCRIPTION_EXPIRED"] = "subscription_expired";
@@ -111,12 +112,12 @@ exports.lemonsqueezyWebhook = functions
         // Parse webhook payload
         const payload = req.body;
         const eventType = payload.meta.event_name;
-        // Check for replay attacks
-        // if (await checkReplayAttack(payload, requestId)) {
-        //     logger.error('Replay attack detected', new Error('Duplicate webhook'), { requestId });
-        //     res.status(409).json({ error: 'Duplicate webhook' });
-        //     return;
-        // }
+        // Check if this webhook was already processed
+        if (await isWebhookAlreadyProcessed(payload, requestId)) {
+            logger_1.default.error('Replay attack detected', new Error('Duplicate webhook'), { requestId });
+            res.status(409).json({ error: 'Duplicate webhook' });
+            return;
+        }
         logger_1.default.info('Processing webhook event', {
             eventType,
             dataId: payload.data.id,
@@ -124,6 +125,8 @@ exports.lemonsqueezyWebhook = functions
         });
         // Route to appropriate handler
         await handleWebhookEvent(payload, requestId);
+        // Only record as processed after successful handling
+        await recordWebhookAsProcessed(payload, requestId);
         res.status(200).json({
             success: true,
             message: 'Webhook processed successfully',
@@ -189,13 +192,13 @@ function verifyWebhookSignature(payload, signature) {
     }
 }
 /**
- * Check for replay attacks by tracking processed webhook IDs in database
+ * Check if webhook was already processed (read-only check)
  */
-async function checkReplayAttack(payload, requestId) {
+async function isWebhookAlreadyProcessed(payload, requestId) {
     try {
         // Create a unique identifier for this webhook
         const webhookId = `${payload.data.id}_${payload.meta.event_name}_${payload.data.attributes.created_at || payload.data.attributes.updated_at}`;
-        logger_1.default.info('Checking for replay attack', {
+        logger_1.default.info('Checking if webhook already processed', {
             webhookId,
             eventName: payload.meta.event_name,
             dataId: payload.data.id,
@@ -213,14 +216,33 @@ async function checkReplayAttack(payload, requestId) {
             return false;
         }
         if (existingWebhook) {
-            logger_1.default.error('Replay attack detected', new Error('Duplicate webhook'), {
+            logger_1.default.warn('Webhook already processed', {
                 webhookId,
                 existingProcessedAt: existingWebhook.processed_at,
                 requestId
             });
-            return true; // This is a replay attack
+            return true; // This webhook was already processed
         }
-        // Record this webhook as being processed
+        return false; // Not processed yet
+    }
+    catch (error) {
+        logger_1.default.error('Error checking if webhook was processed', error, { requestId });
+        // In case of error, allow the webhook to proceed but log the issue
+        return false;
+    }
+}
+/**
+ * Record webhook as successfully processed (call this AFTER successful handling)
+ */
+async function recordWebhookAsProcessed(payload, requestId) {
+    try {
+        // Create a unique identifier for this webhook
+        const webhookId = `${payload.data.id}_${payload.meta.event_name}_${payload.data.attributes.created_at || payload.data.attributes.updated_at}`;
+        logger_1.default.info('Recording webhook as processed', {
+            webhookId,
+            requestId
+        });
+        // Record this webhook as successfully processed
         const { error: insertError } = await supabase_1.default
             .from('webhook_processing_log')
             .insert({
@@ -232,32 +254,25 @@ async function checkReplayAttack(payload, requestId) {
             request_id: requestId
         });
         if (insertError) {
-            logger_1.default.error('Failed to record webhook processing', insertError, { requestId });
-            // If we can't record it, there might be a race condition
-            // Check again if another instance already processed it
-            const { data: raceCheck } = await supabase_1.default
-                .from('webhook_processing_log')
-                .select('id')
-                .eq('webhook_id', webhookId)
-                .single();
-            if (raceCheck) {
-                logger_1.default.warn('Race condition detected - webhook already processed by another instance', {
-                    webhookId,
-                    requestId
-                });
-                return true; // Treat as replay attack
-            }
+            // If insert fails due to unique constraint violation, it means another instance processed it
+            // This is fine - log and continue
+            logger_1.default.warn('Webhook already recorded by another instance (race condition)', {
+                webhookId,
+                error: insertError.message,
+                requestId
+            });
         }
-        logger_1.default.info('Webhook marked as processing', {
-            webhookId,
-            requestId
-        });
-        return false; // Not a replay attack
+        else {
+            logger_1.default.info('Webhook successfully recorded as processed', {
+                webhookId,
+                requestId
+            });
+        }
     }
     catch (error) {
-        logger_1.default.error('Error checking replay attack', error, { requestId });
-        // In case of error, allow the webhook to proceed but log the issue
-        return false;
+        // Don't throw error here - webhook was already processed successfully
+        // Just log the recording failure
+        logger_1.default.error('Failed to record webhook as processed (non-critical)', error, { requestId });
     }
 }
 /**
@@ -290,6 +305,9 @@ async function handleWebhookEvent(payload, requestId) {
         case WebhookEventType.SUBSCRIPTION_UPDATED:
             await handleSubscriptionUpdated(payload, requestId);
             break;
+        case WebhookEventType.SUBSCRIPTION_PAYMENT_SUCCESS:
+            await handleSubscriptionPaymentSuccess(payload, requestId);
+            break;
         case WebhookEventType.SUBSCRIPTION_CANCELLED:
             await handleSubscriptionCancelled(payload, requestId);
             break;
@@ -311,6 +329,8 @@ async function handleWebhookEvent(payload, requestId) {
 }
 /**
  * Handle order created event (one-time payment)
+ * Note: For subscription orders, this event is followed by subscription_created
+ * We skip subscription orders here and let subscription_created handle them
  */
 async function handleOrderCreated(payload, requestId) {
     const orderData = payload.data.attributes;
@@ -320,6 +340,7 @@ async function handleOrderCreated(payload, requestId) {
         orderNumber: orderData.order_number,
         total: orderData.total_usd,
         userId: customData === null || customData === void 0 ? void 0 : customData.user_id,
+        variantId: orderData.first_order_item.variant_id,
         requestId
     });
     // Extract user ID from custom data
@@ -327,6 +348,23 @@ async function handleOrderCreated(payload, requestId) {
     if (!userId) {
         logger_1.default.error('No user ID in order custom data', new Error('Missing user ID'), { requestId });
         return;
+    }
+    // Check if this is a subscription order by checking the variant
+    // Subscription orders will be handled by subscription_created event
+    const variantId = orderData.first_order_item.variant_id;
+    const isSubscriptionVariant = [
+        config_1.default.lemonsqueezy.basicVariantId,
+        config_1.default.lemonsqueezy.proVariantId,
+        config_1.default.lemonsqueezy.premiumVariantId
+    ].includes((variantId === null || variantId === void 0 ? void 0 : variantId.toString()) || '');
+    if (isSubscriptionVariant) {
+        logger_1.default.info('Order is for subscription product, will be handled by subscription_created event', {
+            orderId: payload.data.id,
+            variantId,
+            userId,
+            requestId
+        });
+        return; // Skip processing, let subscription_created handle it
     }
     // Check if this order has already been processed
     const { data: existingPayment, error: checkError } = await supabase_1.default
@@ -351,8 +389,7 @@ async function handleOrderCreated(payload, requestId) {
         });
         return; // Skip processing duplicate order
     }
-    // Determine credits based on variant ID
-    const variantId = orderData.first_order_item.variant_id;
+    // Determine credits based on variant ID (variantId already declared above)
     const credits = getCreditsForVariant(variantId);
     if (credits === 0) {
         logger_1.default.error('Unknown variant ID', new Error(`Unknown variant: ${variantId}`), { requestId });
@@ -406,6 +443,7 @@ async function handleOrderCreated(payload, requestId) {
 }
 /**
  * Handle subscription created event
+ * Creates subscription record ONLY - payment and credits are handled by subscription_payment_success
  */
 async function handleSubscriptionCreated(payload, requestId) {
     const subscriptionData = payload.data.attributes;
@@ -421,37 +459,32 @@ async function handleSubscriptionCreated(payload, requestId) {
         logger_1.default.error('No user ID in subscription custom data', new Error('Missing user ID'), { requestId });
         return;
     }
-    // Check if this subscription has already been processed
-    const { data: existingPayment, error: checkError } = await supabase_1.default
-        .from('payment_records')
-        .select('id, credits_purchased, processed_at')
+    // Check if this subscription already exists
+    const { data: existingSubscription, error: subCheckError } = await supabase_1.default
+        .from('subscriptions')
+        .select('id, lemonsqueezy_subscription_id, user_id')
         .eq('lemonsqueezy_subscription_id', payload.data.id)
         .eq('user_id', userId)
-        .eq('status', 'completed')
         .single();
-    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
-        logger_1.default.error('Error checking existing subscription payment', checkError, { requestId });
-        throw new Error(`Failed to check existing subscription payment: ${checkError.message}`);
+    if (subCheckError && subCheckError.code !== 'PGRST116') {
+        logger_1.default.error('Error checking existing subscription', subCheckError, { requestId });
+        throw new Error(`Failed to check existing subscription: ${subCheckError.message}`);
     }
-    if (existingPayment) {
-        logger_1.default.warn('Subscription already processed, skipping duplicate', {
+    if (existingSubscription) {
+        logger_1.default.info('Subscription already exists, skipping creation', {
             subscriptionId: payload.data.id,
             userId,
-            existingPaymentId: existingPayment.id,
-            existingCredits: existingPayment.credits_purchased,
-            processedAt: existingPayment.processed_at,
             requestId
         });
-        return; // Skip processing duplicate subscription
+        return;
     }
     const credits = getCreditsForVariant(subscriptionData.variant_id);
     const planName = getPlanNameForVariant(subscriptionData.variant_id);
-    const priceUsd = getPriceForVariant(subscriptionData.variant_id);
     try {
-        // Create or update subscription record
+        // Create subscription record
         const { error: subscriptionError } = await supabase_1.default
             .from('subscriptions')
-            .upsert({
+            .insert({
             user_id: userId,
             lemonsqueezy_subscription_id: payload.data.id,
             lemonsqueezy_variant_id: subscriptionData.variant_id.toString(),
@@ -465,41 +498,7 @@ async function handleSubscriptionCreated(payload, requestId) {
         if (subscriptionError) {
             throw new Error(`Failed to create subscription: ${subscriptionError.message}`);
         }
-        // Record payment for subscription with actual price
-        const { data: paymentRecord, error: paymentError } = await supabase_1.default
-            .from('payment_records')
-            .insert({
-            user_id: userId,
-            lemonsqueezy_order_id: subscriptionData.order_id.toString(),
-            lemonsqueezy_subscription_id: payload.data.id,
-            amount_usd: priceUsd, // Use actual subscription price based on variant
-            credits_purchased: credits,
-            status: 'completed',
-            payment_method: `Subscription: ${planName}`,
-            webhook_data: payload,
-            processed_at: new Date().toISOString()
-        })
-            .select()
-            .single();
-        if (paymentError) {
-            logger_1.default.error('Failed to record subscription payment', paymentError, { requestId });
-            // Don't continue if payment record fails - this prevents duplicate processing
-            throw new Error(`Failed to record subscription payment: ${paymentError.message}`);
-        }
-        // Add initial credits using the existing credit system
-        const { data: creditResult, error: creditError } = await supabase_1.default.rpc('add_credits', {
-            user_uuid: userId,
-            credits_amount: credits,
-            credit_source: 'subscription',
-            description: `Subscription: ${planName}`
-        });
-        if (creditError) {
-            throw new Error(`Failed to add subscription credits: ${creditError.message}`);
-        }
-        if (!creditResult) {
-            throw new Error('Failed to add subscription credits - database operation returned false');
-        }
-        logger_1.default.info('Subscription created successfully', {
+        logger_1.default.info('Subscription record created successfully (payment and credits will be handled by subscription_payment_success)', {
             subscriptionId: payload.data.id,
             userId,
             planName,
@@ -518,48 +517,16 @@ async function handleSubscriptionCreated(payload, requestId) {
 }
 /**
  * Handle subscription updated event
+ * Updates subscription status and period - credits are handled by subscription_payment_success
  */
 async function handleSubscriptionUpdated(payload, requestId) {
     const subscriptionData = payload.data.attributes;
-    const customData = payload.meta.custom_data;
     logger_1.default.info('Processing subscription updated', {
         subscriptionId: payload.data.id,
         status: subscriptionData.status,
         requestId
     });
     try {
-        // Get existing subscription to check for renewal
-        const { data: existingSubscription, error: fetchError } = await supabase_1.default
-            .from('subscriptions')
-            .select('*')
-            .eq('lemonsqueezy_subscription_id', payload.data.id)
-            .single();
-        if (fetchError) {
-            logger_1.default.error('Failed to fetch existing subscription', fetchError, { requestId });
-            // Continue with update anyway
-        }
-        // Check if this is a renewal (period end date changed and status is active)
-        // More strict renewal detection to prevent false positives
-        const currentPeriodEnd = new Date(existingSubscription.current_period_end);
-        const newPeriodEnd = new Date(subscriptionData.renews_at);
-        const timeDifference = newPeriodEnd.getTime() - currentPeriodEnd.getTime();
-        const isRenewal = existingSubscription &&
-            subscriptionData.status === 'active' &&
-            newPeriodEnd > currentPeriodEnd &&
-            // Ensure the time difference is reasonable (at least 1 day, max 40 days)
-            timeDifference > (24 * 60 * 60 * 1000) &&
-            timeDifference < (40 * 24 * 60 * 60 * 1000) &&
-            // Ensure this isn't the initial subscription creation
-            existingSubscription.status === 'active';
-        logger_1.default.info('Renewal check details', {
-            subscriptionId: payload.data.id,
-            existingStatus: existingSubscription === null || existingSubscription === void 0 ? void 0 : existingSubscription.status,
-            currentPeriodEnd: currentPeriodEnd.toISOString(),
-            newPeriodEnd: newPeriodEnd.toISOString(),
-            timeDifferenceHours: Math.round(timeDifference / (60 * 60 * 1000)),
-            isRenewal,
-            requestId
-        });
         // Update subscription record
         const { error } = await supabase_1.default
             .from('subscriptions')
@@ -576,74 +543,163 @@ async function handleSubscriptionUpdated(payload, requestId) {
         if (error) {
             throw new Error(`Failed to update subscription: ${error.message}`);
         }
-        // If this is a renewal, add credits for the new period
-        if (isRenewal && existingSubscription) {
-            const userId = (customData === null || customData === void 0 ? void 0 : customData.user_id) || existingSubscription.user_id;
-            const credits = existingSubscription.plan_credits;
-            // Check if we've already processed this renewal period
-            const renewalDescription = `Subscription Renewal: ${existingSubscription.plan_name} (${subscriptionData.renews_at})`;
-            const { data: existingRenewal, error: renewalCheckError } = await supabase_1.default
-                .from('credit_transactions')
-                .select('id, created_at')
-                .eq('user_id', userId)
-                .eq('source', 'subscription')
-                .ilike('description', `%${subscriptionData.renews_at}%`)
-                .single();
-            if (renewalCheckError && renewalCheckError.code !== 'PGRST116') {
-                logger_1.default.error('Error checking existing renewal', renewalCheckError, { requestId });
-            }
-            if (existingRenewal) {
-                logger_1.default.warn('Renewal already processed, skipping duplicate', {
-                    subscriptionId: payload.data.id,
-                    userId,
-                    existingRenewalId: existingRenewal.id,
-                    existingRenewalDate: existingRenewal.created_at,
-                    requestId
-                });
-            }
-            else {
-                logger_1.default.info('Processing subscription renewal', {
-                    subscriptionId: payload.data.id,
-                    userId,
-                    credits,
-                    renewalPeriod: subscriptionData.renews_at,
-                    requestId
-                });
-                // Add renewal credits using the existing credit system
-                const { data: creditResult, error: creditError } = await supabase_1.default.rpc('add_credits', {
-                    user_uuid: userId,
-                    credits_amount: credits,
-                    credit_source: 'subscription',
-                    description: renewalDescription
-                });
-                if (creditError) {
-                    logger_1.default.error('Failed to add renewal credits', creditError, { requestId });
-                    // Don't throw here - subscription update succeeded
-                }
-                else if (!creditResult) {
-                    logger_1.default.error('Failed to add renewal credits - database operation returned false', new Error('Credit operation failed'), { requestId });
-                    // Don't throw here - subscription update succeeded
-                }
-                else {
-                    logger_1.default.info('Renewal credits added successfully', {
-                        subscriptionId: payload.data.id,
-                        userId,
-                        credits,
-                        requestId
-                    });
-                }
-            }
-        }
-        logger_1.default.info('Subscription updated successfully', {
+        logger_1.default.info('Subscription updated successfully (renewal credits will be handled by subscription_payment_success)', {
             subscriptionId: payload.data.id,
             status: subscriptionData.status,
-            isRenewal,
             requestId
         });
     }
     catch (error) {
         logger_1.default.error('Error processing subscription update', error, {
             subscriptionId: payload.data.id,
+            requestId
+        });
+        throw error;
+    }
+}
+/**
+ * Handle subscription payment success event
+ * This fires for both initial subscription and renewals
+ * This is the ONLY place where subscription credits are added
+ */
+async function handleSubscriptionPaymentSuccess(payload, requestId) {
+    var _a, _b;
+    // Note: subscription_payment_success payload is of type "subscription-invoices"
+    const invoiceData = payload.data.attributes;
+    const customData = payload.meta.custom_data;
+    // Extract IDs: data.id is invoice ID, attributes.subscription_id is the actual subscription ID
+    const invoiceId = payload.data.id;
+    const subscriptionId = (_a = invoiceData.subscription_id) === null || _a === void 0 ? void 0 : _a.toString();
+    logger_1.default.info('Processing subscription payment success', {
+        invoiceId,
+        subscriptionId,
+        userId: customData === null || customData === void 0 ? void 0 : customData.user_id,
+        requestId
+    });
+    const userId = customData === null || customData === void 0 ? void 0 : customData.user_id;
+    if (!userId) {
+        logger_1.default.error('No user ID in subscription payment custom data', new Error('Missing user ID'), { requestId });
+        return;
+    }
+    if (!subscriptionId) {
+        logger_1.default.error('No subscription ID in payment webhook', new Error('Missing subscription ID'), { requestId });
+        return;
+    }
+    try {
+        // Check if this payment has already been recorded (idempotency check using invoice ID)
+        const { data: existingPayment, error: payCheckError } = await supabase_1.default
+            .from('payment_records')
+            .select('id, created_at, credits_purchased')
+            .eq('lemonsqueezy_subscription_id', subscriptionId)
+            .eq('lemonsqueezy_order_id', invoiceId)
+            .eq('user_id', userId)
+            .single();
+        if (payCheckError && payCheckError.code !== 'PGRST116') {
+            logger_1.default.error('Error checking existing payment', payCheckError, { requestId });
+        }
+        if (existingPayment) {
+            logger_1.default.info('Payment already recorded, skipping duplicate', {
+                invoiceId,
+                subscriptionId,
+                existingPaymentId: existingPayment.id,
+                existingPaymentDate: existingPayment.created_at,
+                existingCredits: existingPayment.credits_purchased,
+                requestId
+            });
+            return;
+        }
+        // Get subscription info (should exist from subscription_created, but handle race condition)
+        let { data: subscription, error: subError } = await supabase_1.default
+            .from('subscriptions')
+            .select('*')
+            .eq('lemonsqueezy_subscription_id', subscriptionId)
+            .single();
+        if (subError || !subscription) {
+            // Rare case: payment arrived before subscription_created
+            // Wait a bit and retry once
+            logger_1.default.warn('Subscription not found for payment, waiting and retrying...', {
+                subscriptionId,
+                error: subError === null || subError === void 0 ? void 0 : subError.message,
+                requestId
+            });
+            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+            const retryResult = await supabase_1.default
+                .from('subscriptions')
+                .select('*')
+                .eq('lemonsqueezy_subscription_id', subscriptionId)
+                .single();
+            if (retryResult.error || !retryResult.data) {
+                logger_1.default.error('Subscription still not found after retry, payment cannot be processed', retryResult.error, { requestId });
+                throw new Error(`Subscription not found for payment after retry: ${(_b = retryResult.error) === null || _b === void 0 ? void 0 : _b.message}`);
+            }
+            // Use the retried subscription
+            subscription = retryResult.data;
+        }
+        const credits = subscription.plan_credits;
+        const planName = subscription.plan_name;
+        const priceUsd = getPriceForVariant(parseInt(subscription.lemonsqueezy_variant_id));
+        // Determine if this is initial or renewal (for logging/description)
+        const { data: existingPayments, error: countError } = await supabase_1.default
+            .from('payment_records')
+            .select('id')
+            .eq('lemonsqueezy_subscription_id', subscriptionId)
+            .eq('user_id', userId);
+        const isInitialPayment = !existingPayments || existingPayments.length === 0;
+        const paymentType = isInitialPayment ? 'Initial Subscription' : 'Subscription Renewal';
+        logger_1.default.info(`Processing subscription payment (${paymentType})`, {
+            invoiceId,
+            subscriptionId,
+            userId,
+            credits,
+            isInitialPayment,
+            requestId
+        });
+        // Record payment (use invoice ID as order ID)
+        const { error: paymentError } = await supabase_1.default
+            .from('payment_records')
+            .insert({
+            user_id: userId,
+            lemonsqueezy_order_id: invoiceId,
+            lemonsqueezy_subscription_id: subscriptionId,
+            amount_usd: priceUsd,
+            credits_purchased: credits,
+            status: 'completed',
+            payment_method: `${paymentType}: ${planName}`,
+            webhook_data: payload,
+            processed_at: new Date().toISOString()
+        });
+        if (paymentError) {
+            logger_1.default.error('Failed to record payment', paymentError, { requestId });
+            throw new Error(`Failed to record payment: ${paymentError.message}`);
+        }
+        // Add credits
+        const { data: creditResult, error: creditError } = await supabase_1.default.rpc('add_credits', {
+            user_uuid: userId,
+            credits_amount: credits,
+            credit_source: 'subscription',
+            description: `${paymentType}: ${planName}`
+        });
+        if (creditError) {
+            logger_1.default.error('Failed to add credits', creditError, { requestId });
+            throw new Error(`Failed to add credits: ${creditError.message}`);
+        }
+        if (!creditResult) {
+            throw new Error('Failed to add credits - database operation returned false');
+        }
+        logger_1.default.info(`Subscription payment processed successfully (${paymentType})`, {
+            invoiceId,
+            subscriptionId,
+            userId,
+            credits,
+            isInitialPayment,
+            requestId
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Error processing subscription payment', error, {
+            invoiceId,
+            subscriptionId,
+            userId,
             requestId
         });
         throw error;
