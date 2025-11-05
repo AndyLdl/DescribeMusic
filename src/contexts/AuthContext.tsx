@@ -6,6 +6,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { DeviceFingerprint } from '../utils/deviceFingerprint';
+import { setClarityIdentity, clearClarityIdentity } from '../utils/clarity';
 import type {
     User,
     Session,
@@ -195,6 +196,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     userType: 'registered',
                     message: 'Registered user'
                 });
+                
+                // 设置 Clarity 自定义标识符（从设备指纹切换到用户ID）
+                setClarityIdentity(
+                    data.user.id,
+                    data.session.access_token,
+                    typeof window !== 'undefined' ? window.location.pathname : undefined,
+                    data.user.email || undefined,
+                    false // 不是设备指纹，是用户ID
+                );
             }
 
             return { data, error: null };
@@ -309,6 +319,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 userType: 'trial',
                 message: 'Trial mode'
             });
+            
+            // 登出后：切换回设备指纹标识符（而不是清除）
+            try {
+                const fingerprint = await getDeviceFingerprint();
+                setClarityIdentity(
+                    fingerprint,
+                    undefined,
+                    typeof window !== 'undefined' ? window.location.pathname : undefined,
+                    'Anonymous User',
+                    true // 是设备指纹
+                );
+            } catch (error) {
+                console.warn('⚠️ Failed to set Clarity identity for anonymous user after logout:', error);
+                // 如果设备指纹获取失败，清除标识符
+                clearClarityIdentity();
+            }
 
             // 清除所有 Supabase 相关的 localStorage 数据
             try {
@@ -339,6 +365,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
                 userType: 'trial',
                 message: 'Trial mode'
             });
+            
+            // 登出后：尝试切换回设备指纹标识符
+            try {
+                const fingerprint = await getDeviceFingerprint();
+                setClarityIdentity(
+                    fingerprint,
+                    undefined,
+                    typeof window !== 'undefined' ? window.location.pathname : undefined,
+                    'Anonymous User',
+                    true // 是设备指纹
+                );
+            } catch (fingerprintError) {
+                console.warn('⚠️ Failed to set Clarity identity for anonymous user after logout:', fingerprintError);
+                clearClarityIdentity();
+            }
         } finally {
             setLoading(false);
         }
@@ -419,6 +460,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
                     if (session?.user) {
                         console.log('🔐 ✅ User session restored:', session.user.email);
 
+                        // 设置 Clarity 自定义标识符（登录用户）
+                        setClarityIdentity(
+                            session.user.id,
+                            session.access_token,
+                            typeof window !== 'undefined' ? window.location.pathname : undefined,
+                            session.user.email || undefined,
+                            false // 不是设备指纹，是用户ID
+                        );
+
                         // 检查令牌是否即将过期，如果是则主动刷新
                         if (session.expires_at && session.expires_at * 1000 - Date.now() < 60000) {
                             console.log('🔐 Token expiring soon, refreshing...');
@@ -426,6 +476,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
                         }
                     } else {
                         console.log('🔐 ❌ No existing session found');
+                        
+                        // 未登录用户：使用设备指纹设置 Clarity 标识符
+                        try {
+                            const fingerprint = await getDeviceFingerprint();
+                            setClarityIdentity(
+                                fingerprint,
+                                undefined,
+                                typeof window !== 'undefined' ? window.location.pathname : undefined,
+                                'Anonymous User',
+                                true // 是设备指纹
+                            );
+                        } catch (error) {
+                            console.warn('⚠️ Failed to set Clarity identity for anonymous user:', error);
+                        }
                     }
                 } else {
                     console.log('🔐 Component unmounted, skipping state update');
@@ -461,6 +525,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
                                         userType: 'registered',
                                         message: 'Registered user'
                                     });
+                                    
+                                    // 设置 Clarity 自定义标识符（从设备指纹切换到用户ID）
+                                    setClarityIdentity(
+                                        session.user.id,
+                                        session.access_token,
+                                        typeof window !== 'undefined' ? window.location.pathname : undefined,
+                                        session.user.email || undefined,
+                                        false // 不是设备指纹，是用户ID
+                                    );
                                 }
                             } else if (event === 'SIGNED_OUT') {
                                 console.log('🔐 Clearing user session');
@@ -473,6 +546,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
                                     requiresAuth: false,
                                     userType: 'trial',
                                     message: 'Trial mode'
+                                });
+                                
+                                // 登出后：切换回设备指纹标识符
+                                getDeviceFingerprint().then(fingerprint => {
+                                    setClarityIdentity(
+                                        fingerprint,
+                                        undefined,
+                                        typeof window !== 'undefined' ? window.location.pathname : undefined,
+                                        'Anonymous User',
+                                        true // 是设备指纹
+                                    );
+                                }).catch(error => {
+                                    console.warn('⚠️ Failed to set Clarity identity for anonymous user after logout:', error);
+                                    clearClarityIdentity();
                                 });
                             }
                         }
