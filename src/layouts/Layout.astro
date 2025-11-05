@@ -170,10 +170,10 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
 
                   if (action === "identify" && args.length > 0) {
                     window.__clarityIdentityTracker.lastIdentify = {
-                      customId: args[0],
-                      sessionId: args[1],
-                      pageId: args[2],
-                      friendlyName: args[3],
+                      id: args[0], // custom-id
+                      session: args[1], // custom-session-id
+                      page: args[2], // custom-page-id
+                      userHint: args[3], // friendly-name
                       timestamp: Date.now(),
                     };
                   }

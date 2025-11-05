@@ -16,10 +16,10 @@ declare global {
                 timestamp: number;
             }>;
             lastIdentify?: {
-                customId: string;
-                sessionId?: string;
-                pageId?: string;
-                friendlyName?: string;
+                id: string;  // custom-id (会被哈希)
+                session?: string;  // custom-session-id
+                page?: string;  // custom-page-id
+                userHint?: string;  // friendly-name
                 timestamp: number;
             };
         };
@@ -31,18 +31,18 @@ declare global {
  */
 function initClarityTracker(): void {
     if (typeof window === 'undefined') return;
-    
+
     if (!window.__clarityIdentityTracker) {
         window.__clarityIdentityTracker = {
             calls: [],
             lastIdentify: undefined
         };
-        
+
         // 如果 Clarity 已经加载，立即拦截
         if (window.clarity && typeof window.clarity === 'function') {
             // 保存原始 Clarity 函数
             const originalClarity = window.clarity.bind(window);
-            
+
             // 尝试从原始队列中恢复调用（如果存在）
             if ((window.clarity as any).q && Array.isArray((window.clarity as any).q)) {
                 const queue = (window.clarity as any).q;
@@ -55,22 +55,22 @@ function initClarityTracker(): void {
                             args,
                             timestamp: Date.now()
                         });
-                        
+
                         if (action === 'identify' && args.length > 0) {
                             window.__clarityIdentityTracker!.lastIdentify = {
-                                customId: args[0] as string,
-                                sessionId: args[1] as string | undefined,
-                                pageId: args[2] as string | undefined,
-                                friendlyName: args[3] as string | undefined,
+                                id: args[0] as string,  // custom-id
+                                session: args[1] as string | undefined,  // custom-session-id
+                                page: args[2] as string | undefined,  // custom-page-id
+                                userHint: args[3] as string | undefined,  // friendly-name
                                 timestamp: Date.now()
                             };
                         }
                     }
                 });
             }
-            
+
             // 创建新的 Clarity 函数来拦截调用
-            const newClarity = function(action: string, ...args: any[]) {
+            const newClarity = function (action: string, ...args: any[]) {
                 // 记录调用
                 if (window.__clarityIdentityTracker) {
                     window.__clarityIdentityTracker.calls.push({
@@ -78,26 +78,26 @@ function initClarityTracker(): void {
                         args: Array.from(args),
                         timestamp: Date.now()
                     });
-                    
+
                     // 如果是 identify 调用，特别记录
                     if (action === 'identify' && args.length > 0) {
                         window.__clarityIdentityTracker.lastIdentify = {
-                            customId: args[0] as string,
-                            sessionId: args[1] as string | undefined,
-                            pageId: args[2] as string | undefined,
-                            friendlyName: args[3] as string | undefined,
+                            id: args[0] as string,  // custom-id
+                            session: args[1] as string | undefined,  // custom-session-id
+                            page: args[2] as string | undefined,  // custom-page-id
+                            userHint: args[3] as string | undefined,  // friendly-name
                             timestamp: Date.now()
                         };
                     }
                 }
-                
+
                 // 调用原始函数
                 return originalClarity(action, ...args);
             };
-            
+
             // 替换 window.clarity
             (window as any).clarity = newClarity;
-            
+
             // 保持队列属性（如果存在）
             if ((originalClarity as any).q) {
                 (newClarity as any).q = (originalClarity as any).q;
@@ -112,14 +112,14 @@ function initClarityTracker(): void {
 if (typeof window !== 'undefined') {
     // 立即初始化
     initClarityTracker();
-    
+
     // 如果 Clarity 还没加载，监听 DOMContentLoaded
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => {
             initClarityTracker();
         });
     }
-    
+
     // 延迟初始化（确保 Clarity 已加载）
     setTimeout(() => {
         initClarityTracker();
@@ -175,7 +175,7 @@ export async function setClarityIdentity(
     try {
         // 初始化追踪器
         initClarityTracker();
-        
+
         const ready = await waitForClarity();
         if (!ready) {
             console.warn('⚠️ Clarity not ready, skipping identity setup');
@@ -184,23 +184,40 @@ export async function setClarityIdentity(
 
         // 如果没有提供 sessionId，使用当前时间戳生成一个会话ID
         const sessionIdentifier = sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-        
+
         // 如果没有提供 pageId，使用当前页面路径
         const pageIdentifier = pageId || (typeof window !== 'undefined' ? window.location.pathname : 'unknown');
-        
+
         // 调用 Clarity identify API
         // 语法: window.clarity("identify", "custom-id", "custom-session-id", "custom-page-id", "friendly-name")
         // 对于设备指纹，使用 "device_" 前缀以便区分
         const customId = isDeviceFingerprint ? `device_${identifier}` : identifier;
-        window.clarity?.('identify', customId, sessionIdentifier, pageIdentifier, friendlyName);
-        
-        console.log('✅ Clarity identity set:', {
-            identifier: customId,
-            type: isDeviceFingerprint ? 'device' : 'user',
-            sessionId: sessionIdentifier,
-            pageId: pageIdentifier,
-            friendlyName
-        });
+
+        // Clarity API 返回 Promise<{ id, session, page, userHint }>
+        const clarityResult = window.clarity?.('identify', customId, sessionIdentifier, pageIdentifier, friendlyName);
+
+        // 如果返回 Promise，处理结果
+        if (clarityResult && typeof clarityResult.then === 'function') {
+            clarityResult.then((result: any) => {
+                console.log('✅ Clarity identity set:', {
+                    id: result?.id || customId,  // 哈希后的 ID
+                    session: result?.session || sessionIdentifier,
+                    page: result?.page || pageIdentifier,
+                    userHint: result?.userHint || friendlyName,
+                    type: isDeviceFingerprint ? 'device' : 'user'
+                });
+            }).catch((error: any) => {
+                console.warn('⚠️ Clarity identify API warning:', error);
+            });
+        } else {
+            console.log('✅ Clarity identity set:', {
+                id: customId,
+                session: sessionIdentifier,
+                page: pageIdentifier,
+                userHint: friendlyName,
+                type: isDeviceFingerprint ? 'device' : 'user'
+            });
+        }
     } catch (error) {
         console.error('❌ Error setting Clarity identity:', error);
     }
@@ -208,31 +225,32 @@ export async function setClarityIdentity(
 
 /**
  * 获取最后设置的 Clarity 标识符信息（用于测试）
+ * 返回格式与 Clarity API 文档一致
  */
 export function getLastClarityIdentity(): {
-    customId?: string;
-    sessionId?: string;
-    pageId?: string;
-    friendlyName?: string;
+    id?: string;  // custom-id (原始值，会被 Clarity 哈希)
+    session?: string;  // custom-session-id
+    page?: string;  // custom-page-id
+    userHint?: string;  // friendly-name
     timestamp?: number;
     type?: 'device' | 'user';
 } | null {
     if (typeof window === 'undefined' || !window.__clarityIdentityTracker) {
         return null;
     }
-    
+
     const lastIdentify = window.__clarityIdentityTracker.lastIdentify;
     if (!lastIdentify) {
         return null;
     }
-    
+
     return {
-        customId: lastIdentify.customId,
-        sessionId: lastIdentify.sessionId,
-        pageId: lastIdentify.pageId,
-        friendlyName: lastIdentify.friendlyName,
+        id: lastIdentify.id,
+        session: lastIdentify.session,
+        page: lastIdentify.page,
+        userHint: lastIdentify.userHint,
         timestamp: lastIdentify.timestamp,
-        type: lastIdentify.customId.startsWith('device_') ? 'device' : 'user'
+        type: lastIdentify.id.startsWith('device_') ? 'device' : 'user'
     };
 }
 
@@ -247,7 +265,7 @@ export function getAllClarityCalls(): Array<{
     if (typeof window === 'undefined' || !window.__clarityIdentityTracker) {
         return [];
     }
-    
+
     return window.__clarityIdentityTracker.calls;
 }
 
@@ -265,7 +283,7 @@ export async function clearClarityIdentity(): Promise<void> {
         // 使用匿名标识符
         const anonymousId = `anonymous_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         window.clarity?.('identify', anonymousId);
-        
+
         console.log('✅ Clarity identity cleared');
     } catch (error) {
         console.error('❌ Error clearing Clarity identity:', error);
@@ -295,10 +313,10 @@ export async function updateClarityPageId(
         const pageIdentifier = pageId || (typeof window !== 'undefined' ? window.location.pathname : 'unknown');
         const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
         const customId = isDeviceFingerprint ? `device_${identifier}` : identifier;
-        
+
         // 重新设置标识符，更新页面ID
         window.clarity?.('identify', customId, sessionId, pageIdentifier, friendlyName);
-        
+
         console.log('✅ Clarity page ID updated:', pageIdentifier);
     } catch (error) {
         console.error('❌ Error updating Clarity page ID:', error);
@@ -319,7 +337,7 @@ export async function setClarityTag(key: string, value: string | string[]): Prom
         }
 
         window.clarity?.('set', key, value);
-        
+
         console.log('✅ Clarity tag set:', { key, value });
     } catch (error) {
         console.error('❌ Error setting Clarity tag:', error);
@@ -339,7 +357,7 @@ export async function sendClarityEvent(eventName: string): Promise<void> {
         }
 
         window.clarity?.('event', eventName);
-        
+
         console.log('✅ Clarity event sent:', eventName);
     } catch (error) {
         console.error('❌ Error sending Clarity event:', error);
