@@ -32,7 +32,7 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.validateConfig = validateConfig;
 const dotenv = __importStar(require("dotenv"));
@@ -69,12 +69,13 @@ const config = {
         apiKey: ((_h = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _h === void 0 ? void 0 : _h.api_key) || process.env.LEMONSQUEEZY_API_KEY || '',
         storeId: ((_j = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _j === void 0 ? void 0 : _j.store_id) || process.env.LEMONSQUEEZY_STORE_ID || '',
         webhookSecret: ((_k = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _k === void 0 ? void 0 : _k.webhook_secret) || process.env.LEMONSQUEEZY_WEBHOOK_SECRET || '',
-        basicVariantId: ((_l = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _l === void 0 ? void 0 : _l.basic_variant_id) || process.env.LEMONSQUEEZY_BASIC_VARIANT_ID || '',
-        proVariantId: ((_m = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _m === void 0 ? void 0 : _m.pro_variant_id) || process.env.LEMONSQUEEZY_PRO_VARIANT_ID || '',
-        premiumVariantId: ((_o = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _o === void 0 ? void 0 : _o.premium_variant_id) || process.env.LEMONSQUEEZY_PREMIUM_VARIANT_ID || '',
+        productId: ((_l = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _l === void 0 ? void 0 : _l.product_id) || process.env.LEMONSQUEEZY_PRODUCT_ID || '636551',
+        basicVariantId: ((_m = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _m === void 0 ? void 0 : _m.basic_variant_id) || process.env.LEMONSQUEEZY_BASIC_VARIANT_ID || '',
+        proVariantId: ((_o = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _o === void 0 ? void 0 : _o.pro_variant_id) || process.env.LEMONSQUEEZY_PRO_VARIANT_ID || '',
+        premiumVariantId: ((_p = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.lemonsqueezy) === null || _p === void 0 ? void 0 : _p.premium_variant_id) || process.env.LEMONSQUEEZY_PREMIUM_VARIANT_ID || '',
     },
     cors: {
-        allowedOrigins: (((_p = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.cors) === null || _p === void 0 ? void 0 : _p.allowed_origins) || process.env.ALLOWED_ORIGINS || '')
+        allowedOrigins: (((_q = firebaseConfig === null || firebaseConfig === void 0 ? void 0 : firebaseConfig.cors) === null || _q === void 0 ? void 0 : _q.allowed_origins) || process.env.ALLOWED_ORIGINS || '')
             .split(',')
             .filter(Boolean) || [
             'http://localhost:4321',

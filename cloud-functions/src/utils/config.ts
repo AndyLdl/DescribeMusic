@@ -42,6 +42,7 @@ export interface Config {
         apiKey: string;
         storeId: string;
         webhookSecret: string;
+        productId: string;
         basicVariantId: string;
         proVariantId: string;
         premiumVariantId: string;
@@ -94,6 +95,7 @@ const config: Config = {
         apiKey: firebaseConfig?.lemonsqueezy?.api_key || process.env.LEMONSQUEEZY_API_KEY || '',
         storeId: firebaseConfig?.lemonsqueezy?.store_id || process.env.LEMONSQUEEZY_STORE_ID || '',
         webhookSecret: firebaseConfig?.lemonsqueezy?.webhook_secret || process.env.LEMONSQUEEZY_WEBHOOK_SECRET || '',
+        productId: firebaseConfig?.lemonsqueezy?.product_id || process.env.LEMONSQUEEZY_PRODUCT_ID || '636551',
         basicVariantId: firebaseConfig?.lemonsqueezy?.basic_variant_id || process.env.LEMONSQUEEZY_BASIC_VARIANT_ID || '',
         proVariantId: firebaseConfig?.lemonsqueezy?.pro_variant_id || process.env.LEMONSQUEEZY_PRO_VARIANT_ID || '',
         premiumVariantId: firebaseConfig?.lemonsqueezy?.premium_variant_id || process.env.LEMONSQUEEZY_PREMIUM_VARIANT_ID || '',

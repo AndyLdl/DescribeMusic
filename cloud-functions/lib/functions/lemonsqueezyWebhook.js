@@ -340,6 +340,7 @@ async function handleOrderCreated(payload, requestId) {
         orderNumber: orderData.order_number,
         total: orderData.total_usd,
         userId: customData === null || customData === void 0 ? void 0 : customData.user_id,
+        productId: orderData.first_order_item.product_id,
         variantId: orderData.first_order_item.variant_id,
         requestId
     });
@@ -347,6 +348,19 @@ async function handleOrderCreated(payload, requestId) {
     const userId = customData === null || customData === void 0 ? void 0 : customData.user_id;
     if (!userId) {
         logger_1.default.error('No user ID in order custom data', new Error('Missing user ID'), { requestId });
+        return;
+    }
+    // Filter by product ID - only process orders for the configured product
+    const productId = orderData.first_order_item.product_id;
+    const configuredProductId = config_1.default.lemonsqueezy.productId;
+    if ((productId === null || productId === void 0 ? void 0 : productId.toString()) !== configuredProductId) {
+        logger_1.default.info('Order is not for configured product, skipping', {
+            orderId: payload.data.id,
+            productId,
+            configuredProductId,
+            productName: orderData.first_order_item.product_name,
+            requestId
+        });
         return;
     }
     // Check if this is a subscription order by checking the variant
@@ -451,12 +465,26 @@ async function handleSubscriptionCreated(payload, requestId) {
     logger_1.default.info('Processing subscription created', {
         subscriptionId: payload.data.id,
         userId: customData === null || customData === void 0 ? void 0 : customData.user_id,
+        productId: subscriptionData.product_id,
         variantId: subscriptionData.variant_id,
         requestId
     });
     const userId = customData === null || customData === void 0 ? void 0 : customData.user_id;
     if (!userId) {
         logger_1.default.error('No user ID in subscription custom data', new Error('Missing user ID'), { requestId });
+        return;
+    }
+    // Filter by product ID - only process subscriptions for the configured product
+    const productId = subscriptionData.product_id;
+    const configuredProductId = config_1.default.lemonsqueezy.productId;
+    if ((productId === null || productId === void 0 ? void 0 : productId.toString()) !== configuredProductId) {
+        logger_1.default.info('Subscription is not for configured product, skipping', {
+            subscriptionId: payload.data.id,
+            productId,
+            configuredProductId,
+            productName: subscriptionData.product_name,
+            requestId
+        });
         return;
     }
     // Check if this subscription already exists
@@ -523,9 +551,22 @@ async function handleSubscriptionUpdated(payload, requestId) {
     const subscriptionData = payload.data.attributes;
     logger_1.default.info('Processing subscription updated', {
         subscriptionId: payload.data.id,
+        productId: subscriptionData.product_id,
         status: subscriptionData.status,
         requestId
     });
+    // Filter by product ID - only process subscriptions for the configured product
+    const productId = subscriptionData.product_id;
+    const configuredProductId = config_1.default.lemonsqueezy.productId;
+    if ((productId === null || productId === void 0 ? void 0 : productId.toString()) !== configuredProductId) {
+        logger_1.default.info('Subscription update is not for configured product, skipping', {
+            subscriptionId: payload.data.id,
+            productId,
+            configuredProductId,
+            requestId
+        });
+        return;
+    }
     try {
         // Update subscription record
         const { error } = await supabase_1.default
@@ -629,8 +670,18 @@ async function handleSubscriptionPaymentSuccess(payload, requestId) {
                 .eq('lemonsqueezy_subscription_id', subscriptionId)
                 .single();
             if (retryResult.error || !retryResult.data) {
-                logger_1.default.error('Subscription still not found after retry, payment cannot be processed', retryResult.error, { requestId });
-                throw new Error(`Subscription not found for payment after retry: ${(_b = retryResult.error) === null || _b === void 0 ? void 0 : _b.message}`);
+                // Subscription not found even after retry
+                // This could mean:
+                // 1. The subscription was filtered out by product_id check in subscription_created
+                // 2. There was a genuine error
+                // We skip processing and return successfully to avoid webhook retries
+                logger_1.default.info('Subscription not found in database (likely filtered by product_id), skipping payment processing', {
+                    subscriptionId,
+                    invoiceId,
+                    error: (_b = retryResult.error) === null || _b === void 0 ? void 0 : _b.message,
+                    requestId
+                });
+                return;
             }
             // Use the retried subscription
             subscription = retryResult.data;
@@ -712,8 +763,21 @@ async function handleSubscriptionCancelled(payload, requestId) {
     const subscriptionData = payload.data.attributes;
     logger_1.default.info('Processing subscription cancelled', {
         subscriptionId: payload.data.id,
+        productId: subscriptionData.product_id,
         requestId
     });
+    // Filter by product ID - only process subscriptions for the configured product
+    const productId = subscriptionData.product_id;
+    const configuredProductId = config_1.default.lemonsqueezy.productId;
+    if ((productId === null || productId === void 0 ? void 0 : productId.toString()) !== configuredProductId) {
+        logger_1.default.info('Subscription cancellation is not for configured product, skipping', {
+            subscriptionId: payload.data.id,
+            productId,
+            configuredProductId,
+            requestId
+        });
+        return;
+    }
     try {
         // Update subscription status
         const { error } = await supabase_1.default
@@ -744,10 +808,24 @@ async function handleSubscriptionCancelled(payload, requestId) {
  * Handle subscription resumed event
  */
 async function handleSubscriptionResumed(payload, requestId) {
+    const subscriptionData = payload.data.attributes;
     logger_1.default.info('Processing subscription resumed', {
         subscriptionId: payload.data.id,
+        productId: subscriptionData.product_id,
         requestId
     });
+    // Filter by product ID - only process subscriptions for the configured product
+    const productId = subscriptionData.product_id;
+    const configuredProductId = config_1.default.lemonsqueezy.productId;
+    if ((productId === null || productId === void 0 ? void 0 : productId.toString()) !== configuredProductId) {
+        logger_1.default.info('Subscription resume is not for configured product, skipping', {
+            subscriptionId: payload.data.id,
+            productId,
+            configuredProductId,
+            requestId
+        });
+        return;
+    }
     try {
         // Update subscription status
         const { error } = await supabase_1.default
@@ -778,10 +856,24 @@ async function handleSubscriptionResumed(payload, requestId) {
  * Handle subscription expired event
  */
 async function handleSubscriptionExpired(payload, requestId) {
+    const subscriptionData = payload.data.attributes;
     logger_1.default.info('Processing subscription expired', {
         subscriptionId: payload.data.id,
+        productId: subscriptionData.product_id,
         requestId
     });
+    // Filter by product ID - only process subscriptions for the configured product
+    const productId = subscriptionData.product_id;
+    const configuredProductId = config_1.default.lemonsqueezy.productId;
+    if ((productId === null || productId === void 0 ? void 0 : productId.toString()) !== configuredProductId) {
+        logger_1.default.info('Subscription expiration is not for configured product, skipping', {
+            subscriptionId: payload.data.id,
+            productId,
+            configuredProductId,
+            requestId
+        });
+        return;
+    }
     try {
         // Update subscription status
         const { error } = await supabase_1.default
@@ -811,10 +903,24 @@ async function handleSubscriptionExpired(payload, requestId) {
  * Handle subscription paused event
  */
 async function handleSubscriptionPaused(payload, requestId) {
+    const subscriptionData = payload.data.attributes;
     logger_1.default.info('Processing subscription paused', {
         subscriptionId: payload.data.id,
+        productId: subscriptionData.product_id,
         requestId
     });
+    // Filter by product ID - only process subscriptions for the configured product
+    const productId = subscriptionData.product_id;
+    const configuredProductId = config_1.default.lemonsqueezy.productId;
+    if ((productId === null || productId === void 0 ? void 0 : productId.toString()) !== configuredProductId) {
+        logger_1.default.info('Subscription pause is not for configured product, skipping', {
+            subscriptionId: payload.data.id,
+            productId,
+            configuredProductId,
+            requestId
+        });
+        return;
+    }
     try {
         // Update subscription status
         const { error } = await supabase_1.default
@@ -844,10 +950,24 @@ async function handleSubscriptionPaused(payload, requestId) {
  * Handle subscription unpaused event
  */
 async function handleSubscriptionUnpaused(payload, requestId) {
+    const subscriptionData = payload.data.attributes;
     logger_1.default.info('Processing subscription unpaused', {
         subscriptionId: payload.data.id,
+        productId: subscriptionData.product_id,
         requestId
     });
+    // Filter by product ID - only process subscriptions for the configured product
+    const productId = subscriptionData.product_id;
+    const configuredProductId = config_1.default.lemonsqueezy.productId;
+    if ((productId === null || productId === void 0 ? void 0 : productId.toString()) !== configuredProductId) {
+        logger_1.default.info('Subscription unpause is not for configured product, skipping', {
+            subscriptionId: payload.data.id,
+            productId,
+            configuredProductId,
+            requestId
+        });
+        return;
+    }
     try {
         // Update subscription status
         const { error } = await supabase_1.default
