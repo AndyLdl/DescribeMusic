@@ -26,6 +26,7 @@ export default function AnalyzeHeader() {
     const [showExportButtons, setShowExportButtons] = useState(false);
     const [showExportMenu, setShowExportMenu] = useState(false);
     const [showShareMenu, setShowShareMenu] = useState(false);
+    const [showMobileMenu, setShowMobileMenu] = useState(false);
 
     // Listen for analysis result events to show/hide export buttons
     useEffect(() => {
@@ -300,17 +301,136 @@ Quality: ${data.quality?.overall || 0}/10`;
                             <UserAccountDropdown />
 
                             {/* Mobile menu button */}
-                            <button className="md:hidden p-2 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-all duration-300 flex-shrink-0">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                </svg>
+                            <button 
+                                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                                className="md:hidden p-2 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-all duration-300 flex-shrink-0"
+                            >
+                                {showMobileMenu ? (
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                ) : (
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                    </svg>
+                                )}
                             </button>
                         </nav>
                     </div>
                 </div>
             </header>
 
-
+            {/* Mobile Menu */}
+            {showMobileMenu && (
+                <div className="md:hidden fixed inset-0 z-40 top-16">
+                    {/* Backdrop */}
+                    <div 
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm"
+                        onClick={() => setShowMobileMenu(false)}
+                    />
+                    
+                    {/* Menu Panel */}
+                    <div className="relative bg-slate-900/95 backdrop-blur-xl border-b border-slate-800">
+                        <nav className="px-4 py-4">
+                            <ul className="space-y-1">
+                                <li>
+                                    <a
+                                        href="/#features"
+                                        className="block px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200"
+                                        onClick={() => setShowMobileMenu(false)}
+                                    >
+                                        Features
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="/pricing"
+                                        className="block px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200"
+                                        onClick={() => setShowMobileMenu(false)}
+                                    >
+                                        Pricing
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="/blog"
+                                        className="block px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200"
+                                        onClick={() => setShowMobileMenu(false)}
+                                    >
+                                        Blog
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="/about"
+                                        className="block px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200"
+                                        onClick={() => setShowMobileMenu(false)}
+                                    >
+                                        About
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="/contact"
+                                        className="block px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200"
+                                        onClick={() => setShowMobileMenu(false)}
+                                    >
+                                        Contact
+                                    </a>
+                                </li>
+                                
+                                {/* Export/Share actions for mobile */}
+                                {showExportButtons && (
+                                    <>
+                                        <li className="pt-3 mt-3 border-t border-slate-700">
+                                            <button
+                                                onClick={() => {
+                                                    exportAsJSON();
+                                                    setShowMobileMenu(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                                Export as JSON
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    exportAsCSV();
+                                                    setShowMobileMenu(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                                </svg>
+                                                Export as CSV
+                                            </button>
+                                        </li>
+                                        <li>
+                                            <button
+                                                onClick={() => {
+                                                    copyShareLink();
+                                                    setShowMobileMenu(false);
+                                                }}
+                                                className="w-full flex items-center gap-3 px-4 py-3 text-slate-300 hover:text-white hover:bg-slate-800/50 rounded-lg transition-all duration-200"
+                                            >
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                                                </svg>
+                                                Copy Share Link
+                                            </button>
+                                        </li>
+                                    </>
+                                )}
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            )}
 
             {/* Click outside to close menus */}
             {(showUserMenu || showExportMenu || showShareMenu) && (
