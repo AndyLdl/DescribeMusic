@@ -3,10 +3,11 @@
  * Provides user authentication interface
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { useAuth } from '../../contexts/AuthContext';
+import { supabase } from '../../lib/supabase';
 import GoogleSignInButton from './GoogleSignInButton';
 
 // Form validation schemas
@@ -44,28 +45,109 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
     const [mode, setMode] = useState<AuthMode>(defaultMode);
     const [loading, setLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+    const [waitingForEmailConfirmation, setWaitingForEmailConfirmation] = useState(false);
+    const authSubscriptionRef = useRef<{ unsubscribe: () => void } | null>(null);
 
-    const { signIn, signUp, resetPassword } = useAuth();
+    const { signIn, signUp, resetPassword, user } = useAuth();
 
     // 登录表单
-    const loginForm = useForm<LoginFormData>();
+    const loginForm = useForm<LoginFormData>({
+        mode: 'onSubmit',
+        reValidateMode: 'onChange',
+        resolver: async (data) => {
+            try {
+                loginSchema.parse(data);
+                return { values: data, errors: {} };
+            } catch (error: any) {
+                return {
+                    values: {},
+                    errors: error.errors.reduce((acc: any, err: any) => {
+                        acc[err.path[0]] = { type: err.code, message: err.message };
+                        return acc;
+                    }, {})
+                };
+            }
+        }
+    });
 
     // 注册表单
-    const registerForm = useForm<RegisterFormData>();
+    const registerForm = useForm<RegisterFormData>({
+        mode: 'onSubmit',
+        reValidateMode: 'onChange'
+    });
 
     // 重置密码表单
-    const resetForm = useForm<ResetFormData>();
+    const resetForm = useForm<ResetFormData>({
+        mode: 'onSubmit',
+        reValidateMode: 'onChange'
+    });
 
     // Reset state when modal opens/closes
     useEffect(() => {
         if (isOpen) {
             setMode(defaultMode);
             setMessage(null);
+            setWaitingForEmailConfirmation(false);
             loginForm.reset();
             registerForm.reset();
             resetForm.reset();
         }
     }, [isOpen, defaultMode, loginForm, registerForm, resetForm]);
+
+    // 监听邮箱确认状态
+    useEffect(() => {
+        if (!waitingForEmailConfirmation || !isOpen) return;
+
+        console.log('🔐 Setting up email confirmation listener');
+        
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+            (event, session) => {
+                console.log('🔐 Auth event in LoginModal:', event, {
+                    hasSession: !!session,
+                    hasUser: !!session?.user,
+                    emailConfirmed: !!session?.user?.email_confirmed_at
+                });
+
+                // 当用户确认邮箱后，关闭弹窗
+                if (event === 'SIGNED_IN' && session?.user?.email_confirmed_at) {
+                    console.log('🔐 Email confirmed! Closing modal');
+                    setWaitingForEmailConfirmation(false);
+                    setMessage({
+                        type: 'success',
+                        text: 'Email confirmed successfully! Your account has been activated.'
+                    });
+                    // 延迟关闭，让用户看到成功消息
+                    setTimeout(() => {
+                        onClose();
+                    }, 2000);
+                }
+            }
+        );
+
+        authSubscriptionRef.current = subscription;
+
+        return () => {
+            if (authSubscriptionRef.current) {
+                authSubscriptionRef.current.unsubscribe();
+                authSubscriptionRef.current = null;
+            }
+        };
+    }, [waitingForEmailConfirmation, isOpen, onClose]);
+
+    // 检查用户是否已经确认邮箱（如果用户在其他标签页确认了）
+    useEffect(() => {
+        if (waitingForEmailConfirmation && user?.email_confirmed_at) {
+            console.log('🔐 User email already confirmed, closing modal');
+            setWaitingForEmailConfirmation(false);
+            setMessage({
+                type: 'success',
+                text: 'Email confirmed successfully! Your account has been activated.'
+            });
+            setTimeout(() => {
+                onClose();
+            }, 2000);
+        }
+    }, [user, waitingForEmailConfirmation, onClose]);
 
     // Handle login
     const handleLogin = async (data: LoginFormData) => {
@@ -76,10 +158,20 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
             const { error } = await signIn(data.email, data.password);
 
             if (error) {
-                setMessage({
-                    type: 'error',
-                    text: getErrorMessage(error.message)
-                });
+                const errorMsg = getErrorMessage(error.message);
+                
+                // 如果是邮箱未确认错误，显示详细提示
+                if (errorMsg === 'EMAIL_NOT_CONFIRMED') {
+                    setMessage({
+                        type: 'error',
+                        text: 'EMAIL_NOT_CONFIRMED_DETAILED' // 特殊标记，用于显示详细UI
+                    });
+                } else {
+                    setMessage({
+                        type: 'error',
+                        text: errorMsg
+                    });
+                }
             } else {
                 setMessage({
                     type: 'success',
@@ -133,16 +225,12 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                 });
             } else {
                 console.log('🔐 Registration successful, showing success message');
+                setWaitingForEmailConfirmation(true);
                 setMessage({
                     type: 'success',
-                    text: 'Registration successful! Please check your email for the confirmation link to complete your account setup.'
+                    text: 'Registration successful! Please check your email and click the confirmation link to complete your account activation.'
                 });
-                console.log('🔐 Setting timeout to close modal in 4 seconds');
-                // 延迟4秒后自动关闭弹窗，给用户足够时间阅读确认信息
-                setTimeout(() => {
-                    console.log('🔐 Timeout reached, closing modal');
-                    onClose();
-                }, 1000);
+                // 不自动关闭弹窗，等待用户确认邮箱
             }
         } catch (error: any) {
             console.log('🔐 Registration exception:', error);
@@ -182,19 +270,33 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
 
     // Error message localization
     const getErrorMessage = (error: string): string => {
-        if (error.includes('Invalid login credentials')) {
+        const errorLower = error.toLowerCase();
+        
+        // 邮箱未确认的各种可能错误格式
+        if (errorLower.includes('email not confirmed') || 
+            errorLower.includes('email_not_confirmed') ||
+            errorLower.includes('email confirmation') ||
+            errorLower.includes('confirm your email') ||
+            errorLower.includes('unconfirmed email')) {
+            return 'EMAIL_NOT_CONFIRMED'; // 特殊标记，用于显示详细消息
+        }
+        
+        if (errorLower.includes('invalid login credentials') || 
+            errorLower.includes('invalid credentials') ||
+            errorLower.includes('wrong password') ||
+            errorLower.includes('incorrect password')) {
             return 'Invalid email or password';
         }
-        if (error.includes('Email not confirmed')) {
-            return 'Please confirm your email address first';
-        }
-        if (error.includes('User already registered')) {
+        if (errorLower.includes('user already registered') || 
+            errorLower.includes('email already registered')) {
             return 'This email is already registered';
         }
-        if (error.includes('Password should be at least 6 characters')) {
+        if (errorLower.includes('password should be at least') || 
+            errorLower.includes('password must be at least')) {
             return 'Password must be at least 6 characters';
         }
-        if (error.includes('Unable to validate email address')) {
+        if (errorLower.includes('unable to validate email') || 
+            errorLower.includes('invalid email')) {
             return 'Invalid email address format';
         }
         return error || 'Operation failed, please try again later';
@@ -205,10 +307,13 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
 
     return (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-            <div className="glass-pane w-full max-w-md mx-auto">
+            <div 
+                className="glass-pane w-full max-w-md mx-auto max-h-[90vh] flex flex-col"
+                onClick={(e) => e.stopPropagation()}
+            >
                 {/* Modal header */}
-                <div className="flex items-center justify-between p-6 border-b border-white/10">
-                    <h2 className="text-xl font-bold text-white">
+                <div className="flex items-center justify-between p-4 border-b border-white/10 flex-shrink-0">
+                    <h2 className="text-lg font-bold text-white">
                         {mode === 'login' && 'Sign In'}
                         {mode === 'register' && 'Sign Up'}
                         {mode === 'reset' && 'Reset Password'}
@@ -223,11 +328,11 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                     </button>
                 </div>
 
-                {/* Modal content */}
-                <div className="p-6">
+                {/* Modal content - scrollable */}
+                <div className="p-4 overflow-y-auto flex-1 min-h-0">
                     {/* Message alert */}
                     {message && (
-                        <div className={`mb-4 p-4 rounded-lg text-sm ${message.type === 'success'
+                        <div className={`mb-3 p-3 rounded-lg text-sm ${message.type === 'success'
                             ? 'bg-green-500/20 text-green-300 border border-green-500/30'
                             : 'bg-red-500/20 text-red-300 border border-red-500/30'
                             }`}>
@@ -241,14 +346,28 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                     </svg>
                                 )}
-                                <div>
-                                    <p className="font-medium">{message.text}</p>
-                                    {message.type === 'success' && mode === 'register' && (
-                                        <div className="mt-2 text-xs text-green-400/80">
-                                            <p>• Check your email inbox (including spam folder)</p>
-                                            <p>• Click the confirmation link to activate your account</p>
-                                            <p>• You can close this window and return after confirming</p>
+                                <div className="flex-1">
+                                    {message.text === 'EMAIL_NOT_CONFIRMED_DETAILED' ? (
+                                        <div>
+                                            <p className="font-medium mb-2">Email not confirmed</p>
+                                            <div className="text-xs text-red-300/80 space-y-1.5">
+                                                <p>• Your account exists but the email address hasn't been confirmed yet</p>
+                                                <p>• Please check your email inbox (including spam folder) for the confirmation link</p>
+                                                <p>• Click the confirmation link to activate your account, then try logging in again</p>
+                                                <p>• If you didn't receive the email, you may need to register again or contact support</p>
+                                            </div>
                                         </div>
+                                    ) : (
+                                        <>
+                                            <p className="font-medium">{message.text}</p>
+                                            {message.type === 'success' && mode === 'register' && waitingForEmailConfirmation && (
+                                                <div className="mt-2 text-xs text-green-400/80">
+                                                    <p>• Check your email inbox (including spam folder)</p>
+                                                    <p>• Click the confirmation link to activate your account</p>
+                                                    <p>• This window will close automatically after confirmation</p>
+                                                </div>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </div>
@@ -257,7 +376,7 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
 
                     {/* Google Sign In - 只在登录和注册模式显示 */}
                     {(mode === 'login' || mode === 'register') && (
-                        <div className="mb-6">
+                        <div className="mb-4">
                             <GoogleSignInButton
                                 onSuccess={() => {
                                     setMessage({
@@ -275,7 +394,7 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                             />
 
                             {/* 分隔线 */}
-                            <div className="flex items-center my-6">
+                            <div className="flex items-center my-4">
                                 <div className="flex-1 border-t border-white/10"></div>
                                 <span className="px-4 text-sm text-slate-400">or</span>
                                 <div className="flex-1 border-t border-white/10"></div>
@@ -285,16 +404,41 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
 
                     {/* Login form */}
                     {mode === 'login' && (
-                        <form onSubmit={loginForm.handleSubmit(handleLogin)} className="space-y-4">
+                        <form 
+                            onSubmit={async (e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                
+                                // 手动获取表单数据
+                                const formData = loginForm.getValues();
+                                
+                                // 额外的空值检查
+                                if (!formData.email || !formData.password) {
+                                    await loginForm.trigger();
+                                    return false;
+                                }
+                                
+                                // 手动验证
+                                const isValid = await loginForm.trigger();
+                                
+                                if (isValid) {
+                                    await handleLogin(formData);
+                                }
+                                
+                                return false;
+                            }}
+                            action="javascript:void(0);"
+                            className="space-y-3"
+                        >
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-1.5">
                                     Email Address
                                 </label>
                                 <input
                                     type="email"
                                     autoComplete="email"
                                     {...loginForm.register('email')}
-                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400"
+                                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400 text-sm"
                                     placeholder="Enter your email address"
                                     disabled={loading}
                                 />
@@ -306,14 +450,14 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-1.5">
                                     Password
                                 </label>
                                 <input
                                     type="password"
                                     autoComplete="current-password"
                                     {...loginForm.register('password')}
-                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400"
+                                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400 text-sm"
                                     placeholder="Enter your password"
                                     disabled={loading}
                                 />
@@ -327,7 +471,10 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-lg font-medium hover:from-violet-600 hover:to-blue-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                }}
+                                className="w-full py-2.5 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-lg font-medium hover:from-violet-600 hover:to-blue-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                             >
                                 {loading && (
                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -342,16 +489,16 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                         <form onSubmit={(e) => {
                             e.preventDefault();
                             registerForm.handleSubmit(handleRegister)(e);
-                        }} className="space-y-4">
+                        }} className="space-y-3">
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-1.5">
                                     Email Address
                                 </label>
                                 <input
                                     type="email"
                                     autoComplete="email"
                                     {...registerForm.register('email')}
-                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400"
+                                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400 text-sm"
                                     placeholder="Enter your email address"
                                     disabled={loading}
                                 />
@@ -363,14 +510,14 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-1.5">
                                     Password
                                 </label>
                                 <input
                                     type="password"
                                     autoComplete="new-password"
                                     {...registerForm.register('password')}
-                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400"
+                                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400 text-sm"
                                     placeholder="Enter password (at least 6 characters)"
                                     disabled={loading}
                                 />
@@ -382,14 +529,14 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-1.5">
                                     Confirm Password
                                 </label>
                                 <input
                                     type="password"
                                     autoComplete="new-password"
                                     {...registerForm.register('confirmPassword')}
-                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400"
+                                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400 text-sm"
                                     placeholder="Enter password again"
                                     disabled={loading}
                                 />
@@ -403,7 +550,7 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-lg font-medium hover:from-violet-600 hover:to-blue-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full py-2.5 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-lg font-medium hover:from-violet-600 hover:to-blue-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                             >
                                 {loading && (
                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -415,15 +562,18 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
 
                     {/* Password reset form */}
                     {mode === 'reset' && (
-                        <form onSubmit={resetForm.handleSubmit(handleReset)} className="space-y-4">
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            resetForm.handleSubmit(handleReset)(e);
+                        }} className="space-y-3">
                             <div>
-                                <label className="block text-sm font-medium text-slate-300 mb-2">
+                                <label className="block text-sm font-medium text-slate-300 mb-1.5">
                                     Email Address
                                 </label>
                                 <input
                                     type="email"
                                     {...resetForm.register('email')}
-                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400"
+                                    className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:border-violet-400 focus:ring-1 focus:ring-violet-400 text-sm"
                                     placeholder="Enter your registered email address"
                                     disabled={loading}
                                 />
@@ -437,7 +587,7 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                             <button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-lg font-medium hover:from-violet-600 hover:to-blue-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                className="w-full py-2.5 bg-gradient-to-r from-violet-500 to-blue-500 text-white rounded-lg font-medium hover:from-violet-600 hover:to-blue-600 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-sm"
                             >
                                 {loading && (
                                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -448,7 +598,7 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
                     )}
 
                     {/* Mode switching */}
-                    <div className="mt-6 pt-6 border-t border-white/10">
+                    <div className="mt-4 pt-4 border-t border-white/10">
                         {mode === 'login' && (
                             <div className="text-center space-y-2">
                                 <p className="text-slate-400 text-sm">
@@ -503,16 +653,16 @@ export default function LoginModal({ isOpen, onClose, defaultMode = 'login' }: L
 
                     {/* Registration benefits */}
                     {mode === 'register' && (
-                        <div className="mt-4 p-4 bg-gradient-to-r from-violet-500/10 to-blue-500/10 rounded-lg border border-violet-500/20">
-                            <div className="flex items-start gap-3">
-                                <div className="w-6 h-6 bg-gradient-to-r from-violet-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                                    <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="mt-3 p-3 bg-gradient-to-r from-violet-500/10 to-blue-500/10 rounded-lg border border-violet-500/20">
+                            <div className="flex items-start gap-2">
+                                <div className="w-5 h-5 bg-gradient-to-r from-violet-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <h4 className="text-sm font-medium text-white mb-1">Sign up for exclusive benefits</h4>
-                                    <ul className="text-xs text-slate-300 space-y-1">
+                                    <h4 className="text-xs font-medium text-white mb-0.5">Sign up for exclusive benefits</h4>
+                                    <ul className="text-xs text-slate-300 space-y-0.5">
                                         <li>• Get 200 credits for audio analysis</li>
                                         <li>• Save analysis history</li>
                                         <li>• Early access to new features</li>

@@ -172,7 +172,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // 用户登录
     const signIn = useCallback(async (email: string, password: string): Promise<AuthResponse> => {
         try {
-            setLoading(true);
+            // ⚠️ 不在这里设置 loading，避免登录失败时的全局重新渲染
+            // setLoading(true);
 
             const { data, error } = await supabase.auth.signInWithPassword({
                 email,
@@ -180,6 +181,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
             });
 
             if (error) {
+                // 登录失败，直接返回错误，不改变全局状态
+                console.log('🔐 Login failed:', error.message);
                 return { data: { user: null, session: null }, error };
             }
 
@@ -209,13 +212,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
             return { data, error: null };
         } catch (error: any) {
+            console.log('🔐 Login exception:', error);
             return {
                 data: { user: null, session: null },
                 error: error
             };
-        } finally {
-            setLoading(false);
         }
+        // ⚠️ 不在 finally 中设置 loading，避免不必要的重新渲染
     }, []);
 
     // Google登录

@@ -273,6 +273,7 @@ export default function UserAccountDropdown({ className = '' }: UserAccountDropd
                             console.log('🔐 LoginModal onClose called from UserAccountDropdown');
                             setShowLoginModal(false);
                         }}
+                        defaultMode="login"
                     />
                 )}
             </div>
