@@ -16,6 +16,7 @@ interface UploadSectionProps {
   onOpenLogin?: () => void;
   // Credit system props
   currentCredits?: number;
+  isLoadingCredits?: boolean; // 用于认证用户的积分加载状态
   audioDuration?: AudioDurationResult | null;
   creditEstimate?: CreditConsumptionEstimate | null;
   onPurchaseCredits?: () => void;
@@ -32,6 +33,7 @@ export default function UploadSection({
   user,
   onOpenLogin,
   currentCredits = 0,
+  isLoadingCredits = false,
   audioDuration,
   creditEstimate,
   onPurchaseCredits,
@@ -49,10 +51,20 @@ export default function UploadSection({
   }
 
   const [trialCredits, setTrialCredits] = useState<number>(0);
+  const [creditsLoading, setCreditsLoading] = useState<boolean>(true);
+  const [showLoadingUI, setShowLoadingUI] = useState<boolean>(false);
 
   // Get trial credits for non-authenticated users (刷新当 refreshTrigger 变化时)
   useEffect(() => {
     if (!user && getTrialCreditBalance) {
+      setCreditsLoading(true);
+      setShowLoadingUI(false);
+      
+      // 延迟显示 loading UI，只在加载超过 300ms 时显示
+      const loadingTimer = setTimeout(() => {
+        setShowLoadingUI(true);
+      }, 300);
+
       console.log('🔄 Refreshing trial credits...', refreshTrigger);
       getTrialCreditBalance().then(balance => {
         console.log('💳 Trial credits updated:', balance.remaining);
@@ -60,9 +72,36 @@ export default function UploadSection({
       }).catch(error => {
         console.error('Failed to get trial credit balance:', error);
         setTrialCredits(100); // Default trial credits
+      }).finally(() => {
+        clearTimeout(loadingTimer);
+        setCreditsLoading(false);
+        setShowLoadingUI(false);
       });
+
+      return () => clearTimeout(loadingTimer);
+    } else if (user) {
+      // 如果是认证用户，不需要加载试用积分
+      setCreditsLoading(false);
+      setShowLoadingUI(false);
     }
   }, [user, getTrialCreditBalance, refreshTrigger]);
+
+  // 为认证用户的积分加载添加延迟显示逻辑
+  useEffect(() => {
+    if (user && isLoadingCredits) {
+      setShowLoadingUI(false);
+      
+      // 延迟显示 loading UI，只在加载超过 300ms 时显示
+      const loadingTimer = setTimeout(() => {
+        setShowLoadingUI(true);
+      }, 300);
+
+      return () => clearTimeout(loadingTimer);
+    } else if (user) {
+      // 认证用户加载完成，隐藏 loading UI
+      setShowLoadingUI(false);
+    }
+  }, [user, isLoadingCredits]);
 
   const openFileDialog = () => {
     inputRef.current?.click();
@@ -99,41 +138,73 @@ export default function UploadSection({
       <div className="glass-pane p-3">
         <div className="flex items-center justify-between gap-4">
           {/* Credit Info */}
-          <div className="flex items-center gap-4">
-            {/* Balance */}
-            <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-              </svg>
-              <div>
-                <div className="text-xs text-slate-400">Balance</div>
-                <div className="text-lg font-bold text-green-400">{effectiveCredits}</div>
-              </div>
-            </div>
-
-            <div className="h-8 w-px bg-white/10"></div>
-
-            {/* Available */}
-            <div>
-              <div className="text-xs text-slate-400">Available</div>
-              <div className="text-lg font-bold text-blue-400">
-                {availableSeconds > 0 ? formatSeconds(availableSeconds) : '0s'}
-              </div>
-            </div>
-
-            {/* Cost (when file uploaded) */}
-            {audioDuration && creditEstimate && (
-              <>
-                <div className="h-8 w-px bg-white/10"></div>
+          {showLoadingUI ? (
+            /* Loading State - 只在加载超过 300ms 时显示 */
+            <div className="flex items-center gap-4 flex-1">
+              {/* Balance Loading */}
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
                 <div>
-                  <div className="text-xs text-slate-400">Cost</div>
-                  <div className={`text-lg font-bold ${creditEstimate.canAfford ? 'text-orange-400' : 'text-red-400'}`}>
-                    {creditEstimate.creditsRequired}
+                  <div className="text-xs text-slate-400">Balance</div>
+                  <div className="flex items-center gap-1">
+                    <div className="h-2 w-2 bg-violet-400/60 rounded-full animate-pulse"></div>
+                    <div className="h-2 w-2 bg-violet-400/60 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                    <div className="h-2 w-2 bg-violet-400/60 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                   </div>
                 </div>
-              </>
-            )}
-          </div>
+              </div>
+
+              <div className="h-8 w-px bg-white/10"></div>
+
+              {/* Available Loading */}
+              <div>
+                <div className="text-xs text-slate-400">Available</div>
+                <div className="flex items-center gap-1">
+                  <div className="h-2 w-2 bg-blue-400/60 rounded-full animate-pulse"></div>
+                  <div className="h-2 w-2 bg-blue-400/60 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="h-2 w-2 bg-blue-400/60 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Loaded State */
+            <div className="flex items-center gap-4">
+              {/* Balance */}
+              <div className="flex items-center gap-2">
+                <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                </svg>
+                <div>
+                  <div className="text-xs text-slate-400">Balance</div>
+                  <div className="text-lg font-bold text-green-400">{effectiveCredits}</div>
+                </div>
+              </div>
+
+              <div className="h-8 w-px bg-white/10"></div>
+
+              {/* Available */}
+              <div>
+                <div className="text-xs text-slate-400">Available</div>
+                <div className="text-lg font-bold text-blue-400">
+                  {availableSeconds > 0 ? formatSeconds(availableSeconds) : '0s'}
+                </div>
+              </div>
+              {/* Cost (when file uploaded) */}
+              {audioDuration && creditEstimate && (
+                <>
+                  <div className="h-8 w-px bg-white/10"></div>
+                  <div>
+                    <div className="text-xs text-slate-400">Cost</div>
+                    <div className={`text-lg font-bold ${creditEstimate.canAfford ? 'text-orange-400' : 'text-red-400'}`}>
+                      {creditEstimate.creditsRequired}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
 
           {/* Right: Actions */}
           <div className="flex items-center gap-2">

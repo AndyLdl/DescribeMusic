@@ -117,7 +117,7 @@ const makeTitle = title ? `${title} | Describe Music` : siteTitle;
   </head>
   <body>
     <!-- 分析页面不使用默认的header，由AnalyzeAppWithAuth自己管理 -->
-    <main class="page-content" style="padding-top: 0 !important;">
+    <main class="page-content min-h-[calc(100vh-200px)]" style="padding-top: 0 !important;">
       <slot />
     </main>
     <!-- Footer: Owner view shows full footer, SharedAnalysisView renders its own minimal footer -->

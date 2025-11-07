@@ -527,20 +527,6 @@ function AnalyzeAppContent() {
     }
   }, [uploadedFile, handleFiles, handleNewAnalysis]);
 
-  // Show loading state if authentication or credits are loading
-  if (authLoading || creditLoading) {
-    return (
-      <div className="min-h-screen bg-dark-bg flex items-center justify-center">
-        <div className="glass-pane p-8">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 border-2 border-violet-400 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-white">Initializing...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-dark-bg">
       <CreditToastContainer />
@@ -650,6 +636,7 @@ function AnalyzeAppContent() {
                   user={user}
                   onOpenLogin={openLogin}
                   currentCredits={credits}
+                  isLoadingCredits={creditLoading}
                   audioDuration={audioDuration}
                   creditEstimate={creditEstimate}
                   onPurchaseCredits={() => window.location.href = '/pricing'}
@@ -725,6 +712,7 @@ function AnalyzeAppContent() {
                 user={user}
                 onOpenLogin={openLogin}
                 currentCredits={credits}
+                isLoadingCredits={creditLoading}
                 audioDuration={audioDuration}
                 creditEstimate={creditEstimate}
                 onPurchaseCredits={() => window.location.href = '/pricing'}
