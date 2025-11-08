@@ -12,6 +12,8 @@
     "test": "vitest",
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
+    "test:fingerprint": "node scripts/test-device-fingerprint.js",
+    "generate:salt": "node scripts/generate-salt.js",
     "setup:lemonsqueezy": "node setup-lemonsqueezy.js",
     "check:lemonsqueezy": "node check-lemonsqueezy-config.js"
   },

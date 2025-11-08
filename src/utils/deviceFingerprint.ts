@@ -27,10 +27,12 @@ export class DeviceFingerprint {
     private static readonly CACHE_KEY = 'device_fingerprint_cache';
     private static readonly CACHE_EXPIRY_KEY = 'device_fingerprint_expiry';
     private static readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24小时
+    private static readonly STABLE_CACHE_KEY = 'device_stable_fingerprint'; // 稳定指纹缓存
 
     /**
      * 生成设备指纹
-     * 使用多种浏览器特征创建唯一标识
+     * 使用稳定的硬件特征创建唯一标识，确保无痕模式和正常模式生成相同指纹
+     * 这样可以防止用户通过切换无痕模式来绕过试用限制
      */
     static async generate(): Promise<string> {
         // 如果已有缓存的指纹，直接返回
@@ -43,20 +45,33 @@ export class DeviceFingerprint {
             return fingerprintPromise;
         }
 
-        // 检查本地存储的缓存
-        const cached = this.getCachedFingerprint();
+        // 检测是否在无痕模式
+        const isIncognito = await this.detectIncognito();
+
+        // 检查缓存（无痕模式和正常模式使用不同的缓存策略）
+        const cached = isIncognito ? this.getStableFingerprint() : this.getCachedFingerprint();
         if (cached) {
             cachedFingerprint = cached;
+            console.log(isIncognito ? '📦 无痕模式：使用sessionStorage缓存' : '📦 正常模式：使用localStorage缓存');
             return cached;
         }
 
-        // 生成新的指纹
+        // 生成新的指纹（总是使用稳定模式，确保两种模式生成相同指纹）
         fingerprintPromise = this.generateFingerprint();
 
         try {
             const fingerprint = await fingerprintPromise;
             cachedFingerprint = fingerprint;
-            this.setCachedFingerprint(fingerprint);
+
+            // 根据模式使用不同的缓存策略
+            if (isIncognito) {
+                this.setStableFingerprint(fingerprint);
+                console.log('🔒 无痕模式：指纹已保存到sessionStorage');
+            } else {
+                this.setCachedFingerprint(fingerprint);
+                console.log('✅ 正常模式：指纹已保存到localStorage');
+            }
+
             return fingerprint;
         } finally {
             fingerprintPromise = null;
@@ -65,17 +80,27 @@ export class DeviceFingerprint {
 
     /**
      * 生成设备指纹的核心逻辑
+     * 只使用真正的硬件特征，不受屏幕切换、窗口移动等影响
+     * 避免使用 Canvas/WebGL/Audio 等容易被无痕模式修改的特征
      */
     private static async generateFingerprint(): Promise<string> {
-        const components: FingerprintComponents = {
-            screen: this.getScreenFingerprint(),
-            timezone: this.getTimezoneFingerprint(),
-            language: this.getLanguageFingerprint(),
-            platform: this.getPlatformFingerprint(),
-            canvas: await this.getCanvasFingerprint(),
-            webgl: this.getWebGLFingerprint(),
-            audio: await this.getAudioFingerprint(),
-            userAgent: this.getUserAgentFingerprint()
+        // 只使用硬件级别的特征，避免受环境变化影响
+        const components = {
+            // 核心硬件特征（完全不变）
+            gpu: await this.getGPUInfo(),                          // GPU 信息
+            cores: String(navigator.hardwareConcurrency || 'unknown'), // CPU 核心数
+            memory: String((navigator as any).deviceMemory || 'unknown'), // 设备内存
+            platform: this.getPlatformFingerprint(),               // 操作系统
+
+            // 浏览器特征
+            userAgent: this.getUserAgentFingerprint(),             // 浏览器信息
+            vendor: navigator.vendor || 'unknown',                 // 浏览器供应商
+
+            // 系统特征
+            timezone: this.getTimezoneFingerprint(),               // 时区
+
+            // 输入设备特征（较稳定）
+            touch: String(navigator.maxTouchPoints || 0),          // 触摸点数
         };
 
         // 组合所有组件
@@ -185,20 +210,56 @@ export class DeviceFingerprint {
     }
 
     /**
-     * 获取WebGL指纹
+     * 获取 GPU 信息（用于设备指纹）
+     * 这比 Canvas 更稳定，因为它直接读取硬件信息
+     */
+    private static async getGPUInfo(): Promise<string> {
+        if (typeof window === 'undefined') return 'server';
+
+        try {
+            const canvas = document.createElement('canvas');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
+
+            if (!gl) return 'no-webgl';
+
+            // 获取 GPU 供应商和渲染器信息
+            const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+            if (!debugInfo) {
+                // 降级方案：使用基本的 WebGL 参数
+                const vendor = gl.getParameter(gl.VENDOR) || 'unknown';
+                const renderer = gl.getParameter(gl.RENDERER) || 'unknown';
+                return `${vendor}|${renderer}`;
+            }
+
+            const vendor = gl.getParameter((debugInfo as any).UNMASKED_VENDOR_WEBGL) || 'unknown';
+            const renderer = gl.getParameter((debugInfo as any).UNMASKED_RENDERER_WEBGL) || 'unknown';
+
+            // 清理字符串，只保留关键信息
+            const cleanVendor = String(vendor).split('(')[0].trim();
+            const cleanRenderer = String(renderer).split('(')[0].trim();
+
+            return `${cleanVendor}|${cleanRenderer}`;
+        } catch (error) {
+            console.warn('GPU info error:', error);
+            return 'gpu-error';
+        }
+    }
+
+    /**
+     * 获取WebGL指纹（保留用于调试）
      */
     private static getWebGLFingerprint(): string {
         if (typeof window === 'undefined') return 'server';
 
         try {
             const canvas = document.createElement('canvas');
-            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+            const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl') as WebGLRenderingContext | null;
 
             if (!gl) return 'no-webgl';
 
             const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
-            const vendor = debugInfo ? gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) : '';
-            const renderer = debugInfo ? gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) : '';
+            const vendor = debugInfo ? gl.getParameter((debugInfo as any).UNMASKED_VENDOR_WEBGL) : '';
+            const renderer = debugInfo ? gl.getParameter((debugInfo as any).UNMASKED_RENDERER_WEBGL) : '';
 
             return sha256(`${vendor}|${renderer}`).substring(0, 16);
         } catch {
@@ -265,6 +326,25 @@ export class DeviceFingerprint {
     }
 
     /**
+     * 获取浏览器插件指纹
+     */
+    private static getPluginsFingerprint(): string {
+        if (typeof navigator === 'undefined') return 'server';
+
+        try {
+            const plugins = Array.from(navigator.plugins || [])
+                .map(p => p.name)
+                .sort()
+                .slice(0, 5) // 只取前5个插件
+                .join('|');
+
+            return plugins || 'no-plugins';
+        } catch {
+            return 'plugins-error';
+        }
+    }
+
+    /**
      * 从本地存储获取缓存的指纹
      */
     private static getCachedFingerprint(): string | null {
@@ -306,6 +386,51 @@ export class DeviceFingerprint {
     }
 
     /**
+     * 保存稳定指纹（用于无痕模式）
+     * 使用更持久的存储机制
+     */
+    private static setStableFingerprint(fingerprint: string): void {
+        if (typeof sessionStorage === 'undefined') return;
+
+        try {
+            // 无痕模式下使用 sessionStorage（在会话期间有效）
+            sessionStorage.setItem(this.STABLE_CACHE_KEY, fingerprint);
+
+            // 同时尝试 localStorage（可能会失败）
+            try {
+                localStorage.setItem(this.STABLE_CACHE_KEY, fingerprint);
+            } catch {
+                // 无痕模式可能会阻止 localStorage
+            }
+        } catch {
+            // 忽略错误
+        }
+    }
+
+    /**
+     * 获取稳定指纹缓存
+     */
+    private static getStableFingerprint(): string | null {
+        try {
+            // 先尝试 sessionStorage
+            if (typeof sessionStorage !== 'undefined') {
+                const cached = sessionStorage.getItem(this.STABLE_CACHE_KEY);
+                if (cached) return cached;
+            }
+
+            // 再尝试 localStorage
+            if (typeof localStorage !== 'undefined') {
+                const cached = localStorage.getItem(this.STABLE_CACHE_KEY);
+                if (cached) return cached;
+            }
+
+            return null;
+        } catch {
+            return null;
+        }
+    }
+
+    /**
      * 清除缓存的指纹
      */
     static clearCache(): void {
@@ -316,6 +441,15 @@ export class DeviceFingerprint {
             try {
                 localStorage.removeItem(this.CACHE_KEY);
                 localStorage.removeItem(this.CACHE_EXPIRY_KEY);
+                localStorage.removeItem(this.STABLE_CACHE_KEY);
+            } catch {
+                // 忽略错误
+            }
+        }
+
+        if (typeof sessionStorage !== 'undefined') {
+            try {
+                sessionStorage.removeItem(this.STABLE_CACHE_KEY);
             } catch {
                 // 忽略错误
             }
@@ -455,6 +589,91 @@ export class DeviceFingerprint {
             userAgent: navigator.userAgent.substring(0, 100) + '...', // 截断用户代理
             timestamp: new Date().toISOString()
         };
+    }
+
+    /**
+     * 获取完整的设备指纹组件（用于调试）
+     * 可以看到每个组件的具体值
+     */
+    static async getDetailedFingerprint(): Promise<{
+        fingerprint: string;
+        components: Record<string, string>;
+        isIncognito: boolean;
+    }> {
+        // 使用与 generate() 相同的稳定特征
+        const components = {
+            // 核心硬件特征（完全不变）
+            gpu: await this.getGPUInfo(),
+            cores: String(navigator.hardwareConcurrency || 'unknown'),
+            memory: String((navigator as any).deviceMemory || 'unknown'),
+            platform: this.getPlatformFingerprint(),
+
+            // 浏览器特征
+            userAgent: this.getUserAgentFingerprint(),
+            vendor: navigator.vendor || 'unknown',
+
+            // 系统特征
+            timezone: this.getTimezoneFingerprint(),
+
+            // 输入设备特征
+            touch: String(navigator.maxTouchPoints || 0),
+        };
+
+        const fingerprintString = Object.values(components).join('|');
+        const salt = import.meta.env.VITE_DEVICE_FINGERPRINT_SALT || 'default-salt';
+        const saltedFingerprint = `${fingerprintString}|${salt}`;
+        const fingerprint = sha256(saltedFingerprint);
+
+        // 检测是否在无痕模式
+        const isIncognito = await this.detectIncognito();
+
+        return {
+            fingerprint,
+            components,
+            isIncognito
+        };
+    }
+
+    /**
+     * 检测是否在无痕模式
+     */
+    private static async detectIncognito(): Promise<boolean> {
+        if (typeof window === 'undefined') return false;
+
+        try {
+            // 方法1: 检查 FileSystem API
+            if ('storage' in navigator && 'estimate' in navigator.storage) {
+                const { quota } = await navigator.storage.estimate();
+                // 无痕模式下配额通常很小（< 120MB）
+                if (quota && quota < 120000000) {
+                    return true;
+                }
+            }
+
+            // 方法2: 检查 IndexedDB
+            if ('indexedDB' in window) {
+                try {
+                    const db = indexedDB.open('test');
+                    db.onerror = () => true;
+                } catch {
+                    return true;
+                }
+            }
+
+            // 方法3: 检查 localStorage 持久性
+            if (typeof localStorage !== 'undefined') {
+                try {
+                    localStorage.setItem('incognito_test', '1');
+                    localStorage.removeItem('incognito_test');
+                } catch {
+                    return true;
+                }
+            }
+
+            return false;
+        } catch {
+            return false;
+        }
     }
 }
 
