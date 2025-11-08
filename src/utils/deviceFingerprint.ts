@@ -28,6 +28,8 @@ export class DeviceFingerprint {
     private static readonly CACHE_EXPIRY_KEY = 'device_fingerprint_expiry';
     private static readonly CACHE_DURATION = 24 * 60 * 60 * 1000; // 24小时
     private static readonly STABLE_CACHE_KEY = 'device_stable_fingerprint'; // 稳定指纹缓存
+    private static readonly ALGORITHM_VERSION_KEY = 'device_fingerprint_algorithm_version';
+    private static readonly CURRENT_ALGORITHM_VERSION = 'v2.2'; // 当前算法版本
 
     /**
      * 生成设备指纹
@@ -35,6 +37,9 @@ export class DeviceFingerprint {
      * 这样可以防止用户通过切换无痕模式来绕过试用限制
      */
     static async generate(): Promise<string> {
+        // 检查算法版本，如果版本变化则清除旧缓存（必须在检查缓存之前）
+        this.checkAndClearCacheIfVersionChanged();
+
         // 如果已有缓存的指纹，直接返回
         if (cachedFingerprint) {
             return cachedFingerprint;
@@ -63,6 +68,9 @@ export class DeviceFingerprint {
             const fingerprint = await fingerprintPromise;
             cachedFingerprint = fingerprint;
 
+            // 保存算法版本号
+            this.saveAlgorithmVersion();
+
             // 根据模式使用不同的缓存策略
             if (isIncognito) {
                 this.setStableFingerprint(fingerprint);
@@ -75,6 +83,56 @@ export class DeviceFingerprint {
             return fingerprint;
         } finally {
             fingerprintPromise = null;
+        }
+    }
+
+    /**
+     * 检查算法版本，如果版本变化则清除旧缓存
+     * 这样老用户会自动使用新算法生成新指纹
+     */
+    private static checkAndClearCacheIfVersionChanged(): void {
+        if (typeof localStorage === 'undefined') return;
+
+        try {
+            const cachedVersion = localStorage.getItem(DeviceFingerprint.ALGORITHM_VERSION_KEY);
+
+            // 如果版本不匹配，清除所有缓存
+            if (cachedVersion && cachedVersion !== DeviceFingerprint.CURRENT_ALGORITHM_VERSION) {
+                console.log(`🔄 检测到算法版本变化 (${cachedVersion} → ${DeviceFingerprint.CURRENT_ALGORITHM_VERSION})，清除旧缓存`);
+
+                // 清除所有相关缓存
+                localStorage.removeItem(DeviceFingerprint.CACHE_KEY);
+                localStorage.removeItem(DeviceFingerprint.CACHE_EXPIRY_KEY);
+                localStorage.removeItem(DeviceFingerprint.STABLE_CACHE_KEY);
+
+                // 清除内存缓存
+                cachedFingerprint = null;
+                fingerprintPromise = null;
+
+                // 清除 sessionStorage（无痕模式）
+                if (typeof sessionStorage !== 'undefined') {
+                    try {
+                        sessionStorage.removeItem(DeviceFingerprint.STABLE_CACHE_KEY);
+                    } catch {
+                        // 忽略错误
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn('检查算法版本时出错:', error);
+        }
+    }
+
+    /**
+     * 保存当前算法版本号
+     */
+    private static saveAlgorithmVersion(): void {
+        if (typeof localStorage === 'undefined') return;
+
+        try {
+            localStorage.setItem(DeviceFingerprint.ALGORITHM_VERSION_KEY, DeviceFingerprint.CURRENT_ALGORITHM_VERSION);
+        } catch {
+            // 忽略错误
         }
     }
 
@@ -442,6 +500,7 @@ export class DeviceFingerprint {
                 localStorage.removeItem(this.CACHE_KEY);
                 localStorage.removeItem(this.CACHE_EXPIRY_KEY);
                 localStorage.removeItem(this.STABLE_CACHE_KEY);
+                localStorage.removeItem(DeviceFingerprint.ALGORITHM_VERSION_KEY);
             } catch {
                 // 忽略错误
             }
