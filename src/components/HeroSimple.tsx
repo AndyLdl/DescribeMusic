@@ -791,46 +791,67 @@ export default function HeroSimple() {
                         )}
 
                         {uploadState === 'uploaded' && uploadedFile && (
-                          <>
-                            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-2 sm:mb-3">
+                          <div className="space-y-4">
+                            <h3 className="text-base sm:text-lg md:text-xl font-bold text-white mb-2 flex items-center justify-center gap-2">
+                              <svg className="w-6 h-6 text-green-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
                               File Ready for Analysis
                             </h3>
-                            <div className="text-slate-300 text-sm sm:text-base mb-3 sm:mb-4 max-w-full">
-                              <p className="break-words overflow-hidden text-ellipsis whitespace-nowrap" title={uploadedFile.name}>
-                                {uploadedFile.name}
-                              </p>
-                            </div>
-                            <p className="text-slate-400 text-xs sm:text-sm mb-4 sm:mb-6">
-                              Duration: {Math.floor(audioDuration / 60)}:{Math.floor(audioDuration % 60).toString().padStart(2, '0')} • Size: {(uploadedFile.size / 1024 / 1024).toFixed(1)}MB
-                            </p>
                             
-                            {/* Cancel Selection Button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation(); // 阻止事件冒泡
-                                
-                                // 清理之前创建的URL以避免内存泄漏
-                                if (currentAudioUrl && currentAudioUrl.startsWith('blob:')) {
-                                  URL.revokeObjectURL(currentAudioUrl);
-                                }
-                                
-                                setUploadState('idle');
-                                setUploadedFile(null);
-                                setAudioDuration(0);
-                                setErrorMessage('');
-                                setCurrentAudioUrl('/audio/samples/rock-anthem.wav'); // 重置为demo音频
-                                if (fileInputRef.current) {
-                                  fileInputRef.current.value = '';
-                                }
-                              }}
-                              className="w-full py-2 sm:py-2.5 px-3 sm:px-4 rounded-lg text-xs sm:text-sm font-medium bg-red-500/20 hover:bg-red-500/30 text-red-300 hover:text-red-200 border border-red-500/40 hover:border-red-400/60 transition-all duration-200 hover:scale-[1.02] flex items-center justify-center gap-2"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              Cancel Selection
-                            </button>
-                          </>
+                            {/* File Info Card */}
+                            <div className="bg-white/5 rounded-lg p-3 border border-white/10 text-left">
+                              <div className="text-slate-300 text-sm mb-2 truncate" title={uploadedFile.name}>
+                                {uploadedFile.name}
+                              </div>
+                              <div className="flex items-center justify-between text-xs text-slate-400">
+                                <span>{Math.floor(audioDuration / 60)}:{Math.floor(audioDuration % 60).toString().padStart(2, '0')}</span>
+                                <span>•</span>
+                                <span>{(uploadedFile.size / 1024 / 1024).toFixed(1)}MB</span>
+                                <span>•</span>
+                                <span className="text-violet-300 font-medium">{getRoundedCredits(audioDuration)} credits</span>
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
+                              {/* Start Analysis Button - Primary */}
+                              {currentCreditBalance && currentCreditBalance.remaining >= getRoundedCredits(audioDuration) ? (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleStartAnalysis();
+                                  }}
+                                  className="w-full py-3 px-4 rounded-lg font-bold text-sm text-white bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 transition-all duration-300 transform hover:scale-105 shadow-lg"
+                                >
+                                  🚀 Start Analysis
+                                </button>
+                              ) : null}
+
+                              {/* Cancel Button - Secondary */}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  
+                                  if (currentAudioUrl && currentAudioUrl.startsWith('blob:')) {
+                                    URL.revokeObjectURL(currentAudioUrl);
+                                  }
+                                  
+                                  setUploadState('idle');
+                                  setUploadedFile(null);
+                                  setAudioDuration(0);
+                                  setErrorMessage('');
+                                  setCurrentAudioUrl('/audio/samples/rock-anthem.wav');
+                                  if (fileInputRef.current) {
+                                    fileInputRef.current.value = '';
+                                  }
+                                }}
+                                className="w-full py-2 px-3 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-300 hover:bg-white/5 transition-all duration-200"
+                              >
+                                Cancel Selection
+                              </button>
+                            </div>
+                          </div>
                         )}
 
                         {uploadState === 'complete' && (
@@ -894,34 +915,56 @@ export default function HeroSimple() {
                       </div>
                     )}
 
-                    {/* Start Analysis Button - Always visible below upload area */}
+                    {/* Start Analysis Button - Only show when insufficient credits or no file uploaded */}
                     <div className="mt-4 sm:mt-6">
                       {/* Check if user has insufficient credits */}
                       {uploadedFile && audioDuration > 0 && currentCreditBalance && currentCreditBalance.remaining < getRoundedCredits(audioDuration) ? (
-                        /* Insufficient Credits - Prominent Action Button */
-                        <div className="space-y-2 sm:space-y-3">
-                          <button
-                            onClick={handleInsufficientCreditsAction}
-                            className="w-full py-3 sm:py-4 px-4 sm:px-6 rounded-lg font-bold text-sm sm:text-base text-white transition-all duration-300 transform hover:scale-105 shadow-lg bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 border-2 border-orange-400/50 hover:border-orange-300"
-                          >
-                            <div className="flex items-center justify-center gap-2">
-                              <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
-                              </svg>
-                              {!user ? 'Login to Get More Credits' : 'Purchase More Credits'}
-                            </div>
-                          </button>
-                          <div className="text-center">
-                            <p className="text-xs sm:text-sm text-orange-300 font-medium">
-                              Need {getRoundedCredits(audioDuration) - currentCreditBalance.remaining} more credits
-                            </p>
-                            <p className="text-xs text-orange-200/80 mt-1">
-                              {!user ? 'Login to access your credit balance' : 'Purchase credits to continue analysis'}
-                            </p>
+                        /* Insufficient Credits - Simplified Version */
+                        <div className="bg-gradient-to-br from-red-500/10 to-orange-500/10 rounded-lg p-4 sm:p-5 border border-red-500/30 space-y-4">
+                          {/* Header */}
+                          <div className="flex items-center gap-2">
+                            <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                            </svg>
+                            <span className="text-sm font-bold text-red-300">Insufficient Credits</span>
                           </div>
+                          
+                          {/* Credit Info - Compact */}
+                          <div className="text-xs sm:text-sm space-y-1.5">
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-400">Required:</span>
+                              <span className="text-white font-medium">{getRoundedCredits(audioDuration)} credits</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-slate-400">You have:</span>
+                              <span className="text-blue-300 font-medium">{currentCreditBalance.remaining} credits</span>
+                            </div>
+                            <div className="h-px bg-white/10 my-2"></div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-orange-300 font-semibold">Need:</span>
+                              <span className="text-orange-300 font-bold">+{getRoundedCredits(audioDuration) - currentCreditBalance.remaining} credits</span>
+                            </div>
+                          </div>
+
+                          {/* CTA Button */}
+                          {!user ? (
+                            <button
+                              onClick={handleInsufficientCreditsAction}
+                              className="w-full py-3 px-4 rounded-lg font-bold text-sm text-white transition-all duration-300 transform hover:scale-105 shadow-lg bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600"
+                            >
+                              🎁 Get 200 Free Credits
+                            </button>
+                          ) : (
+                            <button
+                              onClick={handleInsufficientCreditsAction}
+                              className="w-full py-3 px-4 rounded-lg font-bold text-sm text-white transition-all duration-300 transform hover:scale-105 shadow-lg bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600"
+                            >
+                              💳 Purchase Credits
+                            </button>
+                          )}
                         </div>
-                      ) : (
-                        /* Normal Start Analysis Button */
+                      ) : uploadState !== 'uploaded' ? (
+                        /* Normal Start Analysis Button - Only show when no file uploaded */
                         <button
                           onClick={handleStartAnalysis}
                           disabled={!uploadedFile || !audioDuration || !currentCreditBalance || uploadState === 'analyzing' || uploadState === 'complete'}
@@ -944,7 +987,7 @@ export default function HeroSimple() {
                             : `Start Analysis (${getRoundedCredits(audioDuration)} credits)`
                           }
                         </button>
-                      )}
+                      ) : null}
                       
                       {/* Credit Info - Only show when file is selected and not completed */}
                       {uploadedFile && audioDuration > 0 && currentCreditBalance && uploadState !== 'complete' && (
@@ -1193,48 +1236,72 @@ export default function HeroSimple() {
                         </div>
                       )}
 
-                      {/* File Selected - Ready for Analysis with Animation */}
+                      {/* File Selected - Ready for Analysis or Insufficient Credits */}
                       {uploadState === 'uploaded' && uploadedFile && (
-                        <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg p-4 border border-green-500/20 animate-slide-in-from-top">
-                          <div className="flex items-center gap-2 mb-4">
-                            <div className="w-5 h-5 rounded bg-green-500/20 flex items-center justify-center animate-pulse">
-                              <svg className="w-3 h-3 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        currentCreditBalance && currentCreditBalance.remaining < getRoundedCredits(audioDuration) ? (
+                          /* Insufficient Credits Warning - Simplified */
+                          <div className="bg-gradient-to-r from-red-500/10 to-orange-500/10 rounded-lg p-4 border border-red-500/20">
+                            <div className="flex items-center gap-2 mb-3">
+                              <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                               </svg>
+                              <span className="text-sm font-bold text-red-300">Insufficient Credits</span>
                             </div>
-                            <span className="text-xs text-green-400 font-medium">Ready for Analysis</span>
+                            
+                            <p className="text-sm text-slate-300 mb-4 text-left">
+                              Need <span className="font-semibold text-orange-300">{getRoundedCredits(audioDuration) - currentCreditBalance.remaining} more credits</span> to analyze this audio
+                            </p>
+
+                            <button
+                              onClick={handleInsufficientCreditsAction}
+                              className="w-full py-2.5 px-4 rounded-lg font-semibold text-sm text-white bg-gradient-to-r from-violet-500 to-blue-500 hover:from-violet-600 hover:to-blue-600 transition-all duration-300"
+                            >
+                              {!user ? '🎁 Get 200 Free Credits' : '💳 Purchase Credits'}
+                            </button>
                           </div>
-                          
-                          {/* Animated Audio Waveform */}
-                          <div className="flex items-center justify-center gap-1 mb-4">
-                            {[1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1].map((height, index) => (
-                              <div
-                                key={index}
-                                className="bg-green-500 rounded-full animate-pulse"
-                                style={{
-                                  width: '3px',
-                                  height: `${height * 3}px`,
-                                  animationDelay: `${index * 0.1}s`,
-                                  animationDuration: '1.5s'
-                                }}
-                              ></div>
-                            ))}
-                          </div>
-                          
-                          {/* Animated Text */}
-                          <div className="text-center">
-                            <div className="flex items-center justify-center gap-2 text-xs text-green-300 mb-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
-                              <span>Audio file ready for AI analysis</span>
-                              <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                        ) : (
+                          /* Sufficient Credits - Ready for Analysis */
+                          <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg p-4 border border-green-500/20">
+                            <div className="flex items-center gap-2 mb-4">
+                              <div className="w-5 h-5 rounded bg-green-500/20 flex items-center justify-center animate-pulse">
+                                <svg className="w-3 h-3 text-green-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                              </div>
+                              <span className="text-xs text-green-400 font-medium">Ready for Analysis</span>
                             </div>
-                            <div className="mt-3 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
-                              <p className="text-green-300 text-xs text-center">
-                                🎵 Click "Start Analysis" to get AI insights
-                              </p>
+                            
+                            {/* Animated Audio Waveform */}
+                            <div className="flex items-center justify-center gap-1 mb-4">
+                              {[1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1].map((height, index) => (
+                                <div
+                                  key={index}
+                                  className="bg-green-500 rounded-full animate-pulse"
+                                  style={{
+                                    width: '3px',
+                                    height: `${height * 3}px`,
+                                    animationDelay: `${index * 0.1}s`,
+                                    animationDuration: '1.5s'
+                                  }}
+                                ></div>
+                              ))}
+                            </div>
+                            
+                            {/* Animated Text */}
+                            <div className="text-center">
+                              <div className="flex items-center justify-center gap-2 text-xs text-green-300 mb-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></div>
+                                <span>Audio file ready for AI analysis</span>
+                                <div className="w-2 h-2 bg-green-500 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                              </div>
+                              <div className="mt-3 p-2 bg-green-500/10 rounded-lg border border-green-500/20">
+                                <p className="text-green-300 text-xs text-center">
+                                  🎵 Click "Start Analysis" to get AI insights
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
+                        )
                       )}
 
                       {/* Analysis in Progress - Animated */}
