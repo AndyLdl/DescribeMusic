@@ -666,29 +666,59 @@ function AnalyzeAppContent() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                     </div>
-                    <h3 className="text-xl font-semibold text-white mb-2">Analysis Failed</h3>
-                    <p className="text-slate-400 mb-6">{errorMessage}</p>
-                    <div className="flex gap-3 justify-center">
-                      {needsAuth ? (
+                    <h3 className="text-xl font-semibold text-white mb-2">Insufficient Credits</h3>
+                    {!user ? (
+                      <div className="mb-6">
+                        <p className="text-slate-300 text-base mb-3">{errorMessage}</p>
+                        <div className="bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-violet-500/20 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <svg className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            <div className="text-left">
+                              <p className="text-violet-300 text-sm font-medium">Sign up now and get 200 free trial credits!</p>
+                              <p className="text-slate-400 text-xs mt-1">Start analyzing your audio files instantly with no credit card required.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mb-6">
+                        <p className="text-slate-300 text-base mb-3">{errorMessage}</p>
+                        <div className="bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-violet-500/20 rounded-lg p-4">
+                          <div className="flex items-start gap-3">
+                            <svg className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <div className="text-left">
+                              <p className="text-violet-300 text-sm font-medium">Need more credits?</p>
+                              <p className="text-slate-400 text-xs mt-1">Choose a plan that fits your needs and continue analyzing without limits.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                      {!user ? (
                         <button
                           onClick={openLogin}
-                          className="btn btn-primary"
+                          className="px-6 py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white text-base font-semibold rounded-lg hover:from-violet-600 hover:to-blue-600 transform hover:scale-105 transition-all duration-300 shadow-lg shadow-violet-500/25"
                         >
-                          登录
+                          Sign Up Free
                         </button>
                       ) : (
                         <button
-                          onClick={handleRetryAnalysis}
-                          className="btn btn-primary"
+                          onClick={() => window.location.href = '/pricing'}
+                          className="px-6 py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white text-base font-semibold rounded-lg hover:from-violet-600 hover:to-blue-600 transform hover:scale-105 transition-all duration-300 shadow-lg shadow-violet-500/25"
                         >
-                          Try Again
+                          Get More Credits
                         </button>
                       )}
                       <button
                         onClick={handleNewAnalysis}
-                        className="btn btn-secondary"
+                        className="px-6 py-3 bg-white/10 text-slate-300 text-base font-medium rounded-lg hover:bg-white/20 hover:text-white border border-white/20 transition-all duration-300"
                       >
-                        New File
+                        Try Another File
                       </button>
                     </div>
                   </div>
@@ -742,29 +772,59 @@ function AnalyzeAppContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-semibold text-white mb-2">Analysis Failed</h3>
-                  <p className="text-slate-400 mb-6">{errorMessage}</p>
-                  <div className="flex gap-3 justify-center">
-                    {needsAuth ? (
+                  <h3 className="text-xl font-semibold text-white mb-2">Insufficient Credits</h3>
+                  {!user ? (
+                    <div className="mb-6">
+                      <p className="text-slate-300 text-base mb-3">{errorMessage}</p>
+                      <div className="bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-violet-500/20 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                          </svg>
+                          <div className="text-left">
+                            <p className="text-violet-300 text-sm font-medium">Sign up now and get 200 free trial credits!</p>
+                            <p className="text-slate-400 text-xs mt-1">Start analyzing your audio files instantly with no credit card required.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mb-6">
+                      <p className="text-slate-300 text-base mb-3">{errorMessage}</p>
+                      <div className="bg-gradient-to-r from-violet-500/10 to-blue-500/10 border border-violet-500/20 rounded-lg p-4">
+                        <div className="flex items-start gap-3">
+                          <svg className="w-5 h-5 text-violet-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <div className="text-left">
+                            <p className="text-violet-300 text-sm font-medium">Need more credits?</p>
+                            <p className="text-slate-400 text-xs mt-1">Choose a plan that fits your needs and continue analyzing without limits.</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-3 justify-center">
+                    {!user ? (
                       <button
                         onClick={openLogin}
-                        className="btn btn-primary"
+                        className="px-6 py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white text-base font-semibold rounded-lg hover:from-violet-600 hover:to-blue-600 transform hover:scale-105 transition-all duration-300 shadow-lg shadow-violet-500/25"
                       >
-                        登录
+                        Sign Up Free
                       </button>
                     ) : (
                       <button
-                        onClick={handleRetryAnalysis}
-                        className="btn btn-primary"
+                        onClick={() => window.location.href = '/pricing'}
+                        className="px-6 py-3 bg-gradient-to-r from-violet-500 to-blue-500 text-white text-base font-semibold rounded-lg hover:from-violet-600 hover:to-blue-600 transform hover:scale-105 transition-all duration-300 shadow-lg shadow-violet-500/25"
                       >
-                        Try Again
+                        Get More Credits
                       </button>
                     )}
                     <button
                       onClick={handleNewAnalysis}
-                      className="btn btn-secondary"
+                      className="px-6 py-3 bg-white/10 text-slate-300 text-base font-medium rounded-lg hover:bg-white/20 hover:text-white border border-white/20 transition-all duration-300"
                     >
-                      New File
+                      Try Another File
                     </button>
                   </div>
                 </div>
