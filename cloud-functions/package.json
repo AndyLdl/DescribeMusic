@@ -10,7 +10,6 @@
         "shell": "npm run build && firebase functions:shell",
         "start": "npm run shell",
         "deploy": "firebase deploy --only functions",
-        "deploy:analyze": "firebase deploy --only functions:analyzeAudio",
         "logs": "firebase functions:log",
         "test": "node test-emulator.js",
         "test:emulator": "npm run serve & sleep 15 && npm run test && pkill -f 'firebase emulators'",

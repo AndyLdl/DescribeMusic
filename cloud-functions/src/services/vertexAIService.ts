@@ -29,12 +29,15 @@ export interface AudioFileInfo {
 export class VertexAIService {
     private vertexAI: VertexAI;
     private model: any;
+    private vertexConfig: VertexAIConfig;  // 保存配置以便后续使用
     private cache: Map<string, { response: any; timestamp: number }> = new Map();
     private readonly CACHE_TTL = 3600000; // 1小时缓存
     private readonly MAX_PROMPT_LENGTH = 8000; // 限制prompt长度以控制成本
     private readonly MAX_RETRIES = 3;
 
     constructor(vertexConfig: VertexAIConfig) {
+        this.vertexConfig = vertexConfig;  // 保存配置
+        
         // 验证配置
         if (!vertexConfig.projectId) {
             throw new Error('Vertex AI project ID is required');
@@ -155,6 +158,145 @@ export class VertexAIService {
     /**
      * Generate audio description using dedicated prompt
      */
+    /**
+     * Generate structure analysis separately for improved accuracy
+     */
+    async generateStructure(
+        structurePrompt: string,
+        requestId: string,
+        audioBuffer?: Buffer,
+        audioMimeType?: string,
+        userId?: string,
+        audioFileUri?: string // GCS URI for large files
+    ): Promise<{ structure: any; success: boolean }> {
+        const startTime = Date.now();
+
+        try {
+            logger.info('Generating structure analysis with dedicated prompt', {
+                requestId,
+                hasAudio: !!audioBuffer,
+                audioSize: audioBuffer?.length || 0,
+                hasGcsUri: !!audioFileUri
+            });
+
+            // 成本预检查
+            const estimatedCost = this.estimateVertexAICost(structurePrompt);
+            if (userId) {
+                CostMonitor.recordCost(userId, estimatedCost, 'vertex-ai-structure');
+            }
+
+            // 使用专门的配置进行结构分析（更低的 temperature 以提高准确性）
+            // 使用与主流程相同的模型，但调整参数以提高时间戳准确性
+            const structureModel = this.vertexAI.getGenerativeModel({
+                model: this.vertexConfig.model,  // 使用配置中的模型（与主流程一致）
+                generationConfig: {
+                    maxOutputTokens: 2048,
+                    temperature: 0.1,  // 非常低的温度，确保时间戳一致性和准确性
+                    topP: 0.8,
+                    topK: 20,  // 减少随机性，提高准确度
+                },
+            });
+
+            // 构建请求内容
+            const parts: any[] = [{ text: structurePrompt }];
+            
+            // 如果有音频文件（优先使用 GCS URI）
+            if (audioFileUri) {
+                parts.push({
+                    fileData: {
+                        mimeType: audioMimeType || 'audio/mpeg',
+                        fileUri: audioFileUri
+                    }
+                });
+            } else if (audioBuffer && audioMimeType) {
+                const base64Audio = audioBuffer.toString('base64');
+                parts.push({
+                    inlineData: {
+                        mimeType: audioMimeType,
+                        data: base64Audio
+                    }
+                });
+            }
+
+            // 调用 Vertex AI（使用专门的结构分析模型）
+            const result = await structureModel.generateContent({
+                contents: [{ role: 'user', parts }]
+            });
+
+            const response = result.response;
+            
+            // 正确提取响应文本
+            let text = '';
+            if (response.candidates && response.candidates[0] && response.candidates[0].content) {
+                const candidate = response.candidates[0];
+                if (candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                    text = candidate.content.parts[0].text;
+                } else {
+                    throw new Error('No text content in Vertex AI response');
+                }
+            } else {
+                throw new Error('No valid response from Vertex AI');
+            }
+
+            const duration = Date.now() - startTime;
+            
+            // 计算实际成本
+            const actualCost = this.calculateVertexAICost(structurePrompt, text);
+            
+            logger.info('Structure analysis generated', {
+                responseLength: text.length,
+                duration,
+                cost: actualCost,
+                requestId
+            });
+
+            // 记录实际成本
+            if (userId && actualCost > estimatedCost) {
+                CostMonitor.recordCost(userId, actualCost - estimatedCost, 'vertex-ai-structure-adjustment');
+            }
+
+            // 清理并解析 JSON 响应
+            let cleanedText = text.trim();
+            cleanedText = cleanedText.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+            cleanedText = cleanedText.replace(/```\s*/g, '');
+            cleanedText = this.sanitizeResponseText(cleanedText);
+
+            // Parse JSON
+            const structure = JSON.parse(cleanedText);
+
+            // 验证结构数据
+            if (!structure || typeof structure !== 'object') {
+                throw new Error('Invalid structure format: must be an object');
+            }
+
+            // 确保有 sections 和 events 字段
+            if (!Array.isArray(structure.sections)) {
+                structure.sections = [];
+            }
+            if (!Array.isArray(structure.events)) {
+                structure.events = [];
+            }
+
+            logger.info('Structure parsed successfully', {
+                sectionsCount: structure.sections?.length || 0,
+                eventsCount: structure.events?.length || 0,
+                requestId
+            });
+
+            return {
+                structure: structure,
+                success: true
+            };
+
+        } catch (error) {
+            logger.error('Failed to generate structure analysis', error as Error);
+            return {
+                structure: { sections: [], events: [] },
+                success: false
+            };
+        }
+    }
+
     async generateDescription(
         descriptionPrompt: string,
         requestId: string,
@@ -267,19 +409,18 @@ export class VertexAIService {
     }
 
     /**
-     * 构建优化的prompt以降低成本
+     * 构建完整的prompt（包含系统提示词以提高分析质量）
      */
     private buildOptimizedPrompt(prompt: AudioAnalysisPrompt): string {
-        return `Analyze this audio file and return JSON only:
+        return `${prompt.systemPrompt}
 
-File: ${prompt.audioMetadata.filename}
-Duration: ${prompt.audioMetadata.duration}s
-Format: ${prompt.audioMetadata.format}
-Size: ${(prompt.audioMetadata.size / (1024 * 1024)).toFixed(1)}MB
+Audio File Metadata:
+- Filename: ${prompt.audioMetadata.filename}
+- Duration: ${prompt.audioMetadata.duration}s
+- Format: ${prompt.audioMetadata.format}
+- Size: ${(prompt.audioMetadata.size / (1024 * 1024)).toFixed(1)}MB
 
-${prompt.userPrompt}
-
-Return JSON with: basicInfo, emotions, structure, quality, similarity, tags.`;
+${prompt.userPrompt}`;
     }
 
     /**
@@ -528,10 +669,8 @@ Return JSON with: basicInfo, emotions, structure, quality, similarity, tags.`;
             return sanitizedAnalysis;
 
         } catch (error: any) {
-            logger.error(`Failed to parse Vertex AI response`, error, {
-                responseLength: responseText.length,
-                requestId,
-            });
+            // 记录完整的响应文本以便调试
+            logger.error(`Failed to parse Vertex AI response [${requestId}]: ${error.message}. Response (first 2000 chars): ${responseText.substring(0, 2000)}`, error as Error);
 
             const jsonMatch = responseText.match(/\{[\s\S]*\}/);
             if (jsonMatch) {

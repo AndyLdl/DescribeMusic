@@ -42,13 +42,12 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.analyzeAudioFromUrl = exports.generateUploadUrl = exports.version = exports.healthCheck = exports.lemonsqueezyWebhook = exports.analyzeAudio = void 0;
+exports.analyzeAudioFromUrl = exports.generateUploadUrl = exports.version = exports.healthCheck = exports.lemonsqueezyWebhook = void 0;
 const admin = __importStar(require("firebase-admin"));
 const functions = __importStar(require("firebase-functions/v1"));
 const uuid_1 = require("uuid");
 const config_1 = __importStar(require("./utils/config"));
 const logger_1 = __importDefault(require("./utils/logger"));
-const analyzeAudio_1 = require("./functions/analyzeAudio");
 const vertexAIService_1 = require("./services/vertexAIService");
 const prompts_1 = require("./utils/prompts");
 const supabase_1 = require("./utils/supabase");
@@ -77,8 +76,6 @@ else {
     logger_1.default.info('Configuration validation passed');
 }
 // Export all cloud functions
-var analyzeAudio_2 = require("./functions/analyzeAudio");
-Object.defineProperty(exports, "analyzeAudio", { enumerable: true, get: function () { return analyzeAudio_2.analyzeAudio; } });
 var lemonsqueezyWebhook_1 = require("./functions/lemonsqueezyWebhook");
 Object.defineProperty(exports, "lemonsqueezyWebhook", { enumerable: true, get: function () { return lemonsqueezyWebhook_1.lemonsqueezyWebhook; } });
 // Health check function
@@ -201,7 +198,7 @@ exports.analyzeAudioFromUrl = functions
     .region('us-central1')
     .https
     .onRequest(async (req, res) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e, _f, _g;
     const requestId = (0, uuid_1.v4)();
     // 安全的CORS配置
     const origin = req.get('Origin');
@@ -367,6 +364,36 @@ exports.analyzeAudioFromUrl = functions
             logger_1.default.error('Failed to generate description', descError);
             // Keep default fallback description
         }
+        // Generate structure analysis separately for improved timestamp accuracy
+        // 单独分析结构以提高时间轴准确度
+        let finalStructure = analysis.structure || { sections: [], events: [] };
+        try {
+            logger_1.default.info('Generating structure analysis using getStructurePrompt', { requestId });
+            const contentType = ((_c = analysis.contentType) === null || _c === void 0 ? void 0 : _c.primary) || ((_d = analysis.basicInfo) === null || _d === void 0 ? void 0 : _d.genre) || 'unknown';
+            const structurePrompt = prompts_1.PromptTemplates.getStructurePrompt(fileName, frontendDuration, contentType);
+            const structureResult = await vertexAIService_1.vertexAIService.generateStructure(structurePrompt, requestId, undefined, // 不使用 buffer
+            metadata.contentType || 'audio/mpeg', undefined, // userId
+            gcsUri // 使用 GCS URI
+            );
+            if (structureResult.success && structureResult.structure) {
+                finalStructure = structureResult.structure;
+                logger_1.default.info('Structure analysis generated successfully', {
+                    requestId,
+                    sectionsCount: ((_e = finalStructure.sections) === null || _e === void 0 ? void 0 : _e.length) || 0,
+                    eventsCount: ((_f = finalStructure.events) === null || _f === void 0 ? void 0 : _f.length) || 0
+                });
+            }
+            else {
+                logger_1.default.warn('Structure generation returned empty result, using fallback', {
+                    requestId,
+                    hasResult: structureResult.success
+                });
+            }
+        }
+        catch (structError) {
+            logger_1.default.error('Failed to generate structure analysis, using main analysis structure', structError);
+            // Keep structure from main analysis as fallback
+        }
         // Generate a new signed URL for playback (7 days validity - GCS limit)
         let audioPlaybackUrl;
         try {
@@ -386,7 +413,7 @@ exports.analyzeAudioFromUrl = functions
             audioPlaybackUrl = fileUrl; // Fallback to original URL
         }
         // 构建标准的分析结果
-        const fileFormat = ((_c = fileName.split('.').pop()) === null || _c === void 0 ? void 0 : _c.toUpperCase()) || 'Unknown';
+        const fileFormat = ((_g = fileName.split('.').pop()) === null || _g === void 0 ? void 0 : _g.toUpperCase()) || 'Unknown';
         const analysisResult = {
             id: requestId,
             filename: fileName,
@@ -428,9 +455,9 @@ exports.analyzeAudioFromUrl = functions
                     acoustic_space: 'medium', time_of_day: 'unknown', weather: 'unknown'
                 }
             },
-            structure: analysis.structure || {
-                intro: { start: 0, end: 8 }, verse1: { start: 8, end: 32 },
-                chorus1: { start: 32, end: 56 }, outro: { start: 56, end: 80 }
+            structure: finalStructure || analysis.structure || {
+                sections: [],
+                events: []
             },
             quality: analysis.quality || {
                 overall: 7.0, clarity: 7.0, loudness: -10, dynamic_range: 6.0,
@@ -483,114 +510,6 @@ exports.analyzeAudioFromUrl = functions
         });
     }
 });
-/**
- * Download audio file for analysis only (duration already known from frontend)
- */
-async function downloadForAnalysis(fileUrl, fileName) {
-    var _a;
-    const startTime = Date.now();
-    const requestId = `download_${startTime}`;
-    try {
-        logger_1.default.info('Downloading audio file for analysis', { fileUrl, fileName, requestId });
-        // Download file from GCS
-        const bucket = admin.storage().bucket('describe-music');
-        const filePath = extractFilePathFromUrl(fileUrl);
-        const file = bucket.file(filePath);
-        // Check if file exists
-        const [exists] = await file.exists();
-        if (!exists) {
-            throw new Error(`File not found: ${filePath}`);
-        }
-        // Get file metadata
-        const [metadata] = await file.getMetadata();
-        const fileSize = metadata.size || 0;
-        // Download file content
-        const [fileBuffer] = await file.download();
-        // Create AudioFile object
-        const audioFile = {
-            originalName: fileName,
-            mimeType: metadata.contentType || 'audio/mpeg',
-            size: fileSize,
-            buffer: fileBuffer,
-            format: ((_a = fileName.split('.').pop()) === null || _a === void 0 ? void 0 : _a.toUpperCase()) || 'MP3'
-        };
-        logger_1.default.info('Audio file downloaded for analysis', {
-            size: fileSize,
-            requestId
-        });
-        return audioFile;
-    }
-    catch (error) {
-        logger_1.default.error(`Download failed: ${error.message}`, error, { fileUrl, fileName }, requestId);
-        throw error;
-    }
-}
-/**
- * Perform AI analysis using already downloaded audio file
- */
-async function performAnalysisWithFile(audioFile, options) {
-    const startTime = Date.now();
-    const requestId = `analysis_${startTime}`;
-    try {
-        logger_1.default.info('Starting AI analysis with downloaded file', {
-            fileName: audioFile.originalName,
-            size: audioFile.size,
-            requestId
-        });
-        // Use the unified analysis logic from analyzeAudio.ts
-        const result = await (0, analyzeAudio_1.performAnalysis)(audioFile, options, requestId);
-        return result;
-    }
-    catch (error) {
-        logger_1.default.error(`Analysis failed: ${error.message}`, error, { fileName: audioFile.originalName }, requestId);
-        throw error;
-    }
-}
-/**
- * Perform real AI analysis using Gemini (legacy function, kept for compatibility)
- */
-async function performRealAnalysis(fileUrl, fileName, options) {
-    var _a;
-    const startTime = Date.now();
-    const requestId = `analysis_${startTime}`;
-    try {
-        logger_1.default.info('Starting real audio analysis', { fileUrl, fileName, requestId });
-        // Download file from GCS
-        const bucket = admin.storage().bucket('describe-music');
-        const filePath = extractFilePathFromUrl(fileUrl);
-        const file = bucket.file(filePath);
-        // Check if file exists
-        const [exists] = await file.exists();
-        if (!exists) {
-            throw new Error(`File not found: ${filePath}`);
-        }
-        // Get file metadata
-        const [metadata] = await file.getMetadata();
-        const fileSize = metadata.size || 0;
-        // Download file content for analysis
-        const [fileBuffer] = await file.download();
-        // Create AudioFile object
-        const audioFile = {
-            originalName: fileName,
-            mimeType: metadata.contentType || 'audio/mpeg',
-            size: fileSize,
-            buffer: fileBuffer,
-            format: ((_a = fileName.split('.').pop()) === null || _a === void 0 ? void 0 : _a.toUpperCase()) || 'MP3'
-        };
-        logger_1.default.info('File downloaded successfully', {
-            size: fileSize,
-            mimeType: audioFile.mimeType,
-            requestId
-        });
-        // Use the unified analysis logic from analyzeAudio.ts
-        const result = await (0, analyzeAudio_1.performAnalysis)(audioFile, options, requestId);
-        return result;
-    }
-    catch (error) {
-        logger_1.default.error(`Analysis failed: ${error.message}`, error, { fileUrl, fileName }, requestId);
-        throw error;
-    }
-}
 /**
  * Extract file path from GCS signed URL
  */

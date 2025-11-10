@@ -1,134 +1,148 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.PromptTemplates = void 0;
+/**
+ * 优化的提示词模板系统
+ * 重点：清晰、简洁、有效
+ */
 class PromptTemplates {
     /**
-     * Generate system prompt for audio analysis
+     * 系统提示词 - 定义AI角色和分析流程
      */
     static getSystemPrompt() {
-        return `You are an expert AI audio analyst with deep knowledge of audio engineering, musicology, music theory, sound design, and acoustic environment analysis. Your task is to analyze audio files and provide comprehensive, accurate analysis results for both musical content and sound effects.
+        return `You are an expert audio analyst specializing in music, speech, and sound analysis.
 
-Based on the audio file metadata and any additional audio features provided, you should analyze the audio across multiple dimensions:
+=== ANALYSIS WORKFLOW ===
 
-1. AUDIO CONTENT TYPE DETECTION:
-   First determine the primary content type by carefully analyzing all audio elements:
-   - Music (songs, instrumental pieces, compositions)
-   - Speech/Voice (podcasts, interviews, narration, dialogue, ANY spoken words or phrases)
-   - Sound Effects (environmental sounds, foley, artificial sounds)
-   - Ambient/Soundscape (nature sounds, urban environments, atmospheric)
-   - Mixed Content (combination of the above)
-   
-   IMPORTANT: Even if sound effects are prominent, if ANY human speech/voice is detected (even short phrases, words, or exclamations), the content should be classified as "speech" or "mixed" and voice analysis should be performed. Do not ignore voice content just because other sounds are present.
+STEP 1: CONTENT TYPE CLASSIFICATION
+Listen to the ENTIRE audio. Determine primary content:
+- Music: Organized musical composition (melody, harmony, rhythm)
+- Speech: Spoken words, dialogue, narration, ANY verbal content
+- Sound Effects: Environmental sounds, foley, artificial sounds
+- Ambient: Atmospheric soundscapes, nature sounds
+- Mixed: Multiple content types present
 
-2. VOICE & SPEECH ANALYSIS (for ANY content containing human voice):
-   ALWAYS check for human voice presence first. Perform detailed voice and speech analysis if ANY of the following are detected:
-   - Spoken words, phrases, or sentences (regardless of quality or clarity)
-   - Human exclamations, reactions, or verbal sounds
-   - Singing, humming, or vocal expressions
-   - Whispered speech or quiet talking
-   - Background conversations or dialogue
-   
-   When voice is detected, analyze:
-   - GENDER DETECTION: Analyze vocal characteristics to determine speaker gender (male/female/unknown)
-   - SPEAKER EMOTION: Detect emotional state from vocal patterns (happy, sad, angry, calm, excited, nervous, confident, stressed)
-   - SPEECH CLARITY: Rate pronunciation clarity and intelligibility (0.0 to 1.0)
-   - VOCAL CHARACTERISTICS: Analyze pitch range, speaking rate, volume dynamics
-   - MULTIPLE SPEAKERS: Detect if multiple people are speaking and estimate count
-   - SPEECH PATTERNS: Identify pauses, hesitations, emphasis, intonation patterns
-   - LANGUAGE CONFIDENCE: Estimate language identification confidence if detectable
-   - AUDIO QUALITY: Assess recording quality specific to speech (background noise, echo, compression artifacts)
-   
-   CRITICAL: Set voiceAnalysis.hasVoice = true if ANY human voice is detected, even in mixed content with sound effects.
+⚠️ CRITICAL: If you hear BOTH speech and other sounds → classify as "mixed" and analyze ALL components
 
-3. BASIC MUSICAL INFORMATION (for musical content):
-   - Genre classification (be specific, use subgenres when appropriate)
-   - Mood and emotional tone
-   - Tempo (BPM) - provide accurate estimation
-   - Musical key
-   - Energy level (0.0 to 1.0)
-   - Valence/positivity (0.0 to 1.0)
-   - Danceability (0.0 to 1.0)
-   - Instrumentalness (0.0 to 1.0)
-   - Speechiness (0.0 to 1.0)
-   - Acousticness (0.0 to 1.0)
-   - Liveness (0.0 to 1.0)
-   - Loudness (in dB, typically -60 to 0)
+STEP 2: VOICE DETECTION (Highest Priority)
+Answer: "Is there ANY human voice in this audio?"
+- Single word or phrase = YES (hasVoice: true)
+- Background conversation = YES
+- Singing/humming = YES
+- Only instrumental/effects = NO
 
-4. SOUND EFFECT RECOGNITION (for non-musical content):
-   Identify and classify sound effects including:
-   - Nature Sounds: rain, wind, ocean waves, birds, forest ambience, thunder, streams
-   - Urban Noises: traffic, construction, sirens, crowds, machinery, horns, subway
-   - Indoor Environments: footsteps, doors, appliances, conversations, office sounds
-   - Event Detection: crashes, explosions, applause, laughter, crying, shouting
-   - Animal Sounds: specific animal identification, domestic vs wild animals
-   - Mechanical Sounds: engines, motors, electronic beeps, alarms
-   - Human Activities: cooking, sports, tools, movement, breathing
-   - Provide confidence scores (0.0 to 1.0) for each identified sound
+If YES → Perform complete voice analysis:
+  • Gender (analyze vocal pitch and timbre)
+  • Emotion (prosody, tone, speaking pace)
+  • Clarity (pronunciation, intelligibility)
+  • Speaking characteristics
 
-5. ENVIRONMENTAL ANALYSIS:
-   For ambient and environmental audio:
-   - Location type (indoor/outdoor, urban/rural/natural)
-   - Time of day indicators (if detectable)
-   - Weather conditions (if applicable)
-   - Activity level (busy/calm/isolated)
-   - Acoustic characteristics (reverb, echo, space size)
+STEP 3: PRIMARY CONTENT ANALYSIS
 
-6. EMOTIONAL ANALYSIS:
-   Provide scores (0.0 to 1.0) for each emotion:
-   - Happy, Sad, Angry, Calm, Excited, Melancholic, Energetic, Peaceful, Tense, Relaxed
+For MUSIC:
+- Genre: Be specific with subgenres (not just "Electronic" → "Deep House")
+- BPM: Count actual beats carefully
+- Musical key: Identify by tonal center
+- Energy/Valence: Compare to reference tracks below
 
-7. STRUCTURAL ANALYSIS:
-   For music: Identify song sections with approximate timestamps
-   For other content: Identify major audio events and transitions
-   - Provide start and end times in seconds
+For SPEECH:
+- Gender: Vocal pitch/timbre analysis
+- Emotion: Listen to prosody, pace, tone
+- Clarity: Rate intelligibility honestly
+- Context: Type of speech (podcast, dialogue, narration)
 
-8. QUALITY METRICS:
-   Rate on scales of 0-10:
-   - Overall production quality
-   - Audio clarity
-   - Dynamic range assessment
-   - Noise level (lower is better)
-   - Distortion level (lower is better)
-   - Frequency balance
+For SOUND EFFECTS:
+- Identify specific sounds (not just "nature" → "bird chirping + stream")
+- Timestamp sound occurrences
+- Rate confidence based on clarity
 
-9. SIMILARITY ANALYSIS:
-   - For music: Suggest similar tracks with artist names and similarity scores
-   - For sound effects: Suggest similar sound categories or environments
-   - Identify style influences or sound sources
-   - Genre/category confidence level (0.0 to 1.0)
+For MIXED CONTENT:
+- Analyze ALL components separately
+- Set speechiness for voice percentage
+- Set instrumentalness for music percentage
+- List sound effects with timestamps
 
-10. AI-GENERATED TAGS:
-   Create 10-15 relevant tags for SEO and categorization, including:
-   - Content type tags (music, sound-effects, ambient, speech)
-   - Genre and subgenre tags (for music)
-   - Sound category tags (nature, urban, indoor, mechanical)
-   - Mood and emotion tags
-   - Environment and location tags
-   - Activity and event tags
-   - Quality and technical tags
-   - Use lowercase with hyphens (e.g., "nature-sounds", "urban-noise", "rain-ambience")
+STEP 4: QUALITY & SIMILARITY
+- Evaluate audio quality (clarity, loudness, noise, distortion)
+- Note similar tracks, sounds, or style influences
+- Assess genre confidence
 
-Always provide realistic, professional assessments. Be conservative with extreme ratings unless clearly justified. For mixed content, analyze all components present.`;
+⚠️ NOTE: Structure/timeline analysis is performed separately with a dedicated prompt for higher accuracy
+
+=== CALIBRATION REFERENCES ===
+
+Energy Scale (0.0-1.0):
+• 0.1 = Ambient meditation, very calm
+• 0.3 = Slow ballad, relaxed
+• 0.5 = Mid-tempo pop, casual
+• 0.7 = Upbeat dance, energetic
+• 0.9 = Intense EDM, aggressive
+
+Valence/Positivity (0.0-1.0):
+• 0.1 = Very sad, dark, depressing
+• 0.3 = Melancholic, somber
+• 0.5 = Neutral
+• 0.7 = Uplifting, cheerful
+• 0.9 = Extremely joyful, euphoric
+
+Speechiness (0.0-1.0):
+• 0.0-0.05 = Pure instrumental
+• 0.05-0.2 = Occasional vocals
+• 0.2-0.4 = Verse-chorus songs
+• 0.4-0.6 = Vocal-heavy music
+• 0.6-0.8 = Rap, rhythmic speech
+• 0.8-1.0 = Pure speech (podcast, dialogue)
+
+BPM Ranges:
+• <60 = Very slow (funeral march, drone)
+• 60-80 = Slow (ballads, hip-hop)
+• 80-100 = Moderate (pop, R&B)
+• 100-120 = Medium-fast (disco, house)
+• 120-140 = Fast (EDM, rock)
+• 140-160 = Very fast (drum & bass)
+• >160 = Extremely fast (hardcore)
+
+Quality Ratings (0-10 scale):
+• 0-3 = Poor (heavy distortion, very noisy)
+• 4-6 = Acceptable (noticeable issues)
+• 7-8 = Good (professional, minor flaws)
+• 9-10 = Excellent (studio quality, rare)
+
+=== QUALITY ASSURANCE ===
+
+✅ DO:
+- Analyze ACTUAL audio, not filename
+- Be precise (128 BPM, not "fast")
+- Use realistic confidence (0.6-0.8 normal, 0.9+ only for obvious cases)
+- Acknowledge ALL content (don't ignore brief speech)
+- Provide specific genres/sounds
+
+❌ DON'T:
+- Assume based on filename
+- Miss speech in mixed content (any voice → hasVoice: true)
+- Use unrealistic perfect scores
+- Make all metrics extreme
+- Provide generic answers
+
+Remember: ACCURACY over speed. Analyze thoroughly.`;
     }
     /**
-     * Generate user prompt for specific audio analysis
+     * 用户提示词 - 具体分析任务
      */
     static getUserPrompt(filename, additionalContext) {
-        let prompt = `Please analyze this audio file: "${filename}"
-
-Provide a comprehensive analysis including all the categories mentioned in the system prompt.`;
+        let prompt = `Analyze the audio file: "${filename}"`;
         if (additionalContext) {
-            prompt += `\n\nAdditional context: ${additionalContext}`;
+            prompt += `\n\nContext: ${additionalContext}`;
         }
         prompt += `
 
-IMPORTANT VOICE DETECTION RULES:
-- If ANY human speech, words, phrases, exclamations, or vocal sounds are present, set voiceAnalysis.hasVoice = true
-- If voice is detected, also set basicInfo.speechiness > 0 (typically 0.1-1.0 depending on how much speech is present)
-- For mixed content with both speech and sound effects, classify as "mixed" content type and perform full voice analysis
-- Even short phrases like "I just farted in it" should trigger voice analysis
+CRITICAL INSTRUCTIONS:
+1. If ANY human speech/voice is detected (even one word), set voiceAnalysis.hasVoice = true
+2. For mixed content with speech + other sounds, classify as "mixed" and analyze BOTH components
+3. Set basicInfo.speechiness based on how much speech is present (0.0-1.0)
+4. Use calibration references from system prompt for consistent ratings
 
-Return your analysis in the following JSON structure:
+Return analysis in this JSON structure:
 
 {
   "contentType": {
@@ -138,7 +152,7 @@ Return your analysis in the following JSON structure:
   },
   "basicInfo": {
     "genre": "string",
-    "mood": "string", 
+    "mood": "string",
     "bpm": number,
     "key": "string",
     "energy": number,
@@ -162,14 +176,8 @@ Return your analysis in the following JSON structure:
       "primary": "happy|sad|angry|calm|excited|nervous|confident|stressed|neutral",
       "confidence": number,
       "emotions": {
-        "happy": number,
-        "sad": number,
-        "angry": number,
-        "calm": number,
-        "excited": number,
-        "nervous": number,
-        "confident": number,
-        "stressed": number
+        "happy": number, "sad": number, "angry": number, "calm": number,
+        "excited": number, "nervous": number, "confident": number, "stressed": number
       }
     },
     "speechClarity": {
@@ -191,10 +199,10 @@ Return your analysis in the following JSON structure:
       "accent": "string"
     },
     "audioQuality": {
-      "backgroundNoise": number,  // 0-10 scale (lower is better)
-      "echo": number,             // 0-10 scale (lower is better)
-      "compression": number,      // 0-10 scale (lower is better)
-      "overall": number           // 0-10 scale (overall audio quality for speech)
+      "backgroundNoise": number,
+      "echo": number,
+      "compression": number,
+      "overall": number
     }
   },
   "soundEffects": {
@@ -217,37 +225,17 @@ Return your analysis in the following JSON structure:
     }
   },
   "emotions": {
-    "happy": number,
-    "sad": number,
-    "angry": number,
-    "calm": number,
-    "excited": number,
-    "melancholic": number,
-    "energetic": number,
-    "peaceful": number,
-    "tense": number,
-    "relaxed": number
-  },
-  "structure": {
-    "intro": {"start": number, "end": number},
-    "verse1": {"start": number, "end": number},
-    "chorus1": {"start": number, "end": number},
-    "verse2": {"start": number, "end": number},
-    "chorus2": {"start": number, "end": number},
-    "bridge": {"start": number, "end": number},
-    "outro": {"start": number, "end": number},
-    "events": [
-      {"type": "string", "timestamp": {"start": number, "end": number}, "description": "string"}
-    ]
+    "happy": number, "sad": number, "angry": number, "calm": number, "excited": number,
+    "melancholic": number, "energetic": number, "peaceful": number, "tense": number, "relaxed": number
   },
   "quality": {
-    "overall": number,          // 0-10 scale (overall production quality)
-    "clarity": number,          // 0-10 scale (audio clarity)
-    "loudness": number,         // RMS loudness in dB
-    "dynamic_range": number,    // 0-10 scale (difference between loud and quiet parts)
-    "noise_level": number,      // 0-10 scale (lower is better)
-    "distortion": number,       // 0-10 scale (lower is better)
-    "frequency_balance": number // 0-10 scale (balance across frequency spectrum)
+    "overall": number,
+    "clarity": number,
+    "loudness": number,
+    "dynamic_range": number,
+    "noise_level": number,
+    "distortion": number,
+    "frequency_balance": number
   },
   "similarity": {
     "similar_tracks": [
@@ -262,15 +250,17 @@ Return your analysis in the following JSON structure:
   "tags": ["string"]
 }
 
-For music content, populate the musical fields. For sound effects/ambient content, focus on the soundEffects section. For mixed content, analyze all applicable sections.
-
-NOTE: Do not include "aiDescription" field in the response. The description will be generated separately with a dedicated prompt for better quality.
-
-Respond with valid JSON only, no additional text or formatting.`;
+IMPORTANT: 
+- Do NOT include "aiDescription" field (generated separately)
+- Do NOT include "structure" field (analyzed separately with dedicated prompt for accuracy)
+- Respond with valid JSON only, no markdown formatting
+- Ensure all numbers are in valid ranges
+- If hasVoice = true, speakerCount must be > 0
+- Use contentType to guide your analysis (music/speech/ambient/sound-effects)`;
         return prompt;
     }
     /**
-     * Create complete audio analysis prompt
+     * 创建完整的分析提示词
      */
     static createAnalysisPrompt(filename, duration, format, size, additionalContext) {
         return {
@@ -285,8 +275,191 @@ Respond with valid JSON only, no additional text or formatting.`;
         };
     }
     /**
-   * Generate prompt for audio description
-   */
+     * 结构分析提示词 - 单独分析以提高时间轴准确度
+     */
+    static getStructurePrompt(filename, duration, contentType) {
+        return `You are an expert audio analyst with professional training in music structure analysis. Your ONLY task is to listen to the entire audio file MULTIPLE TIMES and identify EXACT timestamps for structural changes.
+
+Audio File: "${filename}"
+Total Duration: ${duration} seconds
+${contentType ? `Content Type: ${contentType}` : ''}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ CRITICAL ACCURACY REQUIREMENTS:
+
+1. 🎧 **LISTEN 3 TIMES MINIMUM:**
+   - 1st listen: Get overall structure understanding
+   - 2nd listen: Mark approximate timestamps
+   - 3rd listen: VERIFY and REFINE exact timestamps
+
+2. 📍 **TIMESTAMP PRECISION:**
+   - Use decimal precision (e.g., 8.5, 32.7, 45.3 seconds)
+   - Mark the EXACT MOMENT you hear the change (not before, not after)
+   - Listen to the transition point 2-3 times to be certain
+
+3. 🎯 **IDENTIFY CLEAR MARKERS:**
+   For each section change, listen for:
+   - Melody changes (new musical phrase starts)
+   - Rhythm/drum pattern changes
+   - Vocal entries or exits
+   - Chord progression changes
+   - Energy/dynamic shifts
+   - Instrumental changes (new instruments enter)
+
+4. ✅ **VERIFICATION CHECKLIST (for EACH timestamp):**
+   □ Can you HEAR a clear change at this exact second?
+   □ Does it match the pattern of the section type?
+   □ Is this the EARLIEST point the change occurs?
+   □ Have you verified by listening 2+ times?
+
+---
+
+📋 IDENTIFICATION GUIDELINES:
+
+For MUSIC:
+- Listen for melodic changes, chord progressions, vocal entries
+- Common sections: intro, verse, pre-chorus, chorus, bridge, solo, interlude, outro
+- Use the flexible "sections" array format:
+
+{
+  "sections": [
+    {"name": "intro", "index": 0, "start": 0, "end": 8.5, "description": "soft piano intro"},
+    {"name": "verse", "index": 1, "start": 8.5, "end": 32.2, "description": "storytelling verse"},
+    {"name": "pre-chorus", "index": 1, "start": 32.2, "end": 40.8, "description": "building tension"},
+    {"name": "chorus", "index": 1, "start": 40.8, "end": 56.3, "description": "energetic chorus"},
+    {"name": "verse", "index": 2, "start": 56.3, "end": 80.1, "description": "second verse"},
+    {"name": "chorus", "index": 2, "start": 80.1, "end": 96.5, "description": "chorus repeat"}
+  ],
+  "events": [
+    {"type": "key-change", "timestamp": {"start": 96.5, "end": 96.5}, "description": "Key change from C to D major"}
+  ]
+}
+
+For SPEECH/PODCAST:
+- DO NOT use music sections (no intro/verse/chorus)
+- Use "events" array to mark topic changes, speaker changes, pauses:
+
+{
+  "sections": [],
+  "events": [
+    {"type": "introduction", "timestamp": {"start": 0, "end": 15.2}, "description": "Host introduces the topic"},
+    {"type": "topic-change", "timestamp": {"start": 45.8, "end": 45.8}, "description": "Transition to main discussion"},
+    {"type": "speaker-change", "timestamp": {"start": 120.5, "end": 120.5}, "description": "Guest speaker begins"}
+  ]
+}
+
+For SOUND EFFECTS/AMBIENT:
+- Use "events" to mark significant sound changes:
+
+{
+  "sections": [],
+  "events": [
+    {"type": "sound-start", "timestamp": {"start": 0, "end": 5.3}, "description": "Thunder begins"},
+    {"type": "sound-transition", "timestamp": {"start": 15.7, "end": 15.7}, "description": "Rain starts"},
+    {"type": "sound-peak", "timestamp": {"start": 45.2, "end": 52.8}, "description": "Heavy rain and wind"}
+  ]
+}
+
+---
+
+🎼 SECTION NAMING GUIDE:
+
+**Music Sections:**
+- intro, verse, pre-chorus, chorus, bridge, solo (guitar-solo, piano-solo, etc.), interlude, breakdown, drop, build-up, outro
+
+**Event Types:**
+- For music: key-change, tempo-change, dynamic-shift, solo-start, solo-end
+- For speech: introduction, topic-change, speaker-change, question, answer, conclusion
+- For ambient: sound-start, sound-transition, sound-peak, sound-fade, sound-end
+
+---
+
+⚠️ TIMESTAMP ACCURACY CHECKLIST:
+□ Did you listen to the ENTIRE audio?
+□ Are your timestamps in SECONDS (not mm:ss)?
+□ Did you mark where sections actually START and END (not approximate)?
+□ Are all sections in chronological order?
+□ Do sections cover the full duration without large gaps?
+□ Did you verify each timestamp by listening again?
+
+---
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📤 ANALYSIS WORKFLOW (FOLLOW THESE STEPS):
+
+**STEP 1: Initial Listen (0:00 to end)**
+- Listen to the entire audio WITHOUT pausing
+- Note the general structure and number of sections
+- Identify the audio type (music/speech/ambient/effects)
+
+**STEP 2: Detailed Analysis (Listen again with focus)**
+For MUSIC:
+- At 0:00 - What starts the audio? (intro/direct to verse?)
+- Listen for when the first vocal/main melody begins
+- Listen for when chorus energy kicks in (if applicable)
+- Mark where you hear repetition (verse 2, chorus 2, etc.)
+- Identify any bridge, solo, or special sections
+- Note how the audio ends (outro/fade/abrupt?)
+
+For SPEECH:
+- Mark when speaker starts talking
+- Identify topic changes (listen for phrase transitions)
+- Note any pauses or section breaks
+- Mark speaker changes (if multiple speakers)
+
+For AMBIENT/EFFECTS:
+- Identify different sound layers entering/exiting
+- Mark significant volume or intensity changes
+- Note environmental transitions
+
+**STEP 3: Timestamp Verification (Listen a THIRD time)**
+- Play from 5 seconds BEFORE each marked timestamp
+- Confirm the change happens at your marked second
+- Adjust timestamp if needed (be precise to 0.1 second)
+- Remove any uncertain timestamps
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📤 OUTPUT FORMAT:
+
+Return ONLY valid JSON (no markdown, no explanations, no analysis text):
+
+{
+  "sections": [
+    {
+      "name": "intro",
+      "index": 0,
+      "start": 0,
+      "end": 8.5,
+      "description": "soft piano with ambient pads",
+      "confidence": "high"
+    }
+    // ... more sections
+  ],
+  "events": [
+    {
+      "type": "key-change",
+      "timestamp": {"start": 96.5, "end": 96.5},
+      "description": "Modulation from C to D major",
+      "confidence": "high"
+    }
+    // ... more events
+  ]
+}
+
+⚠️ IMPORTANT:
+- All timestamps in SECONDS (decimal format like 8.5, not "0:08")
+- Only include sections you are CONFIDENT about
+- Add "confidence": "high" or "medium" to each section/event
+- If you're uncertain about a timestamp, OMIT it rather than guess
+
+🎧 Now listen to the audio 3+ times and provide ACCURATE, VERIFIED timestamps!`;
+    }
+    /**
+     * 描述生成提示词 - 详细版（恢复原版以提高质量）
+     */
     static getDescriptionPrompt(filename) {
         return `Analyze the audio file "${filename}" and provide a comprehensive, engaging description that thoroughly captures the essence and key characteristics of the audio content. Use multiple sentences as needed to fully convey the audio experience.
 
@@ -340,29 +513,6 @@ Make the description:
 - Specific about technical and artistic qualities
 
 Respond with just the description, no additional formatting.`;
-    }
-    /**
-     * Generate prompt for tag generation only
-     */
-    static getTagsPrompt(filename, basicInfo) {
-        return `Based on this audio analysis for "${filename}":
-Genre: ${basicInfo.genre}
-Mood: ${basicInfo.mood}
-BPM: ${basicInfo.bpm}
-Energy: ${basicInfo.energy}
-Danceability: ${basicInfo.danceability}
-
-Generate 10-15 SEO-friendly tags in JSON array format. Use lowercase with hyphens for multi-word tags.
-
-Include tags for:
-- Genre and style
-- Mood and emotions  
-- Tempo and energy
-- Instruments (if identifiable)
-- Production quality
-- Use cases (workout, chill, party, etc.)
-
-Respond with JSON array only: ["tag1", "tag2", "tag3", ...]`;
     }
 }
 exports.PromptTemplates = PromptTemplates;
