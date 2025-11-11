@@ -292,9 +292,33 @@ function shareViaEmail() {
 
 function shareToTwitter() {
     const data = getCurrentAnalysisData();
+    if (!data || !data.id) {
+        showNotification("No analysis result available to share");
+        return;
+    }
     const cleanFilename = getCleanFilename(data.filename);
-    const text = `Just analyzed "${cleanFilename}" with Describe Music! 🎵 Genre: ${data.basicInfo.genre}, BPM: ${data.basicInfo.bpm}, Mood: ${data.basicInfo.mood} ⚡ #AudioAnalysis #AI`;
-    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}`;
+    const shareUrl = `${window.location.origin}/analysis/${data.id}/`;
+    
+    // 生成更有吸引力的 Twitter 文案
+    // Twitter 会自动在推文末尾添加链接，所以文案中不需要包含链接提示
+    let text = `🎵 Just analyzed "${cleanFilename}" with AI-powered audio analysis!\n\n`;
+    text += `🎯 ${data.basicInfo?.genre || 'Music'} • ${data.basicInfo?.bpm || 'N/A'} BPM • ${data.basicInfo?.mood || 'Unknown'} mood`;
+    if (data.quality?.overall) {
+        text += ` • ⭐ ${data.quality.overall}/10`;
+    }
+    text += `\n\n`;
+    text += `#AudioAnalysis #AIMusic #MusicTech #DescribeMusic`;
+    
+    // Twitter 字符限制是 280，链接会占用约 23 字符，所以文案限制在 250 字符内
+    const maxLength = 250;
+    if (text.length > maxLength) {
+        // 简化版本：只保留核心信息
+        text = `🎵 Just analyzed "${cleanFilename}" with AI!\n\n`;
+        text += `🎯 ${data.basicInfo?.genre || 'Music'} • ${data.basicInfo?.bpm || 'N/A'} BPM • ${data.basicInfo?.mood || 'Unknown'}\n\n`;
+        text += `#AudioAnalysis #AIMusic #MusicTech`;
+    }
+    
+    const url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(shareUrl)}`;
     window.open(url, "_blank");
 }
 

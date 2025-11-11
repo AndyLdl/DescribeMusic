@@ -25,7 +25,6 @@ export default function AnalyzeHeader() {
     const [showUserMenu, setShowUserMenu] = useState(false);
     const [showExportButtons, setShowExportButtons] = useState(false);
     const [showExportMenu, setShowExportMenu] = useState(false);
-    const [showShareMenu, setShowShareMenu] = useState(false);
     const [showMobileMenu, setShowMobileMenu] = useState(false);
 
     // Listen for analysis result events to show/hide export buttons
@@ -474,7 +473,6 @@ export default function AnalyzeHeader() {
             console.error('Failed to copy to clipboard:', error);
             toast.error('Error', 'Failed to copy to clipboard');
         }
-        setShowShareMenu(false);
     };
 
     return (
@@ -549,39 +547,6 @@ export default function AnalyzeHeader() {
                                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                                         </svg>
                                                         Copy to Clipboard
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Share Dropdown */}
-                                    <div className="relative">
-                                        <button
-                                            onClick={() => setShowShareMenu(!showShareMenu)}
-                                            className="inline-flex items-center gap-2 px-3 py-1.5 text-sm text-slate-400 hover:text-white border border-slate-700 rounded-md hover:border-slate-600 transition-all duration-300"
-                                        >
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                                            </svg>
-                                            Share
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-
-                                        {/* Share Dropdown Menu */}
-                                        {showShareMenu && (
-                                            <div className="absolute right-0 mt-2 w-56 bg-slate-800/95 backdrop-blur-md border border-slate-700 rounded-lg shadow-xl z-50">
-                                                <div className="p-2">
-                                                    <button
-                                                        onClick={copyShareLink}
-                                                        className="w-full flex items-center gap-3 px-3 py-2 text-sm text-slate-300 hover:text-white hover:bg-slate-700/50 rounded-md transition-all duration-200"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-                                                        </svg>
-                                                        Copy Share Link
                                                     </button>
                                                 </div>
                                             </div>
@@ -726,13 +691,12 @@ export default function AnalyzeHeader() {
             )}
 
             {/* Click outside to close menus */}
-            {(showUserMenu || showExportMenu || showShareMenu) && (
+            {(showUserMenu || showExportMenu) && (
                 <div
                     className="fixed inset-0 z-40"
                     onClick={() => {
                         setShowUserMenu(false);
                         setShowExportMenu(false);
-                        setShowShareMenu(false);
                     }}
                 />
             )}

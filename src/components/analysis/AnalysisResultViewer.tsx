@@ -324,8 +324,7 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
         // Check ownership again after state updates
         const isCurrentlyOwner = user && dbResult.creatorInfo?.id && user.id === dbResult.creatorInfo.id;
         
-        // Only make result available for export if owner
-        if (isCurrentlyOwner) {
+        // Make result available for export/share functionality (even if not owner, can still share)
           (window as any).currentAnalysisResult = result;
           (window as any).backupAnalysisResult = result;
           
@@ -336,7 +335,6 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
           });
           window.dispatchEvent(event);
           console.log('🎯 AnalysisResultViewer: Event dispatched');
-        }
         
         setLoading(false);
         return;

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import VoiceAnalysisTab from './VoiceAnalysisTab';
+import ShareCard from '../share/ShareCard';
 
 interface AnalysisResult {
   id: string;
@@ -103,6 +104,22 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
   const defaultTab = getDefaultTab();
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab);
   const [descriptionCopied, setDescriptionCopied] = useState(false);
+  const [showShareCard, setShowShareCard] = useState(false);
+  const [showShareHint, setShowShareHint] = useState(false);
+
+  // Show share hint on first visit
+  React.useEffect(() => {
+    const hasSeenShareHint = localStorage.getItem('hasSeenShareHint');
+    if (!hasSeenShareHint) {
+      const timer = setTimeout(() => {
+        setShowShareHint(true);
+        localStorage.setItem('hasSeenShareHint', 'true');
+        // Auto-hide after 5 seconds
+        setTimeout(() => setShowShareHint(false), 5000);
+      }, 2000); // Show after 2 seconds
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -297,6 +314,68 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
       <div className="text-center text-slate-500 text-sm">
         Analysis completed on {formatTimestamp(result.timestamp)}
       </div>
+
+      {/* Floating Share Button */}
+      <div className="fixed bottom-6 right-6 z-40">
+        {/* Share Hint Tooltip */}
+        {showShareHint && (
+          <div className="absolute bottom-full right-0 mb-3 w-64 glass-pane p-4 rounded-lg border border-violet-500/30 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-r from-violet-500 to-blue-500 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-white mb-1">Share Your Analysis</h4>
+                <p className="text-xs text-slate-400 mb-2">Click the button below to share this analysis with others via link, email, or social media.</p>
+                <button
+                  onClick={() => setShowShareHint(false)}
+                  className="text-xs text-violet-400 hover:text-violet-300"
+                >
+                  Got it
+                </button>
+              </div>
+              <button
+                onClick={() => setShowShareHint(false)}
+                className="flex-shrink-0 p-1 text-slate-400 hover:text-white rounded"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            {/* Arrow pointing to button */}
+            <div className="absolute bottom-0 right-8 transform translate-y-full">
+              <div className="w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-violet-500/30"></div>
+            </div>
+          </div>
+        )}
+        
+        <button
+          onClick={() => {
+            setShowShareCard(true);
+            setShowShareHint(false);
+          }}
+          className="relative w-14 h-14 bg-gradient-to-r from-violet-500 to-blue-500 rounded-full shadow-lg shadow-violet-500/50 hover:shadow-violet-500/70 hover:scale-110 transition-all duration-300 flex items-center justify-center group animate-pulse hover:animate-none"
+          title="Share this analysis"
+        >
+          <svg className="w-6 h-6 text-white transition-transform duration-300 group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+          </svg>
+          {/* Pulse ring animation */}
+          <span className="absolute inset-0 rounded-full bg-violet-400 opacity-75 animate-ping"></span>
+        </button>
+      </div>
+
+      {/* Share Card Modal */}
+      {showShareCard && (
+        <ShareCard
+          analysisId={result.id}
+          filename={result.filename}
+          onClose={() => setShowShareCard(false)}
+        />
+      )}
     </div>
   );
 }
