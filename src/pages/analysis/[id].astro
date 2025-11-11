@@ -23,7 +23,8 @@ const description = `View detailed AI analysis results for audio. Get insights o
 ---
 
 <AnalyzeLayout title={title} description={description}>
-  <AnalysisResultViewerWithAuth analysisId={id} client:only="react" />
+  <!-- 使用 client:load 而不是 client:only，这样 Astro 会先渲染初始 HTML，减少空白屏幕时间 -->
+  <AnalysisResultViewerWithAuth analysisId={id} client:load />
   
   {/* Client-side SEO update script */}
   <script define:vars={{ analysisId: id }}>
