@@ -1147,21 +1147,36 @@ Report ID: ${data.id || "Unknown"}
 • Valence: ${Math.round((data.basicInfo?.valence || 0) * 100)}%
 • Quality Score: ${data.quality?.overall || 0}/10
 
-📁 File Info: ${data.format || "Unknown"} | ${data.fileSize || "Unknown"} | ${Math.floor((data.duration || 0) / 60)}:${((data.duration || 0) % 60).toString().padStart(2, "0")}`;
+📁 File Info: ${data.format || "Unknown"} | ${data.fileSize || "Unknown"} | ${Math.floor((data.duration || 0) / 60)}:${Math.floor((data.duration || 0) % 60).toString().padStart(2, "0")}`;
 
     // Add Content Type if available
     if (data.contentType) {
       summary += `\n\n🎯 Content Type: ${data.contentType.primary} (${Math.round((data.contentType.confidence || 0) * 100)}% confidence)`;
+      if (data.contentType.description) {
+        summary += `\n   ${data.contentType.description}`;
+      }
     }
 
     // Add Voice Analysis if available
     if (data.voiceAnalysis && data.voiceAnalysis.hasVoice) {
-      summary += `\n\n🎙️ Voice Analysis: ${data.voiceAnalysis.speakerCount || 0} speaker(s)`;
+      summary += `\n\n🎙️ Voice Analysis:`;
+      summary += `\n• Speakers: ${data.voiceAnalysis.speakerCount || 0}`;
       if (data.voiceAnalysis.genderDetection) {
-        summary += ` | ${data.voiceAnalysis.genderDetection.primary || "Unknown"} voice`;
+        summary += `\n• Gender: ${data.voiceAnalysis.genderDetection.primary || "Unknown"} (${Math.round((data.voiceAnalysis.genderDetection.confidence || 0) * 100)}%)`;
       }
       if (data.voiceAnalysis.speakerEmotion) {
-        summary += ` | ${data.voiceAnalysis.speakerEmotion.primary || "Unknown"} emotion`;
+        summary += `\n• Emotion: ${data.voiceAnalysis.speakerEmotion.primary || "Unknown"} (${Math.round((data.voiceAnalysis.speakerEmotion.confidence || 0) * 100)}%)`;
+      }
+      if (data.voiceAnalysis.speechClarity) {
+        summary += `\n• Speech Clarity: ${Math.round((data.voiceAnalysis.speechClarity.score || 0) * 10)}/10`;
+        summary += ` | Pace: ${data.voiceAnalysis.speechClarity.pace || "normal"}`;
+        summary += ` | Volume: ${data.voiceAnalysis.speechClarity.volume || "normal"}`;
+      }
+      if (data.voiceAnalysis.languageAnalysis) {
+        summary += `\n• Language: ${data.voiceAnalysis.languageAnalysis.language || "Unknown"} (${Math.round((data.voiceAnalysis.languageAnalysis.confidence || 0) * 100)}%)`;
+        if (data.voiceAnalysis.languageAnalysis.accent) {
+          summary += ` | Accent: ${data.voiceAnalysis.languageAnalysis.accent}`;
+        }
       }
     }
 
@@ -1172,44 +1187,102 @@ Report ID: ${data.id || "Unknown"}
       data.soundEffects.detected.length > 0
     ) {
       summary += `\n\n🔊 Sound Effects: ${data.soundEffects.detected.length} detected`;
-      const topEffect = data.soundEffects.detected[0];
-      if (topEffect) {
-        summary += ` | Top: ${topEffect.type || "Unknown"} (${Math.round((topEffect.confidence || 0) * 100)}%)`;
+      data.soundEffects.detected.slice(0, 5).forEach((effect, index) => {
+        const startTime = Math.floor(effect.timestamp?.start || 0);
+        const endTime = Math.floor(effect.timestamp?.end || 0);
+        summary += `\n• ${index + 1}. ${effect.type || "Unknown"} (${effect.category || "Unknown"}) - ${Math.round((effect.confidence || 0) * 100)}%`;
+        if (startTime > 0 || endTime > 0) {
+          summary += ` [${Math.floor(startTime / 60)}:${Math.floor(startTime % 60).toString().padStart(2, "0")} - ${Math.floor(endTime / 60)}:${Math.floor(endTime % 60).toString().padStart(2, "0")}]`;
+        }
+        if (effect.description) {
+          summary += `\n  ${effect.description}`;
+        }
+      });
+      if (data.soundEffects.detected.length > 5) {
+        summary += `\n  ... and ${data.soundEffects.detected.length - 5} more`;
+      }
+      if (data.soundEffects.environment) {
+        summary += `\n\n📍 Environment:`;
+        if (data.soundEffects.environment.location_type) {
+          summary += `\n• Location: ${data.soundEffects.environment.location_type}`;
+        }
+        if (data.soundEffects.environment.setting) {
+          summary += `\n• Setting: ${data.soundEffects.environment.setting}`;
+        }
+        if (data.soundEffects.environment.activity_level) {
+          summary += `\n• Activity: ${data.soundEffects.environment.activity_level}`;
+        }
       }
     }
 
-    // Add Top Emotions
+    // Add All Emotions
     if (data.emotions) {
-      const topEmotions = Object.entries(data.emotions)
+      const sortedEmotions = Object.entries(data.emotions)
         .sort(([, a], [, b]) => (b as number) - (a as number))
-        .slice(0, 3);
+        .filter(([, value]) => (value as number) > 0);
 
-      if (topEmotions.length > 0) {
-        summary += `\n\n🎭 Top Emotions: ${topEmotions
-          .map(
-            ([emotion, value]) =>
-              `${emotion} ${Math.round((value as number) * 100)}%`
-          )
-          .join(" | ")}`;
+      if (sortedEmotions.length > 0) {
+        summary += `\n\n🎭 Emotions:`;
+        sortedEmotions.forEach(([emotion, value]) => {
+          summary += `\n• ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}: ${Math.round((value as number) * 100)}%`;
+        });
       }
     }
 
-    // Add AI Tags (first 8)
+    // Add Transcription if available
+    if (data.transcription && data.transcription.trim() && !data.transcription.toLowerCase().includes('no speech detected')) {
+      summary += `\n\n📝 Transcription:`;
+      const transcription = data.transcription.trim();
+      // 如果转录内容太长，可以截断，但保留更多内容
+      if (transcription.length > 500) {
+        summary += `\n${transcription.substring(0, 500)}...`;
+        summary += `\n\n[Transcription truncated - ${transcription.length} characters total]`;
+      } else {
+        summary += `\n${transcription}`;
+      }
+    }
+
+    // Add Similarity Analysis if available
+    if (data.similarity) {
+      if (data.similarity.similar_tracks && data.similarity.similar_tracks.length > 0) {
+        summary += `\n\n🎼 Similar Tracks:`;
+        data.similarity.similar_tracks.slice(0, 3).forEach((track, index) => {
+          summary += `\n• ${index + 1}. ${track.title || "Unknown"} by ${track.artist || "Unknown"}`;
+          if (track.similarity) {
+            summary += ` (${Math.round(track.similarity * 100)}% similar)`;
+          }
+        });
+      }
+      if (data.similarity.style_influences && data.similarity.style_influences.length > 0) {
+        summary += `\n\n🎨 Style Influences: ${data.similarity.style_influences.join(", ")}`;
+      }
+    }
+
+    // Add AI Tags (all tags)
     if (data.tags && data.tags.length > 0) {
-      const displayTags = data.tags.slice(0, 8);
-      summary += `\n\n🏷️ AI Tags: ${displayTags.map((tag) => `#${tag}`).join(" ")}`;
-      if (data.tags.length > 8) {
-        summary += ` (+${data.tags.length - 8} more)`;
-      }
+      summary += `\n\n🏷️ AI Tags: ${data.tags.map((tag) => `#${tag}`).join(" ")}`;
     }
 
-    // Add AI Description (truncated)
+    // Add Full AI Description (not truncated)
     if (data.aiDescription) {
-      const truncatedDesc =
-        data.aiDescription.length > 120
-          ? data.aiDescription.substring(0, 120) + "..."
-          : data.aiDescription;
-      summary += `\n\n🤖 AI Description: ${truncatedDesc}`;
+      summary += `\n\n🤖 AI Description:\n${data.aiDescription}`;
+    }
+
+    // Add Quality Details
+    if (data.quality) {
+      summary += `\n\n⭐ Quality Details:`;
+      if (data.quality.clarity !== undefined) {
+        summary += `\n• Clarity: ${data.quality.clarity}/10`;
+      }
+      if (data.quality.loudness !== undefined) {
+        summary += `\n• Loudness: ${data.quality.loudness}/10`;
+      }
+      if (data.quality.dynamic_range !== undefined) {
+        summary += `\n• Dynamic Range: ${data.quality.dynamic_range}/10`;
+      }
+      if (data.quality.noise_level !== undefined) {
+        summary += `\n• Noise Level: ${data.quality.noise_level}/10`;
+      }
     }
 
     summary += `\n\n✨ Analyzed by Describe Music - AI-Powered Audio Analysis`;
@@ -1344,4 +1417,5 @@ ${displayTags.map((tag) => `#${tag}`).join(", ")}`;
   (window as any).shareViaEmail = shareViaEmail;
   (window as any).shareToTwitter = shareToTwitter;
   (window as any).shareToLinkedIn = shareToLinkedIn;
+  (window as any).generateSummary = generateSummary;
 </script>

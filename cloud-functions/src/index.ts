@@ -400,8 +400,7 @@ export const analyzeAudioFromUrl = functions
                     transcription = transcriptionResult.transcription;
                     logger.info('Transcription generated successfully', {
                         requestId,
-                        transcriptionLength: transcription.length,
-                        hasTranscription: transcription.length > 0
+                        transcriptionLength: transcription.length
                     });
                 } else {
                     logger.warn('Transcription generation returned empty result', {

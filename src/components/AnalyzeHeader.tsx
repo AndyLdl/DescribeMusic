@@ -152,12 +152,20 @@ export default function AnalyzeHeader() {
 
     const copyAnalysisData = async () => {
         const data = getCurrentAnalysisData();
-        const summary = `Audio Analysis Summary:
-Filename: ${data.filename}
-Genre: ${data.basicInfo?.genre || 'Unknown'}
-Mood: ${data.basicInfo?.mood || 'Unknown'}
-BPM: ${data.basicInfo?.bpm || 0}
-Quality: ${data.quality?.overall || 0}/10`;
+        if (!data) {
+            toast.error('Error', 'No analysis data available');
+            return;
+        }
+
+        // Use the same generateSummary function from AnalyzeHeader.astro
+        // If it's available globally, use it; otherwise generate inline
+        let summary: string;
+        if ((window as any).generateSummary) {
+            summary = (window as any).generateSummary(data);
+        } else {
+            // Fallback: generate summary inline
+            summary = generateSummaryInline(data);
+        }
 
         try {
             await navigator.clipboard.writeText(summary);
@@ -167,6 +175,128 @@ Quality: ${data.quality?.overall || 0}/10`;
             toast.error('Error', 'Failed to copy to clipboard');
         }
         setShowExportMenu(false);
+    };
+
+    // Inline summary generation as fallback
+    const generateSummaryInline = (data: any): string => {
+        const cleanFilename = data.filename?.replace(/[^a-z0-9]/gi, '_').toLowerCase() || 'audio_file';
+        
+        let summary = `🎵 Audio Analysis Summary for: ${data.filename || 'Unknown'}
+
+📊 Basic Info: ${data.basicInfo?.genre || "Unknown"} | ${data.basicInfo?.mood || "Unknown"} | ${data.basicInfo?.bpm || "Unknown"} BPM | ${data.basicInfo?.key || "Unknown"}
+
+⚡ Key Metrics:
+• Energy: ${Math.round((data.basicInfo?.energy || 0) * 100)}%
+• Danceability: ${Math.round((data.basicInfo?.danceability || 0) * 100)}%
+• Valence: ${Math.round((data.basicInfo?.valence || 0) * 100)}%
+• Quality Score: ${data.quality?.overall || 0}/10
+
+📁 File Info: ${data.format || "Unknown"} | ${data.fileSize || "Unknown"} | ${Math.floor((data.duration || 0) / 60)}:${Math.floor((data.duration || 0) % 60).toString().padStart(2, "0")}`;
+
+        if (data.contentType) {
+            summary += `\n\n🎯 Content Type: ${data.contentType.primary} (${Math.round((data.contentType.confidence || 0) * 100)}% confidence)`;
+            if (data.contentType.description) {
+                summary += `\n   ${data.contentType.description}`;
+            }
+        }
+
+        if (data.voiceAnalysis && data.voiceAnalysis.hasVoice) {
+            summary += `\n\n🎙️ Voice Analysis:`;
+            summary += `\n• Speakers: ${data.voiceAnalysis.speakerCount || 0}`;
+            if (data.voiceAnalysis.genderDetection) {
+                summary += `\n• Gender: ${data.voiceAnalysis.genderDetection.primary || "Unknown"} (${Math.round((data.voiceAnalysis.genderDetection.confidence || 0) * 100)}%)`;
+            }
+            if (data.voiceAnalysis.speakerEmotion) {
+                summary += `\n• Emotion: ${data.voiceAnalysis.speakerEmotion.primary || "Unknown"} (${Math.round((data.voiceAnalysis.speakerEmotion.confidence || 0) * 100)}%)`;
+            }
+            if (data.voiceAnalysis.speechClarity) {
+                summary += `\n• Speech Clarity: ${Math.round((data.voiceAnalysis.speechClarity.score || 0) * 10)}/10`;
+                summary += ` | Pace: ${data.voiceAnalysis.speechClarity.pace || "normal"}`;
+                summary += ` | Volume: ${data.voiceAnalysis.speechClarity.volume || "normal"}`;
+            }
+            if (data.voiceAnalysis.languageAnalysis) {
+                summary += `\n• Language: ${data.voiceAnalysis.languageAnalysis.language || "Unknown"} (${Math.round((data.voiceAnalysis.languageAnalysis.confidence || 0) * 100)}%)`;
+                if (data.voiceAnalysis.languageAnalysis.accent) {
+                    summary += ` | Accent: ${data.voiceAnalysis.languageAnalysis.accent}`;
+                }
+            }
+        }
+
+        if (data.soundEffects && data.soundEffects.detected && data.soundEffects.detected.length > 0) {
+            summary += `\n\n🔊 Sound Effects: ${data.soundEffects.detected.length} detected`;
+            data.soundEffects.detected.slice(0, 5).forEach((effect: any, index: number) => {
+                const startTime = Math.floor(effect.timestamp?.start || 0);
+                const endTime = Math.floor(effect.timestamp?.end || 0);
+                summary += `\n• ${index + 1}. ${effect.type || "Unknown"} (${effect.category || "Unknown"}) - ${Math.round((effect.confidence || 0) * 100)}%`;
+                if (startTime > 0 || endTime > 0) {
+                    summary += ` [${Math.floor(startTime / 60)}:${Math.floor(startTime % 60).toString().padStart(2, "0")} - ${Math.floor(endTime / 60)}:${Math.floor(endTime % 60).toString().padStart(2, "0")}]`;
+                }
+                if (effect.description) {
+                    summary += `\n  ${effect.description}`;
+                }
+            });
+            if (data.soundEffects.detected.length > 5) {
+                summary += `\n  ... and ${data.soundEffects.detected.length - 5} more`;
+            }
+        }
+
+        if (data.emotions) {
+            const sortedEmotions = Object.entries(data.emotions)
+                .sort(([, a], [, b]) => (b as number) - (a as number))
+                .filter(([, value]) => (value as number) > 0);
+
+            if (sortedEmotions.length > 0) {
+                summary += `\n\n🎭 Emotions:`;
+                sortedEmotions.forEach(([emotion, value]) => {
+                    summary += `\n• ${emotion.charAt(0).toUpperCase() + emotion.slice(1)}: ${Math.round((value as number) * 100)}%`;
+                });
+            }
+        }
+
+        if (data.transcription && data.transcription.trim() && !data.transcription.toLowerCase().includes('no speech detected')) {
+            summary += `\n\n📝 Transcription:`;
+            const transcription = data.transcription.trim();
+            if (transcription.length > 500) {
+                summary += `\n${transcription.substring(0, 500)}...`;
+                summary += `\n\n[Transcription truncated - ${transcription.length} characters total]`;
+            } else {
+                summary += `\n${transcription}`;
+            }
+        }
+
+        if (data.similarity) {
+            if (data.similarity.similar_tracks && data.similarity.similar_tracks.length > 0) {
+                summary += `\n\n🎼 Similar Tracks:`;
+                data.similarity.similar_tracks.slice(0, 3).forEach((track: any, index: number) => {
+                    summary += `\n• ${index + 1}. ${track.title || "Unknown"} by ${track.artist || "Unknown"}`;
+                    if (track.similarity) {
+                        summary += ` (${Math.round(track.similarity * 100)}% similar)`;
+                    }
+                });
+            }
+        }
+
+        if (data.tags && data.tags.length > 0) {
+            summary += `\n\n🏷️ AI Tags: ${data.tags.map((tag: string) => `#${tag}`).join(" ")}`;
+        }
+
+        if (data.aiDescription) {
+            summary += `\n\n🤖 AI Description:\n${data.aiDescription}`;
+        }
+
+        if (data.quality) {
+            summary += `\n\n⭐ Quality Details:`;
+            if (data.quality.clarity !== undefined) {
+                summary += `\n• Clarity: ${data.quality.clarity}/10`;
+            }
+            if (data.quality.loudness !== undefined) {
+                summary += `\n• Loudness: ${data.quality.loudness}/10`;
+            }
+        }
+
+        summary += `\n\n✨ Analyzed by Describe Music - AI-Powered Audio Analysis`;
+
+        return summary;
     };
 
     const copyShareLink = async () => {

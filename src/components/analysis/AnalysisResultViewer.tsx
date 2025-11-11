@@ -90,6 +90,7 @@ interface AnalysisResult {
     };
   };
   emotions: any;
+  transcription?: string;  // 音频转文字内容
   structure: any;
   quality: any;
   similarity: any;
@@ -214,6 +215,7 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
             calm: 0.25,
             excited: 0.82
           },
+          transcription: historyRecord.transcription || '',  // 从历史记录读取转录内容
           structure: historyRecord.structure || {
             intro: { start: 0, end: 8 },
             verse1: { start: 8, end: 32 },
@@ -308,6 +310,7 @@ export default function AnalysisResultViewer({ analysisId }: AnalysisResultViewe
           voiceAnalysis: dbResult.data.voiceAnalysis,
           soundEffects: dbResult.data.soundEffects,
           emotions: dbResult.data.emotions,
+          transcription: (dbResult.data as any).transcription || '',  // 从数据库读取转录内容
           structure: dbResult.data.structure,
           quality: dbResult.data.quality,
           similarity: dbResult.data.similarity,

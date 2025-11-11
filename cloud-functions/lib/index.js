@@ -198,7 +198,7 @@ exports.analyzeAudioFromUrl = functions
     .region('us-central1')
     .https
     .onRequest(async (req, res) => {
-    var _a, _b, _c;
+    var _a, _b, _c, _d, _e;
     const requestId = (0, uuid_1.v4)();
     // 安全的CORS配置
     const origin = req.get('Origin');
@@ -373,18 +373,28 @@ exports.analyzeAudioFromUrl = functions
             metadata.contentType || 'audio/mpeg', undefined, // userId
             gcsUri // 使用 GCS URI
             );
+            logger_1.default.info('Transcription result received', {
+                requestId,
+                success: transcriptionResult.success,
+                transcriptionLength: ((_c = transcriptionResult.transcription) === null || _c === void 0 ? void 0 : _c.length) || 0,
+                transcriptionPreview: ((_d = transcriptionResult.transcription) === null || _d === void 0 ? void 0 : _d.substring(0, 200)) || 'N/A',
+                fullTranscription: transcriptionResult.transcription || 'EMPTY'
+            });
             if (transcriptionResult.success && transcriptionResult.transcription) {
                 transcription = transcriptionResult.transcription;
                 logger_1.default.info('Transcription generated successfully', {
                     requestId,
                     transcriptionLength: transcription.length,
-                    hasTranscription: transcription.length > 0
+                    hasTranscription: transcription.length > 0,
+                    transcriptionText: transcription
                 });
             }
             else {
                 logger_1.default.warn('Transcription generation returned empty result', {
                     requestId,
-                    hasResult: transcriptionResult.success
+                    hasResult: transcriptionResult.success,
+                    transcriptionValue: transcriptionResult.transcription,
+                    transcriptionType: typeof transcriptionResult.transcription
                 });
             }
         }
@@ -411,7 +421,7 @@ exports.analyzeAudioFromUrl = functions
             audioPlaybackUrl = fileUrl; // Fallback to original URL
         }
         // 构建标准的分析结果
-        const fileFormat = ((_c = fileName.split('.').pop()) === null || _c === void 0 ? void 0 : _c.toUpperCase()) || 'Unknown';
+        const fileFormat = ((_e = fileName.split('.').pop()) === null || _e === void 0 ? void 0 : _e.toUpperCase()) || 'Unknown';
         const analysisResult = {
             id: requestId,
             filename: fileName,
@@ -465,6 +475,14 @@ exports.analyzeAudioFromUrl = functions
             aiDescription: finalDescription || analysis.aiDescription || 'Audio content analyzed using Vertex AI Gemini.',
             processingTime: processingTime
         };
+        // 打印最终返回的转录内容
+        logger_1.default.info('Final analysis result with transcription', {
+            requestId,
+            transcriptionLength: analysisResult.transcription.length,
+            transcriptionValue: analysisResult.transcription,
+            transcriptionType: typeof analysisResult.transcription,
+            hasTranscription: analysisResult.transcription.length > 0
+        });
         res.json({
             success: true,
             data: analysisResult,

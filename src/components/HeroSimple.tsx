@@ -391,7 +391,7 @@ export default function HeroSimple() {
         },
         // Save complete analysis data
         emotions: result.emotions,
-        structure: result.structure,
+        transcription: (result as any).transcription,  // 保存转录内容
         quality: result.quality,
         similarity: result.similarity,
         tags: result.tags,

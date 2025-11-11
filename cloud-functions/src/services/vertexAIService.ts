@@ -254,14 +254,14 @@ Begin transcription:`;
 
             const duration = Date.now() - startTime;
             
-            logger.info('Transcription generated', {
-                transcriptionLength: text.length,
-                duration,
-                requestId
-            });
-
             // 清理响应文本
             let cleanedTranscription = text.trim();
+            
+            logger.info('Transcription generated', {
+                requestId,
+                transcriptionLength: cleanedTranscription.length,
+                duration
+            });
             
             return {
                 transcription: cleanedTranscription,

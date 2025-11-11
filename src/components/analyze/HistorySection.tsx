@@ -176,7 +176,7 @@ export default function HistorySection({ onSelectRecord, onNewAnalysis }: Histor
                 {record.filename}
               </h3>
               <p className="text-sm text-slate-400 mt-1">
-                {Math.floor(record.duration / 60)}:{(record.duration % 60).toString().padStart(2, '0')} • {record.fileSize} • {record.format}
+                {Math.floor(record.duration / 60)}:{Math.floor(record.duration % 60).toString().padStart(2, '0')} • {record.fileSize} • {record.format}
               </p>
               <p className="text-xs text-slate-500 mt-1">
                 {formatDate(record.timestamp)}

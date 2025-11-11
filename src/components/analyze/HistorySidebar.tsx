@@ -228,7 +228,7 @@ export default function HistorySidebar({ selectedRecordId, onSelectRecord, onNew
                               {record.filename}
                             </h4>
                             <p className="text-xs text-slate-400 mt-0.5">
-                              {Math.floor(record.duration / 60)}:{(record.duration % 60).toString().padStart(2, '0')} • {formatDate(record.timestamp)}
+                              {Math.floor(record.duration / 60)}:{Math.floor(record.duration % 60).toString().padStart(2, '0')} • {formatDate(record.timestamp)}
                             </p>
                           </div>
                         </div>

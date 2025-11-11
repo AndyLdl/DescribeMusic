@@ -23,7 +23,7 @@ export interface AnalysisResultData {
     voiceAnalysis?: any;
     soundEffects?: any;
     emotions?: any;
-    structure?: any;
+    transcription?: string;  // 音频转文字内容
     quality?: any;
     similarity?: any;
     tags?: string[];

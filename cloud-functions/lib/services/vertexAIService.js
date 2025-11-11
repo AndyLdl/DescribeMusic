@@ -222,13 +222,23 @@ Begin transcription:`;
                 throw new Error('No valid response from Vertex AI');
             }
             const duration = Date.now() - startTime;
-            logger_1.default.info('Transcription generated', {
-                transcriptionLength: text.length,
-                duration,
-                requestId
+            // 详细日志：打印原始响应
+            logger_1.default.info('Transcription raw response received', {
+                requestId,
+                responseLength: text.length,
+                rawResponse: text.substring(0, 500), // 打印前500字符
+                fullResponse: text, // 打印完整响应
+                duration
             });
             // 清理响应文本
             let cleanedTranscription = text.trim();
+            logger_1.default.info('Transcription cleaned and ready', {
+                requestId,
+                originalLength: text.length,
+                cleanedLength: cleanedTranscription.length,
+                transcriptionPreview: cleanedTranscription.substring(0, 200),
+                isEmpty: cleanedTranscription.length === 0
+            });
             return {
                 transcription: cleanedTranscription,
                 success: true

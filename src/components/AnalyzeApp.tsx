@@ -95,7 +95,7 @@ interface AnalysisResult {
     };
   };
   emotions: any;
-  structure: any;
+  transcription?: string;  // 音频转文字内容
   quality: any;
   similarity: any;
   tags: string[];
@@ -383,7 +383,7 @@ function AnalyzeAppContent() {
         voiceAnalysis: cloudResult.voiceAnalysis,
         soundEffects: cloudResult.soundEffects,
         emotions: cloudResult.emotions,
-        structure: cloudResult.structure,
+        transcription: (cloudResult as any).transcription || '',  // 添加转录字段
         quality: cloudResult.quality,
         similarity: cloudResult.similarity,
         tags: cloudResult.tags,
@@ -420,7 +420,7 @@ function AnalyzeAppContent() {
         },
         // Save complete analysis data
         emotions: result.emotions,
-        structure: result.structure,
+        transcription: result.transcription,  // 保存转录内容
         quality: result.quality,
         similarity: result.similarity,
         tags: result.tags,

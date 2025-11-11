@@ -593,7 +593,14 @@ function EmotionsTab({ result }: { result: AnalysisResult }) {
 // Transcription Tab Component (音频转文字)
 function TranscriptionTab({ result }: { result: AnalysisResult }) {
   const transcription = (result as any).transcription || '';
-  const hasTranscription = transcription.trim().length > 0;
+  const trimmedTranscription = transcription.trim();
+  
+  // 检查是否是"No speech detected"提示信息（不是真正的转录内容）
+  const isNoSpeechMessage = trimmedTranscription.toLowerCase().startsWith('no speech detected') || 
+                             trimmedTranscription.toLowerCase().includes('no speech detected');
+  
+  // 只有当有实际转录内容且不是"No speech detected"提示时才显示
+  const hasTranscription = trimmedTranscription.length > 0 && !isNoSpeechMessage;
   const contentType = result.contentType;
 
   return (
@@ -637,7 +644,7 @@ function TranscriptionTab({ result }: { result: AnalysisResult }) {
             <div className="p-6 bg-white/5 rounded-lg border border-white/10">
               <div className="prose prose-invert max-w-none">
                 <div className="text-slate-200 leading-relaxed whitespace-pre-wrap">
-                  {transcription}
+                  {trimmedTranscription}
                 </div>
               </div>
             </div>
@@ -646,15 +653,15 @@ function TranscriptionTab({ result }: { result: AnalysisResult }) {
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               <div className="p-4 bg-white/5 rounded-lg">
                 <div className="text-slate-400 text-sm">Characters</div>
-                <div className="text-white text-2xl font-bold mt-1">{transcription.length.toLocaleString()}</div>
+                <div className="text-white text-2xl font-bold mt-1">{trimmedTranscription.length.toLocaleString()}</div>
               </div>
               <div className="p-4 bg-white/5 rounded-lg">
                 <div className="text-slate-400 text-sm">Words (approx)</div>
-                <div className="text-white text-2xl font-bold mt-1">{transcription.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()}</div>
+                <div className="text-white text-2xl font-bold mt-1">{trimmedTranscription.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()}</div>
               </div>
               <div className="p-4 bg-white/5 rounded-lg">
                 <div className="text-slate-400 text-sm">Lines</div>
-                <div className="text-white text-2xl font-bold mt-1">{transcription.split('\n').filter(l => l.trim().length > 0).length}</div>
+                <div className="text-white text-2xl font-bold mt-1">{trimmedTranscription.split('\n').filter(l => l.trim().length > 0).length}</div>
               </div>
             </div>
 
@@ -662,7 +669,7 @@ function TranscriptionTab({ result }: { result: AnalysisResult }) {
             <div className="flex justify-end">
               <button
                 onClick={() => {
-                  navigator.clipboard.writeText(transcription);
+                  navigator.clipboard.writeText(trimmedTranscription);
                   alert('Transcription copied to clipboard!');
                 }}
                 className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
@@ -674,7 +681,17 @@ function TranscriptionTab({ result }: { result: AnalysisResult }) {
               </button>
             </div>
           </div>
+        ) : isNoSpeechMessage ? (
+          // 显示"No speech detected"消息（但不显示统计信息）
+          <div className="p-8 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-lg text-center border border-slate-600/30">
+            <div className="text-4xl mb-3">🎤</div>
+            <p className="text-slate-300 mb-2 font-semibold">No Speech Detected</p>
+            <p className="text-slate-500 text-sm max-w-md mx-auto">
+              {trimmedTranscription || `This audio appears to contain only ${contentType?.primary === 'music' ? 'instrumental music' : contentType?.primary === 'ambient' ? 'ambient sounds' : contentType?.primary === 'sound-effects' ? 'sound effects' : 'non-speech audio'} without any spoken words, dialogue, or lyrics.`}
+            </p>
+          </div>
         ) : (
+          // 完全没有转录内容
           <div className="p-8 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-lg text-center border border-slate-600/30">
             <div className="text-4xl mb-3">🎤</div>
             <p className="text-slate-300 mb-2 font-semibold">No Speech Detected</p>

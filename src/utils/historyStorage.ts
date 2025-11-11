@@ -125,6 +125,7 @@ export interface HistoryRecord {
     };
     tags?: string[];
     aiDescription?: string;
+    transcription?: string;  // 音频转文字内容
     processingTime?: number;
 }
 
