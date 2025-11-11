@@ -79,7 +79,7 @@ interface AnalysisResult {
     };
   };
   emotions: any;
-  structure: any;
+  transcription?: string;  // 音频转文字内容
   quality: any;
   similarity: any;
   tags: string[];
@@ -91,7 +91,7 @@ interface DashboardSectionProps {
   result: AnalysisResult;
 }
 
-type TabType = 'overview' | 'voiceanalysis' | 'soundeffects' | 'emotions' | 'structure' | 'quality' | 'similarity';
+type TabType = 'overview' | 'voiceanalysis' | 'soundeffects' | 'emotions' | 'transcription' | 'quality' | 'similarity';
 
 export default function DashboardSection({ result }: DashboardSectionProps) {
   // 智能默认标签页选择
@@ -154,7 +154,7 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
     { id: 'voiceanalysis', label: 'Voice & Speech', icon: 'microphone' },
     { id: 'soundeffects', label: 'Sound Effects', icon: 'soundwave' },
     { id: 'emotions', label: 'Emotions', icon: 'emotion' },
-    { id: 'structure', label: 'Structure', icon: 'structure' },
+    { id: 'transcription', label: 'Transcription', icon: 'transcription' },
     { id: 'quality', label: 'Quality', icon: 'lightning' },
     { id: 'similarity', label: 'Similarity', icon: 'search' }
   ];
@@ -252,7 +252,7 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                 </svg>
               )}
-              {tab.icon === 'structure' && (
+              {tab.icon === 'transcription' && (
                 <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                 </svg>
@@ -281,7 +281,7 @@ export default function DashboardSection({ result }: DashboardSectionProps) {
           {activeTab === 'voiceanalysis' && result.voiceAnalysis && <VoiceAnalysisTab result={result} />}
           {activeTab === 'soundeffects' && <SoundEffectsTab result={result} />}
           {activeTab === 'emotions' && <EmotionsTab result={result} />}
-          {activeTab === 'structure' && <StructureTab result={result} />}
+          {activeTab === 'transcription' && <TranscriptionTab result={result} />}
           {activeTab === 'quality' && <QualityTab result={result} />}
           {activeTab === 'similarity' && <SimilarityTab result={result} />}
         </div>
@@ -590,168 +590,96 @@ function EmotionsTab({ result }: { result: AnalysisResult }) {
   );
 }
 
-// Structure Tab Component  
-function StructureTab({ result }: { result: AnalysisResult }) {
-  const { contentType, structure } = result;
-  
-  // 格式化时间戳（修复精度问题）
-  const formatTime = (seconds: number) => {
-    if (!seconds || isNaN(seconds)) return '0:00';
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  // 判断是否为音乐内容
-  const isMusic = contentType?.primary === 'music' || !contentType;
-  
-  // 优先使用新的 sections 数组（灵活结构）
-  const sectionsArray = structure.sections || [];
-  const hasFlexibleSections = Array.isArray(sectionsArray) && sectionsArray.length > 0;
-  
-  // 如果有新的 sections 数组，使用它；否则回退到旧的固定字段
-  let validSections: any[] = [];
-  
-  if (hasFlexibleSections) {
-    // 使用新的灵活结构（sections 数组）
-    validSections = sectionsArray
-      .filter((section: any) => {
-        return section && 
-               typeof section.start === 'number' && 
-               typeof section.end === 'number' &&
-               !isNaN(section.start) && 
-               !isNaN(section.end) &&
-               (section.start > 0 || section.end > 0);
-      })
-      .map((section: any) => ({
-        name: section.name || 'Unknown',
-        index: section.index,
-        start: section.start,
-        end: section.end,
-        description: section.description
-      }));
-  } else {
-    // 回退到旧的固定字段（向后兼容）
-    validSections = Object.entries(structure)
-      .filter(([section, timing]: [string, any]) => {
-        // 排除 events 和 sections 字段
-        if (section === 'events' || section === 'sections') return false;
-        return timing && 
-               typeof timing.start === 'number' && 
-               typeof timing.end === 'number' &&
-               !isNaN(timing.start) && 
-               !isNaN(timing.end) &&
-               (timing.start > 0 || timing.end > 0);
-      })
-      .map(([section, timing]: [string, any]) => ({
-        name: section,
-        start: timing.start,
-        end: timing.end
-      }));
-  }
-
-  // 获取 events 数据
-  const events = structure.events || [];
-  const hasValidEvents = Array.isArray(events) && events.length > 0;
+// Transcription Tab Component (音频转文字)
+function TranscriptionTab({ result }: { result: AnalysisResult }) {
+  const transcription = (result as any).transcription || '';
+  const hasTranscription = transcription.trim().length > 0;
+  const contentType = result.contentType;
 
   return (
     <div className="space-y-6">
       <div className="glass-pane p-8">
-        {/* 根据内容类型显示不同标题 */}
+        {/* 标题 */}
         <div className="mb-6">
-          <h3 className="text-2xl font-bold text-white mb-2">
-            {isMusic ? 'Song Structure' : 'Audio Timeline'}
+          <h3 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
+            <span>📝</span>
+            <span>Audio Transcription</span>
           </h3>
+          <p className="text-slate-400 text-sm">
+            Extracted text from speech, dialogue, or lyrics in the audio
+          </p>
           {contentType && (
-            <p className="text-slate-400 text-sm">
+            <p className="text-slate-400 text-sm mt-1">
               Content Type: <span className="text-white capitalize">{contentType.primary.replace('-', ' ')}</span>
             </p>
           )}
         </div>
 
-        {/* 显示结构段落 */}
-        {validSections.length > 0 ? (
-          <div className="space-y-3 mb-6">
-            {isMusic && (
-              <p className="text-slate-400 text-sm mb-4">
-                📊 Musical sections identified in this track:
-              </p>
-            )}
-            {validSections.map((section: any, idx: number) => {
-              // 格式化段落名称
-              let displayName = section.name
-                .replace(/([A-Z])/g, ' $1')
-                .replace(/\d+/g, ' $&')
-                .replace(/-/g, ' ')
-                .trim();
-              
-              // 如果有 index 且不为 0，添加编号
-              if (section.index && section.index > 0) {
-                displayName = `${displayName} ${section.index}`;
-              }
-              
-              return (
-                <div key={`${section.name}-${section.index || idx}`} className="flex items-center justify-between p-4 bg-white/5 rounded-lg hover:bg-white/10 transition-colors">
-                  <div className="flex-1">
-                    <span className="font-medium text-white capitalize">
-                      {displayName}
-                    </span>
-                    {section.description && (
-                      <p className="text-slate-400 text-sm mt-1">{section.description}</p>
-                    )}
-                  </div>
-                  <span className="text-slate-300 font-mono ml-4">
-                    {formatTime(section.start)} - {formatTime(section.end)}
-                  </span>
+        {/* 转录内容显示 */}
+        {hasTranscription ? (
+          <div className="space-y-4">
+            {/* 提示信息 */}
+            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+              <div className="flex items-start gap-3">
+                <svg className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="text-sm text-blue-300">
+                  <p className="font-medium mb-1">AI-Generated Transcription</p>
+                  <p className="text-blue-200/80">
+                    This transcription was generated using AI and may contain errors, especially for unclear audio, accents, or background noise.
+                  </p>
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="p-6 bg-white/5 rounded-lg text-center">
-            <p className="text-slate-400">
-              {isMusic 
-                ? '🎵 No distinct musical sections detected. This might be a continuous piece or the structure is too subtle to identify.'
-                : '📝 No specific timeline sections identified for this audio.'}
-            </p>
-          </div>
-        )}
+              </div>
+            </div>
 
-        {/* 显示特殊事件（对非音乐内容特别有用）*/}
-        {hasValidEvents && (
-          <div className="mt-6 pt-6 border-t border-white/10">
-            <h4 className="text-lg font-semibold text-white mb-4">
-              {isMusic ? '🎯 Notable Events' : '🔊 Audio Events'}
-            </h4>
-            <div className="space-y-3">
-              {events.map((event: any, index: number) => (
-                <div key={index} className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg border border-purple-500/20">
-                  <div className="flex items-start justify-between mb-2">
-                    <span className="font-medium text-white">{event.type}</span>
-                    {event.timestamp && (
-                      <span className="text-slate-300 text-sm font-mono">
-                        {formatTime(event.timestamp.start)} - {formatTime(event.timestamp.end)}
-                      </span>
-                    )}
-                  </div>
-                  {event.description && (
-                    <p className="text-slate-400 text-sm">{event.description}</p>
-                  )}
+            {/* 转录文本 */}
+            <div className="p-6 bg-white/5 rounded-lg border border-white/10">
+              <div className="prose prose-invert max-w-none">
+                <div className="text-slate-200 leading-relaxed whitespace-pre-wrap">
+                  {transcription}
                 </div>
-              ))}
+              </div>
+            </div>
+
+            {/* 统计信息 */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-white/5 rounded-lg">
+                <div className="text-slate-400 text-sm">Characters</div>
+                <div className="text-white text-2xl font-bold mt-1">{transcription.length.toLocaleString()}</div>
+              </div>
+              <div className="p-4 bg-white/5 rounded-lg">
+                <div className="text-slate-400 text-sm">Words (approx)</div>
+                <div className="text-white text-2xl font-bold mt-1">{transcription.split(/\s+/).filter(w => w.length > 0).length.toLocaleString()}</div>
+              </div>
+              <div className="p-4 bg-white/5 rounded-lg">
+                <div className="text-slate-400 text-sm">Lines</div>
+                <div className="text-white text-2xl font-bold mt-1">{transcription.split('\n').filter(l => l.trim().length > 0).length}</div>
+              </div>
+            </div>
+
+            {/* 复制按钮 */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(transcription);
+                  alert('Transcription copied to clipboard!');
+                }}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Copy Transcription
+              </button>
             </div>
           </div>
-        )}
-
-        {/* 如果既没有结构也没有事件 */}
-        {validSections.length === 0 && !hasValidEvents && (
+        ) : (
           <div className="p-8 bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-lg text-center border border-slate-600/30">
-            <div className="text-4xl mb-3">🎧</div>
-            <p className="text-slate-300 mb-2">No structure analysis available</p>
-            <p className="text-slate-500 text-sm">
-              {isMusic 
-                ? 'This audio might be too short, continuous, or experimental in structure.'
-                : 'This appears to be a continuous recording without distinct sections.'}
+            <div className="text-4xl mb-3">🎤</div>
+            <p className="text-slate-300 mb-2 font-semibold">No Speech Detected</p>
+            <p className="text-slate-500 text-sm max-w-md mx-auto">
+              This audio appears to contain only {contentType?.primary === 'music' ? 'instrumental music' : contentType?.primary === 'ambient' ? 'ambient sounds' : contentType?.primary === 'sound-effects' ? 'sound effects' : 'non-speech audio'} without any spoken words, dialogue, or lyrics.
             </p>
           </div>
         )}

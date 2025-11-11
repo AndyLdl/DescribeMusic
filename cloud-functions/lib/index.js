@@ -198,7 +198,7 @@ exports.analyzeAudioFromUrl = functions
     .region('us-central1')
     .https
     .onRequest(async (req, res) => {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c;
     const requestId = (0, uuid_1.v4)();
     // 安全的CORS配置
     const origin = req.get('Origin');
@@ -364,35 +364,33 @@ exports.analyzeAudioFromUrl = functions
             logger_1.default.error('Failed to generate description', descError);
             // Keep default fallback description
         }
-        // Generate structure analysis separately for improved timestamp accuracy
-        // 单独分析结构以提高时间轴准确度
-        let finalStructure = analysis.structure || { sections: [], events: [] };
+        // Generate audio transcription (speech-to-text)
+        // 提取音频中的文字内容（语音识别）
+        let transcription = '';
         try {
-            logger_1.default.info('Generating structure analysis using getStructurePrompt', { requestId });
-            const contentType = ((_c = analysis.contentType) === null || _c === void 0 ? void 0 : _c.primary) || ((_d = analysis.basicInfo) === null || _d === void 0 ? void 0 : _d.genre) || 'unknown';
-            const structurePrompt = prompts_1.PromptTemplates.getStructurePrompt(fileName, frontendDuration, contentType);
-            const structureResult = await vertexAIService_1.vertexAIService.generateStructure(structurePrompt, requestId, undefined, // 不使用 buffer
+            logger_1.default.info('Generating audio transcription', { requestId });
+            const transcriptionResult = await vertexAIService_1.vertexAIService.generateTranscription(fileName, requestId, undefined, // 不使用 buffer
             metadata.contentType || 'audio/mpeg', undefined, // userId
             gcsUri // 使用 GCS URI
             );
-            if (structureResult.success && structureResult.structure) {
-                finalStructure = structureResult.structure;
-                logger_1.default.info('Structure analysis generated successfully', {
+            if (transcriptionResult.success && transcriptionResult.transcription) {
+                transcription = transcriptionResult.transcription;
+                logger_1.default.info('Transcription generated successfully', {
                     requestId,
-                    sectionsCount: ((_e = finalStructure.sections) === null || _e === void 0 ? void 0 : _e.length) || 0,
-                    eventsCount: ((_f = finalStructure.events) === null || _f === void 0 ? void 0 : _f.length) || 0
+                    transcriptionLength: transcription.length,
+                    hasTranscription: transcription.length > 0
                 });
             }
             else {
-                logger_1.default.warn('Structure generation returned empty result, using fallback', {
+                logger_1.default.warn('Transcription generation returned empty result', {
                     requestId,
-                    hasResult: structureResult.success
+                    hasResult: transcriptionResult.success
                 });
             }
         }
-        catch (structError) {
-            logger_1.default.error('Failed to generate structure analysis, using main analysis structure', structError);
-            // Keep structure from main analysis as fallback
+        catch (transError) {
+            logger_1.default.error('Failed to generate transcription', transError);
+            // Keep empty transcription as fallback
         }
         // Generate a new signed URL for playback (7 days validity - GCS limit)
         let audioPlaybackUrl;
@@ -413,7 +411,7 @@ exports.analyzeAudioFromUrl = functions
             audioPlaybackUrl = fileUrl; // Fallback to original URL
         }
         // 构建标准的分析结果
-        const fileFormat = ((_g = fileName.split('.').pop()) === null || _g === void 0 ? void 0 : _g.toUpperCase()) || 'Unknown';
+        const fileFormat = ((_c = fileName.split('.').pop()) === null || _c === void 0 ? void 0 : _c.toUpperCase()) || 'Unknown';
         const analysisResult = {
             id: requestId,
             filename: fileName,
@@ -455,10 +453,7 @@ exports.analyzeAudioFromUrl = functions
                     acoustic_space: 'medium', time_of_day: 'unknown', weather: 'unknown'
                 }
             },
-            structure: finalStructure || analysis.structure || {
-                sections: [],
-                events: []
-            },
+            transcription: transcription || '', // 音频转文字内容
             quality: analysis.quality || {
                 overall: 7.0, clarity: 7.0, loudness: -10, dynamic_range: 6.0,
                 noise_level: 2.0, distortion: 1.0, frequency_balance: 7.0

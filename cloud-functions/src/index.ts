@@ -383,37 +383,35 @@ export const analyzeAudioFromUrl = functions
                 // Keep default fallback description
             }
 
-            // Generate structure analysis separately for improved timestamp accuracy
-            // 单独分析结构以提高时间轴准确度
-            let finalStructure = analysis.structure || { sections: [], events: [] };
+            // Generate audio transcription (speech-to-text)
+            // 提取音频中的文字内容（语音识别）
+            let transcription = '';
             try {
-                logger.info('Generating structure analysis using getStructurePrompt', { requestId });
-                const contentType = analysis.contentType?.primary || analysis.basicInfo?.genre || 'unknown';
-                const structurePrompt = PromptTemplates.getStructurePrompt(fileName, frontendDuration, contentType);
-                const structureResult = await vertexAIService.generateStructure(
-                    structurePrompt,
+                logger.info('Generating audio transcription', { requestId });
+                const transcriptionResult = await vertexAIService.generateTranscription(
+                    fileName,
                     requestId,
                     undefined,           // 不使用 buffer
                     metadata.contentType || 'audio/mpeg',
                     undefined,           // userId
                     gcsUri              // 使用 GCS URI
                 );
-                if (structureResult.success && structureResult.structure) {
-                    finalStructure = structureResult.structure;
-                    logger.info('Structure analysis generated successfully', {
+                if (transcriptionResult.success && transcriptionResult.transcription) {
+                    transcription = transcriptionResult.transcription;
+                    logger.info('Transcription generated successfully', {
                         requestId,
-                        sectionsCount: finalStructure.sections?.length || 0,
-                        eventsCount: finalStructure.events?.length || 0
+                        transcriptionLength: transcription.length,
+                        hasTranscription: transcription.length > 0
                     });
                 } else {
-                    logger.warn('Structure generation returned empty result, using fallback', {
+                    logger.warn('Transcription generation returned empty result', {
                         requestId,
-                        hasResult: structureResult.success
+                        hasResult: transcriptionResult.success
                     });
                 }
-            } catch (structError) {
-                logger.error('Failed to generate structure analysis, using main analysis structure', structError as Error);
-                // Keep structure from main analysis as fallback
+            } catch (transError) {
+                logger.error('Failed to generate transcription', transError as Error);
+                // Keep empty transcription as fallback
             }
 
             // Generate a new signed URL for playback (7 days validity - GCS limit)
@@ -485,10 +483,7 @@ export const analyzeAudioFromUrl = functions
                     }
                 },
 
-                structure: finalStructure || analysis.structure || {
-                    sections: [],
-                    events: []
-                },
+                transcription: transcription || '',  // 音频转文字内容
 
                 quality: analysis.quality || {
                     overall: 7.0, clarity: 7.0, loudness: -10, dynamic_range: 6.0,

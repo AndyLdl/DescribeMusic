@@ -173,7 +173,7 @@ export interface AnalysisResult {
     voiceAnalysis: VoiceAnalysis;
     soundEffects: SoundEffectAnalysis;
     emotions: EmotionalAnalysis;
-    structure: StructuralAnalysis;
+    transcription: string;  // 音频转文字内容
     quality: QualityMetrics;
     similarity: SimilarityAnalysis;
     tags: string[];

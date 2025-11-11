@@ -159,7 +159,127 @@ export class VertexAIService {
      * Generate audio description using dedicated prompt
      */
     /**
+     * Generate audio transcription (speech-to-text)
+     */
+    async generateTranscription(
+        fileName: string,
+        requestId: string,
+        audioBuffer?: Buffer,
+        audioMimeType?: string,
+        userId?: string,
+        audioFileUri?: string // GCS URI for large files
+    ): Promise<{ transcription: string; success: boolean }> {
+        const startTime = Date.now();
+
+        try {
+            logger.info('Generating audio transcription', {
+                requestId,
+                hasAudio: !!audioBuffer,
+                audioSize: audioBuffer?.length || 0,
+                hasGcsUri: !!audioFileUri
+            });
+
+            const transcriptionPrompt = `Please listen to this audio file and transcribe ALL spoken words, dialogue, or narration you hear. 
+
+Audio File: "${fileName}"
+
+Instructions:
+1. Transcribe EVERYTHING you hear people saying
+2. If multiple speakers, indicate speaker changes with "Speaker 1:", "Speaker 2:", etc.
+3. Include all dialogue, narration, speech content
+4. If there's background music with lyrics, transcribe the lyrics
+5. If there's NO speech/singing in the audio, respond with: "No speech detected - this audio contains only [describe what you hear, e.g., 'instrumental music', 'ambient sounds', 'nature sounds']"
+6. Preserve natural flow and punctuation
+7. Note any unclear or inaudible parts with [inaudible]
+
+Output format:
+- Just the transcription text, nothing else
+- No JSON, no markdown formatting
+- Natural readable text with proper punctuation
+- Indicate speaker changes if multiple speakers
+
+Begin transcription:`;
+
+            // 使用与主流程相同的模型，但temperature更低以提高准确性
+            const transcriptionModel = this.vertexAI.getGenerativeModel({
+                model: this.vertexConfig.model,
+                generationConfig: {
+                    maxOutputTokens: 4096,  // 允许更长的转录文本
+                    temperature: 0.2,  // 低温度，更准确
+                    topP: 0.8,
+                    topK: 20,
+                },
+            });
+
+            // 构建请求内容
+            const parts: any[] = [{ text: transcriptionPrompt }];
+            
+            // 如果有音频文件（优先使用 GCS URI）
+            if (audioFileUri) {
+                parts.push({
+                    fileData: {
+                        mimeType: audioMimeType || 'audio/mpeg',
+                        fileUri: audioFileUri
+                    }
+                });
+            } else if (audioBuffer && audioMimeType) {
+                const base64Audio = audioBuffer.toString('base64');
+                parts.push({
+                    inlineData: {
+                        mimeType: audioMimeType,
+                        data: base64Audio
+                    }
+                });
+            }
+
+            // 调用 Vertex AI
+            const result = await transcriptionModel.generateContent({
+                contents: [{ role: 'user', parts }]
+            });
+
+            const response = result.response;
+            
+            // 正确提取响应文本
+            let text = '';
+            if (response.candidates && response.candidates[0] && response.candidates[0].content) {
+                const candidate = response.candidates[0];
+                if (candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+                    text = candidate.content.parts[0].text;
+                } else {
+                    throw new Error('No text content in Vertex AI response');
+                }
+            } else {
+                throw new Error('No valid response from Vertex AI');
+            }
+
+            const duration = Date.now() - startTime;
+            
+            logger.info('Transcription generated', {
+                transcriptionLength: text.length,
+                duration,
+                requestId
+            });
+
+            // 清理响应文本
+            let cleanedTranscription = text.trim();
+            
+            return {
+                transcription: cleanedTranscription,
+                success: true
+            };
+
+        } catch (error) {
+            logger.error('Failed to generate transcription', error as Error);
+            return {
+                transcription: '',
+                success: false
+            };
+        }
+    }
+
+    /**
      * Generate structure analysis separately for improved accuracy
+     * @deprecated - 结构分析功能已移除，改用转录功能
      */
     async generateStructure(
         structurePrompt: string,
