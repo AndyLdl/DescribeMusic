@@ -37,7 +37,7 @@ const samples: AudioSample[] = [
     id: 'rock',
     title: '🎸 Rock Anthem',
     description: 'High-energy hard rock anthem with driving rhythm and powerful instrumentation',
-    audioSrc: '/audio/samples/rock-anthem.wav',
+    audioSrc: 'https://music.describemusic.net/sample-music/rock-anthem.wav',
     analysis: { 
       genre: 'Hard Rock', 
       mood: 'Energetic, Anthemic', 
@@ -55,7 +55,7 @@ const samples: AudioSample[] = [
     id: 'speech',
     title: '🎙️ Female Voice Sample',
     description: 'High-quality female speech with clear pronunciation',
-    audioSrc: '/audio/samples/femal-vocal.mp3',
+    audioSrc: 'https://music.describemusic.net/sample-music/femal-vocal.mp3',
     analysis: { 
       genre: 'Speech/TTS', 
       mood: 'Calm, Neutral', 
@@ -78,7 +78,7 @@ const samples: AudioSample[] = [
     id: 'ambient',
     title: '🌲 Forest Ambience',
     description: 'Natural soundscape with birds, wind, and distant water',
-    audioSrc: '/audio/samples/forest-ambience.mp3',
+    audioSrc: 'https://music.describemusic.net/sample-music/forest-ambience.mp3',
     analysis: { 
       genre: 'Ambient', 
       mood: 'Peaceful', 
