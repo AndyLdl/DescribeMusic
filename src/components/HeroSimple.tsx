@@ -170,19 +170,6 @@ export default function HeroSimple() {
     }
   }, [user]);
 
-  // Initialize visualizer after component mounts
-  useEffect(() => {
-    const initVisualizer = () => {
-      const canvas = document.getElementById('living-nebula-canvas');
-      if (canvas && (window as any).initNebulaVisualizer) {
-        (window as any).initNebulaVisualizer();
-      } else {
-        setTimeout(initVisualizer, 100);
-      }
-    };
-    initVisualizer();
-  }, []);
-
   // Load credit balance on mount and when user/auth status changes
   useEffect(() => {
     const loadCreditBalance = async () => {
@@ -626,12 +613,6 @@ export default function HeroSimple() {
         }
       `}</style>
       <div className="relative min-h-screen flex items-start justify-center overflow-hidden bg-dark-bg -mt-20 pt-16 pb-20">
-      {/* Background Animation Canvas */}
-      <canvas 
-        id="living-nebula-canvas" 
-        className="absolute inset-0 w-full h-full"
-      ></canvas>
-
       {/* Enhanced Gradient Overlay */}
       <div className="absolute inset-0 bg-gradient-to-br from-violet-900/40 via-purple-900/30 to-blue-900/40 z-5"></div>
       <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent z-5"></div>
@@ -1271,22 +1252,6 @@ export default function HeroSimple() {
                               <span className="text-xs text-green-400 font-medium">Ready for Analysis</span>
                             </div>
                             
-                            {/* Animated Audio Waveform */}
-                            <div className="flex items-center justify-center gap-1 mb-4">
-                              {[1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1].map((height, index) => (
-                                <div
-                                  key={index}
-                                  className="bg-green-500 rounded-full animate-pulse"
-                                  style={{
-                                    width: '3px',
-                                    height: `${height * 3}px`,
-                                    animationDelay: `${index * 0.1}s`,
-                                    animationDuration: '1.5s'
-                                  }}
-                                ></div>
-                              ))}
-                            </div>
-                            
                             {/* Animated Text */}
                             <div className="text-center">
                               <div className="flex items-center justify-center gap-2 text-xs text-green-300 mb-2">
@@ -1312,22 +1277,6 @@ export default function HeroSimple() {
                               <div className="w-3 h-3 border-2 border-violet-500 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                             <span className="text-xs text-violet-400 font-medium">AI Analysis in Progress</span>
-                          </div>
-                          
-                          {/* Animated Audio Waveform */}
-                          <div className="flex items-center justify-center gap-1 mb-4">
-                            {[1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3, 4, 5, 4, 3, 2, 1].map((height, index) => (
-                              <div
-                                key={index}
-                                className="bg-violet-500 rounded-full animate-pulse"
-                                style={{
-                                  width: '3px',
-                                  height: `${height * 4}px`,
-                                  animationDelay: `${index * 0.1}s`,
-                                  animationDuration: '1s'
-                                }}
-                              ></div>
-                            ))}
                           </div>
                           
                           <div className="text-center">
