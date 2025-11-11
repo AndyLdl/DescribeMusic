@@ -132,22 +132,185 @@ export default function AnalyzeHeader() {
 
     const exportAsCSV = () => {
         const data = getCurrentAnalysisData();
+        if (!data) {
+            toast.error('Error', 'No analysis data available');
+            return;
+        }
+
+        // Use the same convertToCSV function from AnalyzeHeader.astro if available
+        let csvContent: string;
+        if ((window as any).convertToCSV) {
+            csvContent = (window as any).convertToCSV(data);
+        } else {
+            // Fallback: generate CSV inline
+            csvContent = convertToCSVInline(data);
+        }
+
         const cleanFilename = getCleanFilename(data.filename);
-
-        // Simple CSV conversion
-        const csvRows = [
-            ['Property', 'Value'],
-            ['Filename', data.filename],
-            ['Genre', data.basicInfo?.genre || 'Unknown'],
-            ['Mood', data.basicInfo?.mood || 'Unknown'],
-            ['BPM', data.basicInfo?.bpm || 0],
-            ['Quality Score', data.quality?.overall || 0],
-            ['Duration', data.duration || 0],
-        ];
-
-        const csvContent = csvRows.map(row => row.join(',')).join('\n');
         downloadFile(`${cleanFilename}-analysis.csv`, csvContent, "text/csv");
         setShowExportMenu(false);
+    };
+
+    // Inline CSV conversion as fallback
+    const convertToCSVInline = (data: any): string => {
+        const formatTime = (seconds: number): string => {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${mins}:${secs.toString().padStart(2, "0")}`;
+        };
+
+        const escapeCSV = (value: any): string => {
+            if (value === null || value === undefined) return "";
+            const str = String(value);
+            // Escape quotes and wrap in quotes if contains comma, newline, or quote
+            if (str.includes(",") || str.includes("\n") || str.includes('"')) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        };
+
+        const rows: string[][] = [
+            ["Category", "Property", "Value", "Notes"],
+            
+            // File Information
+            ["File Info", "Filename", data.filename || "Unknown", "Original audio file"],
+            ["File Info", "Analysis Date", new Date(data.timestamp || Date.now()).toLocaleString(), "When analysis was performed"],
+            ["File Info", "Duration", formatTime(data.duration || 0), "Audio length in MM:SS"],
+            ["File Info", "File Size", data.fileSize || "Unknown", "Size of audio file"],
+            ["File Info", "Format", data.format || "Unknown", "Audio file format"],
+            ["File Info", "Processing Time", `${data.processingTime || 0} seconds`, "AI analysis processing time"],
+            
+            // Basic Musical Analysis
+            ["Music Analysis", "Genre", data.basicInfo?.genre || "Unknown", "Primary musical genre"],
+            ["Music Analysis", "Mood", data.basicInfo?.mood || "Unknown", "Overall emotional mood"],
+            ["Music Analysis", "BPM", String(data.basicInfo?.bpm || "Unknown"), "Beats per minute (tempo)"],
+            ["Music Analysis", "Key", data.basicInfo?.key || "Unknown", "Musical key signature"],
+            ["Music Analysis", "Energy", `${Math.round((data.basicInfo?.energy || 0) * 100)}%`, "Energy level (0-100%)"],
+            ["Music Analysis", "Valence", `${Math.round((data.basicInfo?.valence || 0) * 100)}%`, "Musical positivity (0-100%)"],
+            ["Music Analysis", "Danceability", `${Math.round((data.basicInfo?.danceability || 0) * 100)}%`, "How suitable for dancing (0-100%)"],
+            ["Music Analysis", "Instrumentalness", `${Math.round((data.basicInfo?.instrumentalness || 0) * 100)}%`, "Lack of vocals (0-100%)"],
+            ["Music Analysis", "Speechiness", `${Math.round((data.basicInfo?.speechiness || 0) * 100)}%`, "Presence of spoken words (0-100%)"],
+            ["Music Analysis", "Acousticness", `${Math.round((data.basicInfo?.acousticness || 0) * 100)}%`, "Acoustic vs electronic (0-100%)"],
+            ["Music Analysis", "Liveness", `${Math.round((data.basicInfo?.liveness || 0) * 100)}%`, "Live performance detection (0-100%)"],
+            
+            // Audio Quality
+            ["Audio Quality", "Overall Score", `${data.quality?.overall || 0}/10`, "Overall audio quality rating"],
+            ["Audio Quality", "Clarity", `${data.quality?.clarity || 0}/10`, "Audio clarity and definition"],
+            ["Audio Quality", "Loudness", `${data.quality?.loudness || 0} dB`, "RMS loudness level"],
+            ["Audio Quality", "Dynamic Range", `${data.quality?.dynamic_range || 0}/10`, "Difference between loud and quiet parts"],
+            ["Audio Quality", "Noise Level", `${data.quality?.noise_level || 0}%`, "Background noise percentage"],
+        ];
+
+        // Add Emotional Analysis
+        if (data.emotions) {
+            Object.entries(data.emotions).forEach(([emotion, value]) => {
+                rows.push([
+                    "Emotions",
+                    emotion.charAt(0).toUpperCase() + emotion.slice(1),
+                    `${Math.round((value as number) * 100)}%`,
+                    `${emotion} emotion intensity`,
+                ]);
+            });
+        }
+
+        // Add Content Type
+        if (data.contentType) {
+            rows.push(["Content Type", "Primary Type", data.contentType.primary || "Unknown", "Main content classification"]);
+            rows.push(["Content Type", "Confidence", `${Math.round((data.contentType.confidence || 0) * 100)}%`, "Classification confidence"]);
+            if (data.contentType.description) {
+                rows.push(["Content Type", "Description", data.contentType.description, "Detailed content description"]);
+            }
+        }
+
+        // Add Voice Analysis
+        if (data.voiceAnalysis && data.voiceAnalysis.hasVoice) {
+            rows.push(["Voice Analysis", "Has Voice", "Yes", "Voice detection result"]);
+            rows.push(["Voice Analysis", "Speaker Count", String(data.voiceAnalysis.speakerCount || 0), "Number of detected speakers"]);
+            
+            if (data.voiceAnalysis.genderDetection) {
+                rows.push(["Voice Analysis", "Primary Gender", data.voiceAnalysis.genderDetection.primary || "Unknown", "Detected speaker gender"]);
+                rows.push(["Voice Analysis", "Gender Confidence", `${Math.round((data.voiceAnalysis.genderDetection.confidence || 0) * 100)}%`, "Gender detection confidence"]);
+            }
+            
+            if (data.voiceAnalysis.speakerEmotion) {
+                rows.push(["Voice Analysis", "Speaker Emotion", data.voiceAnalysis.speakerEmotion.primary || "Unknown", "Primary emotional tone"]);
+                rows.push(["Voice Analysis", "Emotion Confidence", `${Math.round((data.voiceAnalysis.speakerEmotion.confidence || 0) * 100)}%`, "Emotion detection confidence"]);
+            }
+            
+            if (data.voiceAnalysis.speechClarity) {
+                rows.push(["Voice Analysis", "Speech Clarity", `${data.voiceAnalysis.speechClarity.score || 0}/10`, "Overall speech clarity score"]);
+                rows.push(["Voice Analysis", "Speaking Pace", data.voiceAnalysis.speechClarity.pace || "Unknown", "Speaking speed assessment"]);
+                rows.push(["Voice Analysis", "Volume Level", data.voiceAnalysis.speechClarity.volume || "Unknown", "Voice volume level"]);
+            }
+            
+            if (data.voiceAnalysis.languageAnalysis) {
+                rows.push(["Voice Analysis", "Language", data.voiceAnalysis.languageAnalysis.language || "Unknown", "Detected language"]);
+                rows.push(["Voice Analysis", "Language Confidence", `${Math.round((data.voiceAnalysis.languageAnalysis.confidence || 0) * 100)}%`, "Language detection confidence"]);
+                if (data.voiceAnalysis.languageAnalysis.accent) {
+                    rows.push(["Voice Analysis", "Accent", data.voiceAnalysis.languageAnalysis.accent, "Detected accent"]);
+                }
+            }
+        }
+
+        // Add Sound Effects
+        if (data.soundEffects && data.soundEffects.detected && data.soundEffects.detected.length > 0) {
+            data.soundEffects.detected.forEach((sound: any, index: number) => {
+                rows.push(["Sound Effects", `Effect ${index + 1} - Type`, sound.type || "Unknown", "Detected sound effect type"]);
+                rows.push(["Sound Effects", `Effect ${index + 1} - Category`, sound.category || "Unknown", "Sound category classification"]);
+                rows.push(["Sound Effects", `Effect ${index + 1} - Confidence`, `${Math.round((sound.confidence || 0) * 100)}%`, "Detection confidence"]);
+                rows.push(["Sound Effects", `Effect ${index + 1} - Time`, `${formatTime(sound.timestamp?.start || 0)} - ${formatTime(sound.timestamp?.end || 0)}`, "When this sound occurs"]);
+                if (sound.description) {
+                    rows.push(["Sound Effects", `Effect ${index + 1} - Description`, sound.description, "Detailed description"]);
+                }
+            });
+            
+            if (data.soundEffects.environment) {
+                const env = data.soundEffects.environment;
+                rows.push(["Environment", "Location Type", env.location_type || "Unknown", "Indoor/outdoor classification"]);
+                rows.push(["Environment", "Setting", env.setting || "Unknown", "Environment setting type"]);
+                rows.push(["Environment", "Activity Level", env.activity_level || "Unknown", "Level of activity/busyness"]);
+                rows.push(["Environment", "Acoustic Space", env.acoustic_space || "Unknown", "Size of acoustic space"]);
+                rows.push(["Environment", "Time of Day", env.time_of_day || "Unknown", "Estimated time period"]);
+                rows.push(["Environment", "Weather", env.weather || "Unknown", "Weather conditions if detectable"]);
+            }
+        }
+
+        // Add Similar Tracks
+        if (data.similarity && data.similarity.similar_tracks && data.similarity.similar_tracks.length > 0) {
+            data.similarity.similar_tracks.forEach((track: any, index: number) => {
+                rows.push([
+                    "Similar Music",
+                    `Similar Track ${index + 1}`,
+                    `${track.artist || "Unknown"} - ${track.title || "Unknown"}`,
+                    `${Math.round((track.similarity || 0) * 100)}% similarity`,
+                ]);
+            });
+            rows.push(["Similar Music", "Genre Confidence", `${Math.round((data.similarity.genre_confidence || 0) * 100)}%`, "Confidence in genre classification"]);
+        }
+
+        // Add Style Influences
+        if (data.similarity && data.similarity.style_influences && data.similarity.style_influences.length > 0) {
+            rows.push(["Similar Music", "Style Influences", data.similarity.style_influences.join(", "), "Musical styles that influenced this track"]);
+        }
+
+        // Add AI Tags
+        if (data.tags && data.tags.length > 0) {
+            rows.push(["AI Tags", "All Tags", data.tags.map((tag: string) => `#${tag}`).join(", "), `${data.tags.length} auto-generated tags for SEO and categorization`]);
+        }
+
+        // Add Transcription
+        if (data.transcription && data.transcription.trim() && !data.transcription.toLowerCase().includes('no speech detected')) {
+            const transcription = data.transcription.trim();
+            rows.push(["Transcription", "Full Text", transcription, "Complete audio-to-text transcription"]);
+            rows.push(["Transcription", "Character Count", String(transcription.length), "Total characters in transcription"]);
+        }
+
+        // Add AI Description
+        if (data.aiDescription) {
+            rows.push(["AI Analysis", "Description", data.aiDescription, "AI-generated description of the audio"]);
+        }
+
+        return rows.map(row => row.map(cell => escapeCSV(cell)).join(",")).join("\n");
     };
 
     const copyAnalysisData = async () => {

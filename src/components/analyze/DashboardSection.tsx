@@ -804,13 +804,39 @@ function SimilarityTab({ result }: { result: AnalysisResult }) {
 
 // Metadata Card Component
 function MetadataCard({ result }: { result: AnalysisResult }) {
+  const [idCopied, setIdCopied] = React.useState(false);
+
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const formatAnalysisId = (id: string): string => {
+    // 显示前8个字符 + 省略号 + 后4个字符
+    if (id.length > 12) {
+      return `${id.substring(0, 8)}...${id.substring(id.length - 4)}`;
+    }
+    return id;
+  };
+
+  const handleCopyId = async () => {
+    try {
+      await navigator.clipboard.writeText(result.id);
+      setIdCopied(true);
+      setTimeout(() => setIdCopied(false), 2000);
+    } catch (error) {
+      console.error('Failed to copy ID:', error);
+    }
+  };
+
   return (
     <div className="glass-pane p-6">
       <h4 className="text-lg font-bold text-white mb-4">File Information</h4>
       <div className="space-y-3">
         <div className="flex justify-between">
           <span className="text-slate-400">Duration</span>
-          <span className="text-white">{Math.floor(result.duration / 60)}:{(result.duration % 60).toString().padStart(2, '0')}</span>
+          <span className="text-white">{formatDuration(result.duration)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-slate-400">Size</span>
@@ -820,9 +846,28 @@ function MetadataCard({ result }: { result: AnalysisResult }) {
           <span className="text-slate-400">Format</span>
           <span className="text-white">{result.format}</span>
         </div>
-        <div className="flex justify-between">
+        <div className="flex justify-between items-center gap-2">
           <span className="text-slate-400">Analysis ID</span>
-          <span className="text-white font-mono text-sm">{result.id}</span>
+          <div className="flex items-center gap-2">
+            <span className="text-white font-mono text-xs" title={result.id}>
+              {formatAnalysisId(result.id)}
+            </span>
+            <button
+              onClick={handleCopyId}
+              className="p-1.5 text-slate-400 hover:text-violet-400 transition-colors rounded hover:bg-white/5"
+              title={idCopied ? "Copied!" : "Copy full ID"}
+            >
+              {idCopied ? (
+                <svg className="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -938,6 +938,33 @@ import { Icon } from "astro-icon/components";
       ]);
     }
 
+    // Add Transcription if available
+    if (data.transcription && data.transcription.trim() && !data.transcription.toLowerCase().includes('no speech detected')) {
+      const transcription = data.transcription.trim();
+      rows.push([
+        "Transcription",
+        "Full Text",
+        transcription,
+        "Complete audio-to-text transcription",
+      ]);
+      rows.push([
+        "Transcription",
+        "Character Count",
+        transcription.length.toString(),
+        "Total characters in transcription",
+      ]);
+    }
+
+    // Add Style Influences if available
+    if (data.similarity && data.similarity.style_influences && data.similarity.style_influences.length > 0) {
+      rows.push([
+        "Similar Music",
+        "Style Influences",
+        data.similarity.style_influences.join(", "),
+        "Musical styles that influenced this track",
+      ]);
+    }
+
     // Add AI Description
     if (data.aiDescription) {
       rows.push([
@@ -1418,4 +1445,5 @@ ${displayTags.map((tag) => `#${tag}`).join(", ")}`;
   (window as any).shareToTwitter = shareToTwitter;
   (window as any).shareToLinkedIn = shareToLinkedIn;
   (window as any).generateSummary = generateSummary;
+  (window as any).convertToCSV = convertToCSV;
 </script>
